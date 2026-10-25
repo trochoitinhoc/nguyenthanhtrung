@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game: Săn Kho Báu Kiến Thức</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #4ade80;
+            --primary-dark: #166534;
+            --secondary: #fbbf24;
+            --secondary-dark: #b45309;
+            --bg-color: #e0f2fe;
+            --wood: #8B4513;
+            --wood-light: #A0522D;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .screen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background-image: linear-gradient(to bottom, #bae6fd, #e0f2fe);
+        }
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wood-board {
+            background-color: var(--wood);
+            border: 4px solid var(--wood-light);
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        .btn-action {
+            background: linear-gradient(to bottom, #fde047, #f59e0b);
+            border: 4px solid #b45309;
+            border-radius: 9999px;
+            color: #78350f;
+            font-weight: 900;
+            text-transform: uppercase;
+            box-shadow: 0 4px 0 #78350f, 0 8px 10px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            text-align: center;
+            cursor: pointer;
+        }
+        .btn-action:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #78350f, 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-action:disabled {
+            filter: grayscale(100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-option {
+            background: white;
+            border: 3px solid #cbd5e1;
+            border-radius: 16px;
+            color: #1e293b;
+            font-weight: 700;
+            box-shadow: 0 4px 0 #94a3b8;
+            transition: all 0.1s;
+            cursor: pointer;
+        }
+        .btn-option:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #94a3b8;
+        }
+        .btn-option.selected {
+            background: #fef08a;
+            border-color: #eab308;
+            box-shadow: 0 4px 0 #ca8a04;
+        }
+
+        .map-bg {
+            background: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><path d="M0 50 Q 25 25, 50 50 T 100 50 L 100 100 L 0 100 Z" fill="%23bbf7d0" opacity="0.5"/></svg>');
+            background-color: #86efac;
+            position: relative;
+        }
+        
+        .map-node {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            background: white;
+            border: 4px solid #94a3b8;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            z-index: 10;
+        }
+        .map-node.locked {
+            filter: grayscale(100%) brightness(0.7);
+            opacity: 0.8;
+        }
+        .map-node.unlocked {
+            border-color: #3b82f6;
+            animation: pulse-node 2s infinite;
+            cursor: pointer;
+        }
+        .map-node.completed {
+            border-color: #22c55e;
+            background: #dcfce7;
+        }
+        
+        .map-path {
+            position: absolute;
+            border-top: 4px dashed #94a3b8;
+            z-index: 5;
+            transform-origin: 0 50%;
+        }
+
+        @keyframes pulse-node {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating { animation: float 3s ease-in-out infinite; }
+
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* Confetti & UI Overlays */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        .score-popup {
+            position: absolute;
+            color: #f59e0b;
+            font-weight: 900;
+            font-size: 1.5rem;
+            text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            z-index: 1000;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+        }
+        .notebook-item {
+            background: rgba(255,255,255,0.9);
+            border-left: 4px solid var(--secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Khung chứa hệ thống thông báo Toast (Thay thế alert) -->
+    <div id="toast-container" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none w-[90%] max-w-sm"></div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- AUDIO TOGGLE -->
+    <button id="btn-audio" class="fixed top-2 left-2 z-50 bg-white p-2 rounded-full shadow-lg text-xl" onclick="toggleAudio()">🔊</button>
+
+    <div id="screen-start" class="screen active items-center justify-center p-4">
+        <div class="text-center animate-pop max-w-md w-full">
+            <div class="text-6xl floating mb-4">🗺️</div>
+            <div class="wood-board p-6 mb-8">
+                <h2 class="text-xl text-yellow-300 font-bold mb-2">BÀI 6</h2>
+                <h1 class="text-3xl md:text-4xl font-black mb-4 leading-tight text-white">SĂN KHO BÁU<br>KIẾN THỨC</h1>
+                <p class="text-sm md:text-base font-bold text-gray-100">
+                    "Internet là kho thông tin khổng lồ.<br>Nhưng không phải thông tin nào cũng phù hợp với em.<br>Hãy trở thành nhà thám hiểm thông minh!"
+                </p>
+            </div>
+            <button onclick="goToScreen('screen-register')" class="btn-action w-full py-4 text-xl">▶️ BẮT ĐẦU PHIÊU LƯU</button>
+        </div>
+    </div>
+
+    <div id="screen-register" class="screen items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-xl p-6 max-w-md w-full animate-pop border-4 border-blue-200">
+            <h2 class="text-2xl font-black text-center text-blue-800 mb-6">NHÀ THÁM HIỂM LÀ AI?</h2>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-bold mb-2">👤 Họ và Tên:</label>
+                <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" class="w-full p-4 border-2 border-gray-300 rounded-xl text-lg focus:border-blue-500 focus:outline-none font-bold text-blue-900">
+            </div>
+            
+            <div class="mb-8">
+                <label class="block text-gray-700 font-bold mb-2">🏫 Lớp:</label>
+                <input type="text" id="player-class" placeholder="Nhập tên lớp..." class="w-full p-4 border-2 border-gray-300 rounded-xl text-lg focus:border-blue-500 focus:outline-none font-bold text-blue-900">
+            </div>
+
+            <button onclick="startGame()" class="btn-action w-full py-4 text-lg">🧭 BƯỚC VÀO CUỘC PHIÊU LƯU</button>
+        </div>
+    </div>
+
+    <div id="screen-map" class="screen map-bg relative">
+        <div class="absolute top-0 left-0 w-full p-2 flex justify-between items-center z-50 pointer-events-none">
+            <div class="mt-10 ml-2 pointer-events-auto flex flex-col gap-2">
+                <div class="bg-white px-3 py-1 rounded-full shadow font-bold text-blue-800 flex items-center border-2 border-blue-200">
+                    👤 <span id="hud-name" class="ml-1 max-w-[100px] truncate">...</span>
+                </div>
+                <button onclick="openNotebook()" class="btn-action px-3 py-1 text-sm flex items-center shadow-lg">
+                    📖 SỔ TAY
+                </button>
+            </div>
+            
+            <div class="flex flex-col gap-2 pointer-events-auto items-end mr-2 mt-2">
+                <div class="bg-white px-3 py-1 rounded-full shadow font-bold text-yellow-600 border-2 border-yellow-200 flex justify-between w-32">
+                    <span>⭐</span> <span id="hud-score">0</span>
+                </div>
+                <div id="hud-combo-box" class="bg-orange-500 text-white px-3 py-1 rounded-full shadow font-black hidden border-2 border-orange-700">
+                    🔥 x<span id="hud-combo">1</span>
+                </div>
+                <div class="flex gap-1">
+                    <div class="bg-white w-8 h-8 rounded-full flex items-center justify-center text-sm shadow font-bold border-2 border-green-200">
+                        🧩<span id="hud-pieces" class="text-xs">0</span>
+                    </div>
+                    <div class="bg-white w-8 h-8 rounded-full flex items-center justify-center text-sm shadow font-bold border-2 border-blue-200">
+                        🔎<span id="hud-clues" class="text-xs">0</span>
+                    </div>
+                    <div class="bg-white w-8 h-8 rounded-full flex items-center justify-center text-sm shadow font-bold border-2 border-yellow-200">
+                        🗝️<span id="hud-keys" class="text-xs">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full h-full relative overflow-auto" id="map-container">
+            <div class="w-[800px] h-[800px] relative mx-auto my-auto origin-center transform scale-75 md:scale-100 mt-20" id="map-content">
+                <!-- Nodes/Paths injected here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-task" class="screen flex-col">
+        <div class="bg-blue-600 text-white p-3 flex justify-between items-center shadow-md shrink-0">
+            <div class="font-bold flex items-center gap-2">
+                <span id="task-stage-icon" class="text-2xl">🌴</span>
+                <span id="task-stage-name" class="uppercase text-sm">Chặng 1</span>
+            </div>
+            <div class="font-black text-yellow-300">⭐ <span id="task-score">0</span></div>
+        </div>
+        
+        <div class="flex-1 p-4 flex flex-col relative bg-white pb-28 overflow-y-auto" id="task-content-area">
+            <!-- Task HTML injected here -->
+        </div>
+
+        <div class="fixed bottom-0 left-0 w-full p-4 bg-white border-t-2 border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40 hidden" id="task-bottom-bar">
+            <button id="btn-submit-task" class="btn-action w-full py-4 text-xl">XÁC NHẬN</button>
+        </div>
+    </div>
+
+    <div id="modal-feedback" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-[90%] text-center animate-pop border-4 shadow-2xl" id="feedback-box">
+            <div id="feedback-icon" class="text-6xl mb-2 floating">🎉</div>
+            <h2 id="feedback-title" class="text-2xl font-black mb-2 uppercase">Chính xác!</h2>
+            <p id="feedback-message" class="text-gray-700 font-bold mb-6">Em đã tìm thấy manh mối.</p>
+            
+            <div id="feedback-reward" class="flex justify-center gap-4 mb-6 hidden">
+                <!-- Rewards injected here -->
+            </div>
+
+            <button id="btn-feedback-next" class="btn-action w-full py-3 text-lg">TIẾP TỤC</button>
+        </div>
+    </div>
+
+    <div id="modal-stage-intro" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="wood-board p-6 max-w-sm w-[90%] text-center animate-pop relative">
+            <div id="intro-icon" class="text-6xl absolute -top-10 left-1/2 transform -translate-x-1/2 floating">🌴</div>
+            <h2 id="intro-title" class="text-2xl font-black mt-4 mb-2 text-yellow-300">CHẶNG 1</h2>
+            <h3 id="intro-subtitle" class="text-xl font-bold mb-4">ĐẢO THÔNG TIN</h3>
+            <p id="intro-task" class="text-sm font-bold bg-black bg-opacity-30 p-3 rounded-lg mb-6">Nhiệm vụ: TÌM MANH MỐI</p>
+            <button onclick="startCurrentStageTasks()" class="btn-action w-full py-3 text-lg">TIẾN LÊN!</button>
+        </div>
+    </div>
+
+    <div id="modal-notebook" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="bg-yellow-50 rounded-lg p-6 max-w-md w-[95%] h-[80%] flex flex-col border-8 border-yellow-800 shadow-2xl relative">
+            <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-red-600 text-white font-black py-1 px-4 rounded-full border-4 border-yellow-800 text-center w-64">
+                📖 SỔ TAY NHÀ THÁM HIỂM
+            </div>
+            
+            <div class="flex-1 overflow-y-auto mt-6 pr-2 pb-4" id="notebook-content">
+                <!-- Sổ tay content injected -->
+            </div>
+            
+            <button onclick="closeNotebook()" class="btn-action w-full py-3 text-lg mt-4 shrink-0">ĐÓNG SỔ TAY</button>
+        </div>
+    </div>
+
+    <div id="modal-boss-password" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="bg-purple-900 border-4 border-yellow-400 rounded-3xl p-6 max-w-md w-[95%] text-center shadow-2xl animate-pop text-white max-h-[95vh] overflow-y-auto">
+            <div class="text-5xl floating mb-2">🔐</div>
+            <h2 class="text-2xl font-black text-yellow-300 mb-2">RƯƠNG KHO BÁU</h2>
+            <p class="text-sm font-bold mb-4">Em đã thu thập đủ manh mối. Hãy xếp theo thứ tự để tìm ra mật mã mở rương!</p>
+            
+            <div id="password-slots" class="flex flex-col gap-2 mb-4">
+                <!-- Slots injected -->
+            </div>
+            
+            <div id="password-options" class="flex flex-wrap justify-center gap-2 mb-4">
+                <!-- Options injected -->
+            </div>
+
+            <button id="btn-check-password" class="btn-action w-full py-3 text-lg bg-gray-400 border-gray-600 text-gray-800 opacity-50" disabled>MỞ KHÓA</button>
+        </div>
+    </div>
+
+    <div id="screen-result" class="screen items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full text-center animate-pop border-4 border-yellow-400 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-yellow-300 to-transparent opacity-50 pointer-events-none"></div>
+            
+            <div class="text-7xl floating mb-2 relative z-10" id="result-icon">🏆</div>
+            <h2 class="text-2xl font-black text-red-600 mb-1 relative z-10">CHINH PHỤC KHO BÁU!</h2>
+            <h3 id="result-rank" class="text-xl font-bold text-purple-700 mb-6 relative z-10">BẬC THẦY SĂN KHO BÁU</h3>
+            
+            <div class="bg-blue-50 rounded-xl p-4 mb-6 text-left border-2 border-blue-200 relative z-10">
+                <p class="font-bold text-gray-700">👤 <span id="res-name">...</span> - 🏫 <span id="res-class">...</span></p>
+                <div class="h-px bg-blue-200 my-2"></div>
+                <div class="grid grid-cols-2 gap-2 text-sm font-bold">
+                    <div>⭐ Điểm: <span id="res-score" class="text-orange-600">0</span></div>
+                    <div>🔥 Combo: <span id="res-combo" class="text-red-600">0</span></div>
+                    <div>🧩 Bản đồ: <span id="res-pieces" class="text-green-600">0/2</span></div>
+                    <div>🔎 Manh mối: <span id="res-clues" class="text-blue-600">0/4</span></div>
+                    <div>🗝️ Chìa khóa: <span id="res-keys" class="text-yellow-600">0/1</span></div>
+                    <div>⏱️ Thời gian: <span id="res-time" class="text-purple-600">0:00</span></div>
+                </div>
+            </div>
+            
+            <p class="text-sm font-bold text-gray-600 mb-6 relative z-10 italic">"Chúc mừng nhà thám hiểm! Em đã biết cách tìm thông tin trên Internet và biết lựa chọn những thông tin phù hợp."</p>
+            
+            <div class="flex gap-2 relative z-10">
+                <button onclick="location.reload()" class="btn-action flex-1 py-3 text-xs">🔄 CHƠI LẠI TỪ ĐẦU</button>
+                <button onclick="openNotebook()" class="btn-option flex-1 py-3 text-xs bg-blue-100 border-blue-300">📖 XEM MANH MỐI</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GAME_DATA = {
+            stages: [
+                {
+                    id: 1, title: "ĐẢO THÔNG TIN", emoji: "🌴", x: 100, y: 600,
+                    tasks: [
+                        {
+                            type: "mcq",
+                            scenario: "Cánh cổng chỉ mở khi em tìm đúng những điều có thể xem trên Internet.",
+                            question: "Em có thể xem gì trên Internet?",
+                            options: [
+                                "A. Lịch thi đấu bóng đá.",
+                                "B. Phim hoạt hình dành cho thiếu nhi.",
+                                "C. Video giới thiệu các danh lam thắng cảnh, điểm du lịch nổi tiếng.",
+                                "D. Cả A, B và C."
+                            ],
+                            correct: 3, // D
+                            reward: { type: "piece", val: 1 }
+                        },
+                        {
+                            type: "multi-select",
+                            scenario: "Hãy chọn tất cả những thông tin hoặc chương trình mà em có thể tìm/xem khi truy cập Internet.",
+                            options: [
+                                { text: "⚽ Lịch thi đấu bóng đá", correct: true },
+                                { text: "🎬 Phim hoạt hình", correct: true },
+                                { text: "🏞️ Danh lam thắng cảnh", correct: true },
+                                { text: "🍳 Công thức nấu ăn", correct: true },
+                                { text: "📺 Chương trình giải trí", correct: true }
+                            ]
+                        },
+                        {
+                            type: "true-false",
+                            scenario: "Hãy cho biết các phát biểu sau ĐÚNG hay SAI:",
+                            statements: [
+                                { text: "Internet có thể giúp em xem tin tức.", correct: true },
+                                { text: "Internet có thể giúp em xem phim hoạt hình.", correct: true },
+                                { text: "Internet chỉ dùng để chơi game.", correct: false },
+                                { text: "Internet có thể giúp em xem các chương trình giải trí.", correct: true }
+                            ],
+                            reward: { type: "clue", text: "Internet có thể cung cấp nhiều loại thông tin và chương trình giải trí." },
+                            finalInStage: true
+                        }
+                    ]
+                },
+                {
+                    id: 2, title: "HANG INTERNET", emoji: "🌊", x: 300, y: 400,
+                    tasks: [
+                        {
+                            type: "mcq-img",
+                            scenario: "Bạn An cần tìm cách quàng khăn quàng đỏ đúng nghi thức. Trong máy tính của An chưa có thông tin này.",
+                            question: "An có thể tìm thông tin đó ở đâu?",
+                            options: [
+                                { icon: "💻", text: "Trong máy tính" },
+                                { icon: "🌐", text: "Internet" },
+                                { icon: "📦", text: "Thùng đồ dùng" },
+                                { icon: "📚", text: "Cặp sách" }
+                            ],
+                            correct: 1,
+                            reward: { type: "clue", text: "Có những thông tin không có sẵn trong máy tính nhưng có thể tìm thấy trên Internet." }
+                        },
+                        {
+                            type: "categorize",
+                            scenario: "Kéo các thẻ thông tin về đúng nơi của nó:",
+                            categories: ["💻 TRONG MÁY TÍNH", "🌐 TRÊN INTERNET"],
+                            items: [
+                                { text: "Một tệp văn bản em đã lưu trong máy", cat: 0 },
+                                { text: "Video hướng dẫn cách quàng khăn quàng đỏ", cat: 1 },
+                                { text: "Hình ảnh cách quàng khăn quàng đỏ", cat: 1 },
+                                { text: "Một thông tin mà An chưa lưu sẵn trong máy", cat: 1 }
+                            ]
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Đứng trước kho tàng vĩ đại...",
+                            question: "Điều nào mô tả đúng về Internet?",
+                            options: [
+                                "A. Internet là kho thông tin khổng lồ.",
+                                "B. Internet không có nhiều thông tin.",
+                                "C. Thông tin trên Internet không bao giờ thay đổi.",
+                                "D. Chỉ có thông tin đã lưu trong máy tính mới có thể tìm thấy."
+                            ],
+                            correct: 0,
+                            reward: { type: "piece", val: 2 }
+                        },
+                        {
+                            type: "order-words",
+                            scenario: "Sắp xếp các mảnh đá lại để mở đường:",
+                            words: ["Internet", "là kho thông tin", "khổng lồ."],
+                            correct: ["Internet", "là kho thông tin", "khổng lồ."]
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "An xem dự báo thời tiết trên Internet để chuẩn bị Lễ Kết nạp Đội vào thứ Hai tới. Dự báo thứ Hai: 22°–26°, Có mây, có mưa rào và dông.",
+                            question: "Lớp bạn An nên tổ chức Lễ Kết nạp Đội viên ở đâu? Vì sao?",
+                            options: [
+                                "A. Trong lớp, vì dự báo có mưa rào và dông.",
+                                "B. Ngoài sân trường, vì trời sẽ nắng đẹp.",
+                                "C. Ngoài sân trường, vì Internet dự báo sai.",
+                                "D. Trong lớp, vì ngoài sân không có bóng râm."
+                            ],
+                            correct: 0,
+                            reward: { type: "clue", text: "Internet là kho thông tin khổng lồ và được cập nhật thường xuyên." },
+                            finalInStage: true
+                        }
+                    ]
+                },
+                {
+                    id: 3, title: "ĐỀN AN TOÀN", emoji: "🏛️", x: 600, y: 500,
+                    tasks: [
+                        {
+                            type: "mcq-img",
+                            scenario: "Em đứng trước 3 cánh cửa.",
+                            question: "Trong những trang thông tin sau, trang nào có nội dung KHÔNG phù hợp với các em?",
+                            options: [
+                                { icon: "🎮", text: "Cửa 1: Trò chơi dân gian" },
+                                { icon: "🏛️", text: "Cửa 2: Lịch sử, địa lí" },
+                                { icon: "⚠️", text: "Cửa 3: Nội dung bạo lực" }
+                            ],
+                            correct: 2
+                        },
+                        {
+                            type: "categorize",
+                            scenario: "Phân loại thông tin thành 2 nhóm:",
+                            categories: ["💚 PHÙ HỢP", "⚠️ KHÔNG PHÙ HỢP"],
+                            items: [
+                                { text: "Thông tin về trò chơi dân gian", cat: 0 },
+                                { text: "Thông tin về lịch sử, địa lí", cat: 0 },
+                                { text: "Nội dung bạo lực", cat: 1 }
+                            ]
+                        },
+                        {
+                            type: "true-false",
+                            scenario: "Khẳng định nào ĐÚNG hay SAI?",
+                            statements: [
+                                { text: "Mọi thông tin trên Internet đều phù hợp với trẻ em.", correct: false },
+                                { text: "Trên Internet có thể có thông tin không chính xác.", correct: true },
+                                { text: "Một số thông tin trên Internet có thể khó hiểu với các em.", correct: true },
+                                { text: "Một số thông tin có thể có nội dung xấu hoặc độc hại.", correct: true },
+                                { text: "Khi sử dụng Internet, học sinh cần được người lớn cho phép và hướng dẫn.", correct: true }
+                            ],
+                            reward: { type: "clue", text: "Thông tin trên Internet rất đa dạng nhưng không phải thông tin nào cũng phù hợp." }
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Minh lên mạng tìm hiểu cách phân loại thực vật theo đặc điểm của rễ nhưng thấy nhiều nội dung khó hiểu.",
+                            question: "Minh nên làm gì?",
+                            options: [
+                                "A. Tiếp tục xem bất kỳ trang nào.",
+                                "B. Nhờ mẹ hoặc người lớn hỗ trợ tìm thông tin phù hợp.",
+                                "C. Bỏ qua mọi hướng dẫn.",
+                                "D. Tự tìm nội dung bất kỳ."
+                            ],
+                            correct: 1
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Em gặp một thông tin trên Internet khiến em lo lắng hoặc khó hiểu.",
+                            question: "Chọn người mà em NÊN chia sẻ và nhờ giúp đỡ:",
+                            options: [
+                                "A. Người lớn đáng tin cậy (như Bố mẹ, Thầy cô giáo).",
+                                "B. Người lạ mới quen trên Internet.",
+                                "C. Không chia sẻ với ai cả.",
+                                "D. Chỉ nói cho bạn bè bằng tuổi nghe."
+                            ],
+                            correct: 0
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Tình huống quan trọng!",
+                            question: "Em nhìn thấy một nội dung trên Internet có nội dung xấu hoặc khiến em sợ. Em sẽ làm gì?",
+                            options: [
+                                "A. Tiếp tục xem để biết thêm.",
+                                "B. Chia sẻ cho nhiều bạn cùng xem.",
+                                "C. Báo và chia sẻ với người lớn đáng tin cậy.",
+                                "D. Tự tìm thêm nội dung tương tự."
+                            ],
+                            correct: 2,
+                            reward: { type: "clue", text: "Khi gặp thông tin khó hiểu hoặc không phù hợp, hãy nhờ người lớn đáng tin cậy giúp đỡ." },
+                            finalInStage: true
+                        }
+                    ]
+                },
+                {
+                    id: 4, title: "NÚI THỬ THÁCH", emoji: "⛰️", x: 500, y: 150,
+                    tasks: [
+                        {
+                            type: "mcq",
+                            scenario: "Trước khi mua một món đồ, chị của Khoa thường vào Internet để tìm hiểu trước.",
+                            question: "Tại sao chị của Khoa lại làm như vậy?",
+                            options: [
+                                "A. Để tìm hiểu thông tin về món đồ trước khi mua.",
+                                "B. Vì Internet chỉ dùng để giải trí.",
+                                "C. Vì mọi thông tin trên Internet đều chính xác tuyệt đối.",
+                                "D. Vì không cần xem xét thông tin nào khác."
+                            ],
+                            correct: 0
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Em cần tìm một thông tin mà máy tính đang sử dụng chưa có.",
+                            question: "Em có thể tìm thông tin đó ở đâu?",
+                            options: [
+                                "A. Trong cặp sách.",
+                                "B. Trên Internet.",
+                                "C. Trong thùng rác.",
+                                "D. Chỉ cần tắt máy đi."
+                            ],
+                            correct: 1
+                        },
+                        {
+                            type: "categorize",
+                            scenario: "Không phải thông tin nào cũng phù hợp. Hãy phân loại các nội dung sau:",
+                            categories: ["✅ AN TOÀN", "⚠️ CẦN CẨN THẬN"],
+                            items: [
+                                { text: "Thông tin về trò chơi dân gian", cat: 0 },
+                                { text: "Thông tin về lịch sử, địa lí", cat: 0 },
+                                { text: "Một thông tin giải trí phù hợp", cat: 0 },
+                                { text: "Nội dung bạo lực", cat: 1 },
+                                { text: "Một thông tin khó hiểu", cat: 1 },
+                                { text: "Một thông tin chưa biết rõ nguồn", cat: 1 }
+                            ]
+                        },
+                        {
+                            type: "true-false",
+                            scenario: "Khoa nói: 'Ở nhà tớ, mỗi lần dùng Internet đều phải có người lớn cho phép và hướng dẫn.'",
+                            statements: [
+                                { text: "Điều Khoa nói là ĐÚNG với nội dung bài học.", correct: true }
+                            ]
+                        },
+                        {
+                            type: "multi-select",
+                            scenario: "Chọn tất cả những manh mối quan trọng để mở cửa hang kho báu:",
+                            options: [
+                                { text: "📜 Internet là kho thông tin khổng lồ.", correct: true },
+                                { text: "📜 Internet được cập nhật thường xuyên.", correct: true },
+                                { text: "📜 Không phải thông tin nào trên Internet cũng phù hợp.", correct: true },
+                                { text: "📜 Khi gặp vấn đề, hãy chia sẻ với người lớn đáng tin cậy.", correct: true }
+                            ],
+                            reward: { type: "key", val: 1 },
+                            finalInStage: true
+                        }
+                    ]
+                },
+                {
+                    id: 5, title: "HANG KHO BÁU", emoji: "🏴‍☠️", x: 150, y: 200,
+                    isBoss: true,
+                    tasks: [
+                        {
+                            type: "mcq",
+                            scenario: "Khóa 1: Ổ khóa Cơ bản",
+                            question: "Internet có thể cung cấp những gì?",
+                            options: [
+                                "A. Tin tức.",
+                                "B. Chương trình giải trí, phim hoạt hình.",
+                                "C. Video giới thiệu danh lam thắng cảnh.",
+                                "D. Tất cả các lựa chọn trên đều phù hợp."
+                            ],
+                            correct: 3
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Khóa 2: Ổ khóa Bản chất",
+                            question: "Internet là gì?",
+                            options: [
+                                "A. Là một trò chơi.",
+                                "B. Là kho thông tin khổng lồ.",
+                                "C. Là một thư mục trong máy tính.",
+                                "D. Là một quyển sách."
+                            ],
+                            correct: 1
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Khóa 3: Ổ khóa Ứng xử",
+                            question: "Em tìm thấy một thông tin trên Internet nhưng nội dung rất khó hiểu. Em nên làm gì?",
+                            options: [
+                                "A. Bỏ qua và tắt máy.",
+                                "B. Cố gắng xem tiếp.",
+                                "C. Nhờ người lớn hỗ trợ tìm thông tin phù hợp.",
+                                "D. Tin luôn thông tin đó."
+                            ],
+                            correct: 2
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Khóa 4: Ổ khóa Tỉnh táo",
+                            question: "Điều nào sau đây KHÔNG đúng?",
+                            options: [
+                                "A. Thông tin trên Internet đa dạng và phong phú.",
+                                "B. Internet được cập nhật thường xuyên.",
+                                "C. Mọi thông tin trên Internet đều đáng tin cậy và luôn chính xác.",
+                                "D. Có những thông tin không phù hợp với các em."
+                            ],
+                            correct: 2
+                        },
+                        {
+                            type: "multi-select",
+                            scenario: "Khóa 5: Ổ khóa Lựa chọn (Chọn những con đường an toàn và phù hợp)",
+                            options: [
+                                { text: "🌿 Đường A: Tìm hiểu thông tin phù hợp.", correct: true },
+                                { text: "⚠️ Đường B: Mở một trang có nội dung bạo lực.", correct: false },
+                                { text: "📜 Đường C: Nhờ người lớn hướng dẫn khi gặp thông tin khó hiểu.", correct: true },
+                                { text: "❓ Đường D: Tin ngay mọi thông tin nhìn thấy trên Internet.", correct: false }
+                            ],
+                            finalInStage: true
+                        }
+                    ]
+                }
+            ]
+        };
+
+        let state = {
+            name: "",
+            className: "",
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            pieces: 0,
+            clues: [],
+            keys: 0,
+            currentStageId: 1,
+            unlockedStages: [1],
+            currentTaskIndex: 0,
+            audioEnabled: true,
+            startTime: 0
+        };
+
+        function showToast(msg, type = "error") {
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl font-bold text-white shadow-xl animate-pop pointer-events-auto transition-opacity duration-300 text-center ${type === 'error' ? 'bg-red-500' : 'bg-green-500 border-2 border-green-300 text-green-900'}`;
+            toast.innerText = msg;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // HỆ THỐNG NHẠC NỀN 8-BIT OFFLINE (BGM)
+        const bgmSequence = [
+            261.63, 329.63, 392.00, 523.25, 392.00, 329.63, // C Major
+            261.63, 329.63, 392.00, 523.25, 392.00, 329.63, // C Major
+            293.66, 349.23, 440.00, 587.33, 440.00, 349.23, // D Minor
+            196.00, 246.94, 293.66, 392.00, 293.66, 246.94  // G Major
+        ];
+        let bgmIndex = 0;
+        let bgmTimeout = null;
+        let isBgmPlaying = false;
+
+        function playBGMStep() {
+            if (!state.audioEnabled || !isBgmPlaying) return;
+            initAudio();
+            
+            const freq = bgmSequence[bgmIndex];
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle'; // Âm thanh êm dịu làm nhạc nền
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            // Âm lượng siêu nhỏ để không lấn át tiếng hiệu ứng (0.02)
+            gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+
+            bgmIndex = (bgmIndex + 1) % bgmSequence.length;
+            bgmTimeout = setTimeout(playBGMStep, 200); // Tốc độ nốt nhạc
+        }
+
+        function startBGM() {
+            if (isBgmPlaying) return;
+            isBgmPlaying = true;
+            playBGMStep();
+        }
+
+        function stopBGM() {
+            isBgmPlaying = false;
+            clearTimeout(bgmTimeout);
+        }
+
+        function playTone(freq, type, duration, vol = 0.1) {
+            if (!state.audioEnabled) return;
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sfx = {
+            click: () => playTone(600, 'sine', 0.1, 0.1),
+            correct: () => {
+                playTone(523.25, 'sine', 0.1, 0.1); 
+                setTimeout(() => playTone(659.25, 'sine', 0.2, 0.1), 100); 
+            },
+            wrong: () => playTone(200, 'sawtooth', 0.3, 0.1),
+            unlock: () => {
+                playTone(440, 'square', 0.1, 0.05);
+                setTimeout(() => playTone(554.37, 'square', 0.1, 0.05), 100);
+                setTimeout(() => playTone(659.25, 'square', 0.3, 0.05), 200);
+            },
+            victory: () => {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    setTimeout(() => playTone(freq, 'sine', 0.3, 0.2), i * 150);
+                });
+            }
+        };
+
+        function toggleAudio() {
+            state.audioEnabled = !state.audioEnabled;
+            document.getElementById('btn-audio').innerText = state.audioEnabled ? "🔊" : "🔇";
+            if (state.audioEnabled) {
+                initAudio();
+                startBGM(); // Bật lại nhạc nền
+            } else {
+                stopBGM(); // Tắt nhạc nền
+            }
+        }
+
+        function goToScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if (screenId === 'screen-map') renderMap();
+            sfx.click();
+            
+            // Bắt đầu phát nhạc nền từ lần tương tác đầu tiên của người dùng
+            if (state.audioEnabled && !isBgmPlaying) {
+                startBGM();
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-name').innerText = state.name;
+            const scoreEl = document.getElementById('hud-score');
+            if(parseInt(scoreEl.innerText) !== state.score) {
+                scoreEl.classList.add('animate-pop', 'text-green-600');
+                setTimeout(() => scoreEl.classList.remove('animate-pop', 'text-green-600'), 500);
+            }
+            scoreEl.innerText = state.score;
+
+            const comboEl = document.getElementById('hud-combo-box');
+            if (state.combo > 1) {
+                comboEl.classList.remove('hidden');
+                comboEl.classList.add('animate-pop');
+                document.getElementById('hud-combo').innerText = Math.min(state.combo, 4);
+            } else {
+                comboEl.classList.add('hidden');
+            }
+
+            document.getElementById('hud-pieces').innerText = state.pieces;
+            document.getElementById('hud-clues').innerText = state.clues.length;
+            document.getElementById('hud-keys').innerText = state.keys;
+        }
+
+        function addScore(base) {
+            const multiplier = Math.max(1, Math.min(state.combo, 4));
+            const points = base * multiplier;
+            state.score += points;
+            
+            const mapContainer = document.getElementById('screen-map').classList.contains('active') ? document.body : document.getElementById('screen-task');
+            const floatTxt = document.createElement('div');
+            floatTxt.className = 'score-popup left-1/2 top-1/3 transform -translate-x-1/2';
+            floatTxt.innerText = `+${points}`;
+            mapContainer.appendChild(floatTxt);
+            setTimeout(() => floatTxt.remove(), 1000);
+            
+            updateHUD();
+        }
+
+        function startGame() {
+            const name = document.getElementById('player-name').value.trim();
+            const cls = document.getElementById('player-class').value.trim();
+            if (!name) {
+                return showToast("⚠️ Hãy nhập tên của em nhé!");
+            }
+            state.name = name;
+            state.className = cls;
+            state.startTime = Date.now();
+            initAudio();
+            updateHUD();
+            goToScreen('screen-map');
+            
+            if(state.clues.length === 0) {
+                state.clues.push("Chào mừng nhà thám hiểm! Hãy lần theo bản đồ để tìm kho báu.");
+            }
+        }
+
+        function renderMap() {
+            const container = document.getElementById('map-content');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < GAME_DATA.stages.length - 1; i++) {
+                const s1 = GAME_DATA.stages[i];
+                const s2 = GAME_DATA.stages[i+1];
+                const path = document.createElement('div');
+                path.className = 'map-path';
+                
+                const dx = s2.x - s1.x;
+                const dy = s2.y - s1.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                path.style.width = `${dist}px`;
+                path.style.left = `${s1.x + 40}px`; 
+                path.style.top = `${s1.y + 40}px`;
+                path.style.transform = `rotate(${angle}deg)`;
+                
+                container.appendChild(path);
+            }
+
+            GAME_DATA.stages.forEach(stage => {
+                const node = document.createElement('div');
+                node.className = 'map-node';
+                node.style.left = `${stage.x}px`;
+                node.style.top = `${stage.y}px`;
+                node.innerHTML = `<span>${stage.emoji}</span>`;
+                
+                const label = document.createElement('div');
+                label.className = 'absolute -bottom-8 w-32 text-center text-xs font-bold text-blue-900 bg-white bg-opacity-80 rounded px-1 shadow-sm';
+                label.style.left = '-24px';
+                label.innerText = stage.title;
+                node.appendChild(label);
+
+                if (state.unlockedStages.includes(stage.id)) {
+                    if (state.currentStageId > stage.id) {
+                        node.classList.add('completed');
+                        node.innerHTML += '<div class="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">✔️</div>';
+                    } else {
+                        node.classList.add('unlocked');
+                        node.onclick = () => openStageIntro(stage.id);
+                    }
+                } else {
+                    node.classList.add('locked');
+                    node.innerHTML += '<div class="absolute inset-0 flex justify-center items-center text-3xl opacity-80">🔒</div>';
+                }
+                
+                container.appendChild(node);
+            });
+        }
+
+        function openStageIntro(stageId) {
+            sfx.click();
+            const stage = GAME_DATA.stages.find(s => s.id === stageId);
+            state.currentStageId = stageId;
+            state.currentTaskIndex = 0;
+            
+            document.getElementById('intro-icon').innerText = stage.emoji;
+            document.getElementById('intro-title').innerText = `CHẶNG ${stage.id}`;
+            document.getElementById('intro-subtitle').innerText = stage.title;
+            
+            document.getElementById('modal-stage-intro').classList.remove('hidden');
+        }
+
+        function startCurrentStageTasks() {
+            document.getElementById('modal-stage-intro').classList.add('hidden');
+            goToScreen('screen-task');
+            renderTask();
+        }
+
+        let currentTaskState = {};
+
+        function renderTask() {
+            const stage = GAME_DATA.stages.find(s => s.id === state.currentStageId);
+            const task = stage.tasks[state.currentTaskIndex];
+            
+            document.getElementById('task-stage-icon').innerText = stage.emoji;
+            document.getElementById('task-stage-name').innerText = stage.title;
+            document.getElementById('task-score').innerText = state.score;
+            
+            const area = document.getElementById('task-content-area');
+            area.innerHTML = '';
+            
+            if (task.scenario) {
+                area.innerHTML += `<div class="bg-blue-100 p-4 rounded-xl border-2 border-blue-300 mb-4 font-bold text-blue-900 shadow-sm">${task.scenario}</div>`;
+            }
+            if (task.question) {
+                area.innerHTML += `<h3 class="text-xl font-black text-gray-800 mb-4">${task.question}</h3>`;
+            }
+
+            const btnSubmit = document.getElementById('btn-submit-task');
+            document.getElementById('task-bottom-bar').classList.remove('hidden');
+            btnSubmit.onclick = checkTask;
+            btnSubmit.innerText = "XÁC NHẬN";
+            btnSubmit.classList.remove('opacity-50', 'bg-gray-400');
+            btnSubmit.disabled = false;
+            
+            currentTaskState = { type: task.type, selected: [], isCorrect: false };
+
+            if (task.type === "mcq") {
+                const grid = document.createElement('div');
+                grid.className = "flex flex-col gap-3";
+                task.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-option w-full p-4 text-left text-lg";
+                    btn.innerText = opt;
+                    btn.onclick = () => {
+                        sfx.click();
+                        grid.querySelectorAll('.btn-option').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        currentTaskState.selected = [idx];
+                    };
+                    grid.appendChild(btn);
+                });
+                area.appendChild(grid);
+            }
+            
+            else if (task.type === "mcq-img") {
+                const grid = document.createElement('div');
+                grid.className = "grid grid-cols-2 gap-4";
+                task.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-option flex flex-col items-center p-4 text-center aspect-square justify-center";
+                    btn.innerHTML = `<span class="text-4xl mb-2">${opt.icon}</span><span class="font-bold text-sm leading-tight">${opt.text}</span>`;
+                    btn.onclick = () => {
+                        sfx.click();
+                        grid.querySelectorAll('.btn-option').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        currentTaskState.selected = [idx];
+                    };
+                    grid.appendChild(btn);
+                });
+                area.appendChild(grid);
+            }
+
+            else if (task.type === "multi-select") {
+                const grid = document.createElement('div');
+                grid.className = "flex flex-wrap gap-3";
+                task.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-option p-3 text-sm md:text-base flex-grow text-left";
+                    btn.innerText = opt.text;
+                    btn.onclick = () => {
+                        sfx.click();
+                        btn.classList.toggle('selected');
+                        if (btn.classList.contains('selected')) {
+                            currentTaskState.selected.push(idx);
+                        } else {
+                            currentTaskState.selected = currentTaskState.selected.filter(i => i !== idx);
+                        }
+                    };
+                    grid.appendChild(btn);
+                });
+                area.appendChild(grid);
+            }
+
+            else if (task.type === "true-false") {
+                currentTaskState.answers = Array(task.statements.length).fill(null);
+                const list = document.createElement('div');
+                list.className = "flex flex-col gap-4 pb-6";
+                task.statements.forEach((stmt, idx) => {
+                    const row = document.createElement('div');
+                    row.className = "bg-gray-50 p-3 rounded-lg border-2 border-gray-200 flex flex-col gap-2";
+                    row.innerHTML = `<div class="font-bold text-gray-800">${idx+1}. ${stmt.text}</div>`;
+                    
+                    const btnGroup = document.createElement('div');
+                    btnGroup.className = "flex gap-2";
+                    
+                    ['ĐÚNG', 'SAI'].forEach((val, vIdx) => {
+                        const btn = document.createElement('button');
+                        btn.className = "btn-option flex-1 py-2 text-sm";
+                        btn.innerText = val;
+                        btn.onclick = () => {
+                            sfx.click();
+                            btnGroup.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+                            btn.classList.add('selected');
+                            currentTaskState.answers[idx] = (vIdx === 0);
+                        };
+                        btnGroup.appendChild(btn);
+                    });
+                    row.appendChild(btnGroup);
+                    list.appendChild(row);
+                });
+                area.appendChild(list);
+            }
+
+            else if (task.type === "categorize") {
+                // Initialize explicitly
+                currentTaskState.answers = Array(task.items.length).fill(null);
+                currentTaskState.currentItemIdx = 0;
+                
+                const header = document.createElement('div');
+                header.className = "text-center font-bold text-gray-500 mb-2";
+                header.id = "cat-progress";
+                header.innerText = `Thẻ 1 / ${task.items.length}`;
+                area.appendChild(header);
+
+                const cardBox = document.createElement('div');
+                cardBox.className = "bg-yellow-100 p-6 rounded-2xl border-4 border-yellow-300 text-center text-lg md:text-xl font-black text-gray-800 mb-6 min-h-[100px] flex items-center justify-center animate-pop";
+                cardBox.id = "cat-card";
+                cardBox.innerText = task.items[0].text;
+                area.appendChild(cardBox);
+
+                const btnGrid = document.createElement('div');
+                btnGrid.className = "grid grid-cols-2 gap-4";
+                task.categories.forEach((cat, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-action py-4 md:py-6 text-sm flex flex-col items-center justify-center bg-gradient-to-b from-blue-300 to-blue-500 border-blue-700 text-white font-black leading-tight px-2";
+                    btn.innerText = cat;
+                    btn.onclick = () => {
+                        if (currentTaskState.currentItemIdx >= task.items.length) return;
+                        sfx.click();
+                        currentTaskState.answers[currentTaskState.currentItemIdx] = idx;
+                        currentTaskState.currentItemIdx++;
+                        
+                        if (currentTaskState.currentItemIdx < task.items.length) {
+                            cardBox.classList.remove('animate-pop');
+                            void cardBox.offsetWidth; 
+                            cardBox.classList.add('animate-pop');
+                            cardBox.innerText = task.items[currentTaskState.currentItemIdx].text;
+                            document.getElementById('cat-progress').innerText = `Thẻ ${currentTaskState.currentItemIdx + 1} / ${task.items.length}`;
+                        } else {
+                            cardBox.innerText = "Đã phân loại xong!";
+                            checkTask(); // Auto check
+                        }
+                    };
+                    btnGrid.appendChild(btn);
+                });
+                area.appendChild(btnGrid);
+                
+                document.getElementById('task-bottom-bar').classList.add('hidden');
+            }
+
+            else if (task.type === "order-words") {
+                currentTaskState.selected = [];
+                let available = [...task.words].sort(() => Math.random() - 0.5); 
+                
+                const dropZone = document.createElement('div');
+                dropZone.className = "min-h-[80px] bg-gray-100 border-2 border-dashed border-gray-400 rounded-xl p-3 flex flex-wrap gap-2 mb-6";
+                dropZone.id = "drop-zone";
+                area.appendChild(dropZone);
+
+                const sourceZone = document.createElement('div');
+                sourceZone.className = "flex flex-wrap gap-2 justify-center";
+                
+                const renderWords = () => {
+                    dropZone.innerHTML = '';
+                    sourceZone.innerHTML = '';
+                    
+                    currentTaskState.selected.forEach((word, idx) => {
+                        const w = document.createElement('span');
+                        w.className = "bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow animate-pop cursor-pointer";
+                        w.innerText = word;
+                        w.onclick = () => {
+                            sfx.click();
+                            currentTaskState.selected.splice(idx, 1);
+                            available.push(word);
+                            renderWords();
+                        };
+                        dropZone.appendChild(w);
+                    });
+
+                    available.forEach((word, idx) => {
+                        const w = document.createElement('span');
+                        w.className = "bg-white border-2 border-gray-300 text-gray-800 px-4 py-2 rounded-lg font-bold shadow cursor-pointer";
+                        w.innerText = word;
+                        w.onclick = () => {
+                            sfx.click();
+                            available.splice(idx, 1);
+                            currentTaskState.selected.push(word);
+                            renderWords();
+                        };
+                        sourceZone.appendChild(w);
+                    });
+                };
+                
+                area.appendChild(sourceZone);
+                renderWords();
+            }
+        }
+
+        function checkTask() {
+            const stage = GAME_DATA.stages.find(s => s.id === state.currentStageId);
+            const task = stage.tasks[state.currentTaskIndex];
+            let isCorrect = false;
+
+            if (task.type === "mcq" || task.type === "mcq-img" || task.type === "scenario-logic") {
+                if (currentTaskState.selected.length === 0) return showToast("⚠️ Em hãy chọn một đáp án nhé!");
+                isCorrect = currentTaskState.selected[0] === task.correct;
+            } 
+            else if (task.type === "multi-select") {
+                if (currentTaskState.selected.length === 0) return showToast("⚠️ Em hãy chọn ít nhất một đáp án nhé!");
+                let correctIndices = [];
+                task.options.forEach((o, i) => { if(o.correct) correctIndices.push(i) });
+                
+                const set1 = new Set(currentTaskState.selected);
+                const set2 = new Set(correctIndices);
+                isCorrect = set1.size === set2.size && [...set1].every(x => set2.has(x));
+            }
+            else if (task.type === "true-false") {
+                if (currentTaskState.answers.includes(null)) return showToast("⚠️ Em hãy chọn ĐÚNG/SAI cho tất cả các câu nhé!");
+                isCorrect = true;
+                task.statements.forEach((s, i) => {
+                    if (s.correct !== currentTaskState.answers[i]) isCorrect = false;
+                });
+            }
+            else if (task.type === "categorize") {
+                isCorrect = true;
+                task.items.forEach((item, i) => {
+                    if (item.cat !== currentTaskState.answers[i]) isCorrect = false;
+                });
+            }
+            else if (task.type === "order-words") {
+                if (currentTaskState.selected.length !== task.words.length) return showToast("⚠️ Em hãy ghép tất cả các từ nhé!");
+                isCorrect = currentTaskState.selected.join(" ") === task.correct.join(" ");
+            }
+
+            if (isCorrect) {
+                handleCorrect(task, stage);
+            } else {
+                handleWrong();
+            }
+        }
+
+        function handleWrong() {
+            sfx.wrong();
+            state.combo = 0;
+            updateHUD();
+            
+            const msgs = [
+                "Chưa đúng rồi! Hãy đọc lại và thử sức lại nhé.",
+                "Em đang đi nhầm đường. Hãy suy nghĩ thêm một chút!",
+                "Manh mối giả! Em hãy thử lại nào."
+            ];
+            
+            showFeedbackModal(
+                "❌ OOPS!",
+                msgs[Math.floor(Math.random() * msgs.length)],
+                "text-red-500",
+                "THỬ LẠI",
+                () => { 
+                    document.getElementById('modal-feedback').classList.add('hidden'); 
+                    renderTask(); // Quan trọng: Đặt lại UI cho nhiệm vụ (đặc biệt là Kéo thả / Phân loại)
+                }
+            );
+        }
+
+        function handleCorrect(task, stage) {
+            sfx.correct();
+            state.combo++;
+            if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+            addScore(10);
+            
+            let rewardHtml = "";
+            
+            if (task.reward) {
+                if (task.reward.type === "piece") {
+                    state.pieces++;
+                    rewardHtml += `<div class="bg-green-100 border border-green-500 p-2 rounded text-center"><div class="text-3xl">🧩</div><div class="text-xs font-bold">Mảnh Bản Đồ</div></div>`;
+                }
+                if (task.reward.type === "clue") {
+                    if (!state.clues.includes(task.reward.text)) {
+                        state.clues.push(task.reward.text);
+                        rewardHtml += `<div class="bg-blue-100 border border-blue-500 p-2 rounded text-center"><div class="text-3xl">🔎</div><div class="text-xs font-bold">Manh Mối</div></div>`;
+                    }
+                }
+                if (task.reward.type === "key") {
+                    state.keys++;
+                    rewardHtml += `<div class="bg-yellow-100 border border-yellow-500 p-2 rounded text-center"><div class="text-3xl">🗝️</div><div class="text-xs font-bold">Chìa Khóa</div></div>`;
+                }
+            }
+
+            const titles = ["🎉 CHÍNH XÁC!", "🌟 TUYỆT VỜI!", "🧠 NHÀ THÁM HIỂM THÔNG MINH!"];
+            
+            showFeedbackModal(
+                titles[Math.floor(Math.random() * titles.length)],
+                "Em đã vượt qua thử thách này!",
+                "text-green-500",
+                "TIẾP TỤC",
+                () => {
+                    document.getElementById('modal-feedback').classList.add('hidden');
+                    advanceTask(stage);
+                },
+                rewardHtml
+            );
+            
+            spawnConfetti(50);
+        }
+
+        function advanceTask(stage) {
+            state.currentTaskIndex++;
+            if (state.currentTaskIndex >= stage.tasks.length || stage.tasks[state.currentTaskIndex-1].finalInStage) {
+                if (!state.unlockedStages.includes(stage.id + 1) && stage.id < 5) {
+                    state.unlockedStages.push(stage.id + 1);
+                    sfx.unlock();
+                    showToast(`🔓 Đã mở khóa: ${GAME_DATA.stages.find(s=>s.id === stage.id+1).title}`, 'success');
+                }
+                goToScreen('screen-map');
+                
+                if (stage.isBoss && state.currentTaskIndex >= stage.tasks.length) {
+                    openBossPassword();
+                }
+            } else {
+                renderTask();
+            }
+        }
+
+        function showFeedbackModal(title, msg, titleColorClass, btnText, callback, rewardHtml = "") {
+            document.getElementById('feedback-title').innerText = title;
+            document.getElementById('feedback-title').className = `text-2xl font-black mb-2 uppercase ${titleColorClass}`;
+            document.getElementById('feedback-message').innerText = msg;
+            
+            const rwDiv = document.getElementById('feedback-reward');
+            if (rewardHtml) {
+                rwDiv.innerHTML = rewardHtml;
+                rwDiv.classList.remove('hidden');
+            } else {
+                rwDiv.classList.add('hidden');
+                rwDiv.innerHTML = "";
+            }
+
+            const btn = document.getElementById('btn-feedback-next');
+            btn.innerText = btnText;
+            btn.onclick = callback;
+            
+            document.getElementById('modal-feedback').classList.remove('hidden');
+        }
+
+        function openNotebook() {
+            sfx.click();
+            const container = document.getElementById('notebook-content');
+            container.innerHTML = '';
+            
+            state.clues.forEach((clue, idx) => {
+                container.innerHTML += `
+                    <div class="notebook-item p-3 mb-3 rounded shadow-sm text-sm font-bold text-gray-800">
+                        <span class="text-blue-600 mr-2">🔎 Manh mối ${idx+1}:</span> ${clue}
+                    </div>
+                `;
+            });
+            
+            if (state.clues.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-500 font-bold mt-10">Chưa có manh mối nào. Hãy tiếp tục thám hiểm!</div>`;
+            }
+            
+            document.getElementById('modal-notebook').classList.remove('hidden');
+        }
+
+        function closeNotebook() {
+            sfx.click();
+            document.getElementById('modal-notebook').classList.add('hidden');
+        }
+
+        let pwdState = { sequence: [], correct: ["🌐", "🔎", "🛡️", "👨‍👩‍👧", "💎"] };
+        const pwdMap = {
+            "🌐": "INTERNET",
+            "🔎": "TÌM THÔNG TIN",
+            "🛡️": "CHỌN LỌC AN TOÀN",
+            "👨‍👩‍👧": "NHỜ NGƯỜI LỚN",
+            "💎": "KHO BÁU"
+        };
+
+        function openBossPassword() {
+            document.getElementById('modal-boss-password').classList.remove('hidden');
+            renderPasswordPuzzle();
+        }
+
+        function renderPasswordPuzzle() {
+            const slots = document.getElementById('password-slots');
+            const opts = document.getElementById('password-options');
+            slots.innerHTML = '';
+            opts.innerHTML = '';
+            
+            pwdState.correct.forEach((_, idx) => {
+                const s = document.createElement('div');
+                s.className = "bg-purple-800 border-2 border-purple-600 h-12 rounded flex items-center justify-center text-xl cursor-pointer";
+                if (pwdState.sequence[idx]) {
+                    const icon = pwdState.sequence[idx];
+                    s.innerHTML = `${icon} <span class="text-sm ml-2 text-yellow-300 font-bold">${pwdMap[icon]}</span>`;
+                    s.onclick = () => {
+                        sfx.click();
+                        pwdState.sequence.splice(idx, 1);
+                        renderPasswordPuzzle();
+                    };
+                }
+                slots.appendChild(s);
+            });
+
+            const available = pwdState.correct.filter(x => !pwdState.sequence.includes(x));
+            [...available].sort(()=>Math.random()-0.5).forEach(icon => {
+                const btn = document.createElement('button');
+                btn.className = "bg-yellow-400 text-yellow-900 font-black p-2 rounded-lg border-b-4 border-yellow-600 flex flex-col items-center justify-center w-[30%] cursor-pointer";
+                btn.innerHTML = `<span class="text-2xl">${icon}</span><span class="text-[10px] uppercase leading-tight mt-1 text-center">${pwdMap[icon]}</span>`;
+                btn.onclick = () => {
+                    sfx.click();
+                    if (pwdState.sequence.length < pwdState.correct.length) {
+                        pwdState.sequence.push(icon);
+                        renderPasswordPuzzle();
+                    }
+                };
+                opts.appendChild(btn);
+            });
+
+            const btnCheck = document.getElementById('btn-check-password');
+            if (pwdState.sequence.length === pwdState.correct.length) {
+                btnCheck.disabled = false;
+                btnCheck.classList.remove('opacity-50', 'bg-gray-400', 'border-gray-600', 'text-gray-800');
+                btnCheck.classList.add('bg-green-500', 'text-white', 'border-green-700');
+                btnCheck.onclick = verifyPassword;
+            } else {
+                btnCheck.disabled = true;
+                btnCheck.className = "btn-action w-full py-3 text-lg bg-gray-400 border-gray-600 text-gray-800 opacity-50 cursor-not-allowed";
+            }
+        }
+
+        function verifyPassword() {
+            if (pwdState.sequence.join("") === pwdState.correct.join("")) {
+                sfx.unlock();
+                setTimeout(() => {
+                    sfx.victory();
+                    document.getElementById('modal-boss-password').classList.add('hidden');
+                    showVictoryScreen();
+                }, 1000);
+            } else {
+                sfx.wrong();
+                showToast("❌ Mật mã chưa đúng logic! (Gợi ý: Internet -> Tìm kiếm -> Chọn lọc -> Người lớn -> Kho báu)", "error");
+                pwdState.sequence = [];
+                renderPasswordPuzzle();
+            }
+        }
+
+        function showVictoryScreen() {
+            goToScreen('screen-result');
+            
+            document.getElementById('res-name').innerText = state.name;
+            document.getElementById('res-class').innerText = state.className;
+            document.getElementById('res-score').innerText = state.score;
+            document.getElementById('res-combo').innerText = state.maxCombo;
+            document.getElementById('res-pieces').innerText = `${state.pieces}/2`;
+            document.getElementById('res-clues').innerText = `${state.clues.length}/4`;
+            document.getElementById('res-keys').innerText = `${state.keys}/1`;
+            
+            const timeTaken = Math.floor((Date.now() - state.startTime) / 1000);
+            const min = Math.floor(timeTaken / 60);
+            const sec = (timeTaken % 60).toString().padStart(2, '0');
+            document.getElementById('res-time').innerText = `${min}:${sec}`;
+
+            let rank = "NHÀ THÁM HIỂM TẬP SỰ 🥉";
+            if (state.score >= 100) rank = "NHÀ THÁM HIỂM TÀI BA 🥈";
+            if (state.score >= 150) rank = "BẬC THẦY SĂN KHO BÁU 🥇";
+            
+            document.getElementById('result-rank').innerText = rank;
+            
+            spawnConfetti(200, true);
+        }
+
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let confettis = [];
+        let animationId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function spawnConfetti(amount, continuous = false) {
+            const colors = ['#fde047', '#4ade80', '#60a5fa', '#f87171', '#c084fc'];
+            for (let i = 0; i < amount; i++) {
+                confettis.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 10 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5
+                });
+            }
+            if (!animationId) animateConfetti();
+            
+            if (continuous) {
+                setTimeout(() => {
+                    if (document.getElementById('screen-result').classList.contains('active')) {
+                        spawnConfetti(50, true);
+                    }
+                }, 1000);
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+            
+            for (let i = 0; i < confettis.length; i++) {
+                let p = confettis[i];
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotationSpeed;
+                
+                if (p.y < canvas.height) active = true;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation * Math.PI / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                ctx.restore();
+            }
+
+            if (active) {
+                animationId = requestAnimationFrame(animateConfetti);
+            } else {
+                confettis = [];
+                animationId = null;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đại Chiến Tìm Kiếm Thông Tin</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --secondary: #f59e0b;
+            --secondary-dark: #d97706;
+            --success: #10b981;
+            --success-dark: #059669;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --bg-color: #e0f2fe;
+            --text-dark: #1e293b;
+            --text-light: #ffffff;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: #0f172a;
+            color: var(--text-dark);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Container mô phỏng màn hình điện thoại/tablet nằm ngang */
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1024px;
+            max-height: 768px;
+            background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 1024px) {
+            #game-container {
+                border-radius: 20px;
+                height: 90vh;
+            }
+        }
+
+        /* Ẩn các màn hình chưa dùng */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 10;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* Nút bấm 3D */
+        .btn-3d {
+            background: linear-gradient(to bottom, var(--primary), var(--primary-dark));
+            border: 2px solid #1d4ed8;
+            border-bottom: 6px solid #1e40af;
+            border-radius: 16px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 12px 24px;
+            cursor: pointer;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            outline: none;
+            font-family: var(--font-main);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            border-bottom: 2px solid #1e40af;
+        }
+        .btn-3d.secondary {
+            background: linear-gradient(to bottom, var(--secondary), var(--secondary-dark));
+            border-color: #b45309;
+            border-bottom-color: #92400e;
+        }
+        .btn-3d.success {
+            background: linear-gradient(to bottom, var(--success), var(--success-dark));
+            border-color: #047857;
+            border-bottom-color: #064e3b;
+        }
+        .btn-3d.danger {
+            background: linear-gradient(to bottom, var(--danger), var(--danger-dark));
+            border-color: #b91c1c;
+            border-bottom-color: #7f1d1d;
+        }
+        .btn-3d:disabled {
+            filter: grayscale(100%);
+            cursor: not-allowed;
+            transform: none;
+            border-bottom: 6px solid #475569;
+        }
+
+        #screen-home {
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><radialGradient id="grad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="0%" style="stop-color:%23bae6fd;stop-opacity:1" /><stop offset="100%" style="stop-color:%230284c7;stop-opacity:1" /></radialGradient></defs><rect width="100%" height="100%" fill="url(%23grad)"/></svg>');
+            background-size: cover;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .game-title {
+            font-size: 3rem;
+            color: #fff;
+            text-transform: uppercase;
+            text-shadow: 3px 3px 0 #ea580c, -1px -1px 0 #ea580c, 1px -1px 0 #ea580c, -1px 1px 0 #ea580c, 1px 1px 0 #ea580c, 4px 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+        .game-subtitle {
+            font-size: 1.2rem;
+            color: #fef08a;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        .login-panel {
+            background: var(--panel-bg);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border: 4px solid #fff;
+            position: relative;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .input-group label {
+            font-weight: bold;
+            color: #1e3a8a;
+            font-size: 1.1rem;
+        }
+        .input-group input {
+            padding: 12px 15px;
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        .input-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .settings-bar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.8);
+            border: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        #screen-map {
+            background: #4ade80; /* Màu nền cỏ */
+            position: relative;
+        }
+        
+        /* Vẽ đường đi bằng SVG nền */
+        .map-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .map-header {
+            position: absolute;
+            top: 10px; left: 20px; right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border: 2px solid #fff;
+        }
+        .player-info { font-weight: bold; font-size: 1.1rem; color: #1e3a8a; }
+
+        .level-node {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            border: 4px solid #94a3b8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: white;
+            box-shadow: 0 8px 0 #64748b, 0 15px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            z-index: 2;
+            transition: transform 0.2s;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .level-node::after {
+            content: attr(data-title);
+            position: absolute;
+            bottom: -35px;
+            white-space: nowrap;
+            background: rgba(0,0,0,0.7);
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .level-node:hover::after { opacity: 1; }
+
+        .level-node.unlocked {
+            background: #fde047;
+            border-color: #eab308;
+            box-shadow: 0 8px 0 #ca8a04, 0 15px 20px rgba(0,0,0,0.3);
+            animation: pulse-node 2s infinite;
+        }
+        .level-node.completed {
+            background: #34d399;
+            border-color: #10b981;
+            box-shadow: 0 8px 0 #059669, 0 15px 20px rgba(0,0,0,0.3);
+        }
+        .level-node.boss {
+            width: 100px; height: 100px;
+            background: #fca5a5; border-color: #ef4444;
+            box-shadow: 0 10px 0 #b91c1c, 0 15px 20px rgba(0,0,0,0.3);
+            font-size: 2.5rem;
+        }
+
+        @keyframes pulse-node {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Vị trí các mốc trên bản đồ (tương đối) */
+        #node-1 { bottom: 15%; left: 15%; }
+        #node-2 { top: 40%; left: 30%; }
+        #node-3 { top: 30%; right: 25%; }
+        #node-4 { bottom: 25%; right: 20%; }
+        #node-5 { top: 10%; right: 10%; } /* Boss */
+
+        /* Player avatar trên map */
+        #map-player {
+            position: absolute;
+            width: 60px; height: 60px;
+            z-index: 3;
+            transition: all 1s ease-in-out;
+            pointer-events: none;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.4));
+        }
+
+        #screen-gameplay {
+            background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+            color: white;
+            align-items: center;
+        }
+        
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .level-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fde047;
+            text-transform: uppercase;
+        }
+
+        .game-content {
+            flex: 1;
+            width: 100%;
+            background: var(--panel-bg);
+            border-radius: 20px;
+            padding: 20px;
+            color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .question-box {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #eff6ff;
+            border-radius: 15px;
+            border: 2px dashed #93c5fd;
+        }
+
+        /* Khung Modal Thông Báo tự làm */
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-box {
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            border: 5px solid #fff;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-box.success { border-color: var(--success); }
+        .modal-box.danger { border-color: var(--danger); }
+        
+        .modal-icon { font-size: 4rem; margin-bottom: 10px; }
+        .modal-message { font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; color: #334155; }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Level 1: Mắt thần từ khóa (Chọn đáp án) */
+        .options-grid {
+            display: grid;
+            gap: 15px;
+            width: 100%;
+        }
+        .option-btn {
+            background: white;
+            border: 3px solid #cbd5e1;
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .option-btn:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+            transform: translateX(5px);
+        }
+        .option-index {
+            background: var(--primary);
+            color: white;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Level 2: Cổng máy tìm kiếm (Sắp xếp) */
+        .sort-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .sort-item {
+            background: white;
+            border: 2px solid #94a3b8;
+            border-radius: 12px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 500;
+        }
+        .sort-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .sort-btn {
+            background: #e2e8f0;
+            border: none;
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .sort-btn:active { background: #cbd5e1; }
+
+        /* Level 3: Tháp kết quả (Mô phỏng máy tìm kiếm) */
+        .fake-browser {
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .browser-header {
+            background: #f1f5f9;
+            padding: 10px;
+            border-bottom: 2px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .fake-search-bar {
+            background: white;
+            border: 1px solid #94a3b8;
+            border-radius: 20px;
+            padding: 5px 15px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            color: #64748b;
+        }
+        .search-results {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+        .fake-link {
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .fake-link:hover { background: #f8fafc; }
+        .fake-url { font-size: 0.8rem; color: #16a34a; margin-bottom: 2px; }
+        .fake-title { font-size: 1.2rem; color: #2563eb; text-decoration: underline; margin-bottom: 5px; font-weight: bold; }
+        .fake-desc { font-size: 0.9rem; color: #475569; }
+
+        /* Boss Battle Styles */
+        .battle-arena {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 180px;
+            margin-bottom: 20px;
+            padding: 0 20px;
+            border-bottom: 3px solid #cbd5e1;
+            position: relative;
+        }
+        .character-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 40%;
+        }
+        .health-bar-bg {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            border: 2px solid #94a3b8;
+            overflow: hidden;
+            position: relative;
+        }
+        .health-bar-fill {
+            height: 100%;
+            background: linear-gradient(to right, #ef4444, #22c55e);
+            width: 100%;
+            transition: width 0.3s ease-out;
+        }
+        .hp-text {
+            position: absolute; width: 100%; text-align: center;
+            font-size: 0.7rem; font-weight: bold; line-height: 16px; color: white;
+            text-shadow: 1px 1px 1px black;
+        }
+        .char-svg { width: 100px; height: 100px; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.3)); }
+        
+        .boss-svg { width: 140px; height: 140px; }
+        
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .anim-shake { animation: shake 0.4s; }
+        
+        @keyframes attack {
+            0% { transform: translateX(0) scale(1); }
+            50% { transform: translateX(30px) scale(1.1); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        .anim-attack { animation: attack 0.3s ease-in-out; }
+
+        /* Màn hình chiến thắng */
+        #screen-victory {
+            background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%);
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .certificate {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            border: 10px solid #fbbf24;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+        }
+        .certificate::before {
+            content: ''; position: absolute; top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 2px dashed #fbbf24; border-radius: 10px; pointer-events: none;
+        }
+        .cert-title { color: #d97706; font-size: 2rem; margin-bottom: 20px; text-transform: uppercase;}
+        .cert-name { font-size: 2.5rem; color: #1d4ed8; font-weight: bold; margin: 10px 0; }
+        .cert-class { font-size: 1.2rem; color: #475569; margin-bottom: 20px; }
+        .cert-desc { font-size: 1.1rem; line-height: 1.5; color: #334155;}
+        
+        /* Pháo hoa bằng CSS (Đơn giản hóa để không cần JS phức tạp) */
+        .confetti-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 1;}
+        .confetti { position: absolute; width: 10px; height: 10px; background: red; animation: fall linear forwards; }
+        @keyframes fall { to { transform: translateY(100vh) rotate(720deg); } }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <div id="screen-home" class="screen active">
+        <div class="settings-bar">
+            <button class="btn-icon" id="btn-toggle-sound" onclick="game.toggleSound()" title="Bật/Tắt Âm thanh">🔊</button>
+            <button class="btn-icon" onclick="game.showHelp()" title="Hướng dẫn">❓</button>
+        </div>
+
+        <div class="title-container">
+            <h1 class="game-title">Đại Chiến</h1>
+            <h1 class="game-title" style="color: #fde047; text-shadow: 3px 3px 0 #b45309;">Tìm Kiếm Thông Tin</h1>
+            <div class="game-subtitle">Vượt qua kiếp nạn - Trở thành Cao thủ!</div>
+        </div>
+
+        <!-- Nhân vật trang chủ -->
+        <div style="margin-bottom: 20px; animation: float 2s ease-in-out infinite alternate;">
+            <svg width="120" height="120" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <!-- Thân -->
+                <circle cx="50" cy="60" r="30" fill="#3b82f6" stroke="#1e3a8a" stroke-width="3"/>
+                <!-- Mắt -->
+                <circle cx="40" cy="50" r="5" fill="white"/><circle cx="40" cy="50" r="2" fill="black"/>
+                <circle cx="60" cy="50" r="5" fill="white"/><circle cx="60" cy="50" r="2" fill="black"/>
+                <!-- Miệng cười -->
+                <path d="M 40 65 Q 50 75 60 65" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                <!-- Áo choàng -->
+                <path d="M 25 50 Q 10 70 20 90 Q 50 80 80 90 Q 90 70 75 50 Z" fill="#ef4444" opacity="0.8" z-index="-1"/>
+                <!-- Kiếm/Đũa phép (Kính lúp) -->
+                <line x1="75" y1="65" x2="95" y2="45" stroke="#854d0e" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="95" cy="45" r="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+            </svg>
+        </div>
+
+        <div class="login-panel">
+            <div class="input-group">
+                <label for="player-name">Họ và Tên Chiến Binh:</label>
+                <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label for="player-class">Lớp:</label>
+                <input type="text" id="player-class" placeholder="Ví dụ: 4A1" autocomplete="off">
+            </div>
+            <button class="btn-3d" style="margin-top: 10px; width: 100%;" onclick="game.startGame()">
+                ▶ BẮT ĐẦU PHIÊU LƯU
+            </button>
+        </div>
+    </div>
+
+    <div id="screen-map" class="screen">
+        <!-- SVG Vẽ đường nối các node -->
+        <svg class="map-bg" preserveAspectRatio="none">
+            <path d="M 15% 85% C 15% 50%, 30% 60%, 30% 40% C 30% 20%, 75% 20%, 75% 30% C 75% 45%, 80% 60%, 80% 75% C 80% 90%, 90% 90%, 90% 10%" 
+                  fill="none" stroke="#65a30d" stroke-width="15" stroke-dasharray="20 10" opacity="0.5"/>
+        </svg>
+
+        <div class="map-header">
+            <div class="player-info">👤 <span id="info-name">Name</span> - <span id="info-class">Class</span></div>
+            <button class="btn-3d danger" style="padding: 5px 15px; font-size: 1rem;" onclick="game.resetGame()">Thoát</button>
+        </div>
+
+        <!-- Các Node Cấp độ -->
+        <div id="node-1" class="level-node" data-level="1" data-title="Kiếp nạn 1: Mắt Thần Từ Khóa" onclick="game.enterLevel(1)">1</div>
+        <div id="node-2" class="level-node" data-level="2" data-title="Kiếp nạn 2: Cổng Máy Tìm Kiếm" onclick="game.enterLevel(2)">2</div>
+        <div id="node-3" class="level-node" data-level="3" data-title="Kiếp nạn 3: Tháp Kết Quả" onclick="game.enterLevel(3)">3</div>
+        <div id="node-4" class="level-node" data-level="4" data-title="Hỏa Diệm Sơn: Thử Thách 3 Câu" onclick="game.enterLevel(4)">🔥</div>
+        <div id="node-5" class="level-node boss" data-level="5" data-title="Đại Boss: Chúa Tể Thông Tin" onclick="game.enterLevel(5)">👹</div>
+
+        <!-- Player Avatar -->
+        <div id="map-player">
+            <svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="40" fill="#3b82f6" stroke="white" stroke-width="4"/>
+                <circle cx="35" cy="40" r="6" fill="white"/><circle cx="35" cy="40" r="3" fill="black"/>
+                <circle cx="65" cy="40" r="6" fill="white"/><circle cx="65" cy="40" r="3" fill="black"/>
+                <path d="M 35 65 Q 50 80 65 65" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+        </div>
+    </div>
+
+    <div id="screen-gameplay" class="screen">
+        <div class="game-header">
+            <button class="btn-3d secondary" style="padding: 8px 15px; font-size: 1rem;" onclick="game.showScreen('screen-map')">🔙 Bản Đồ</button>
+            <div class="level-title" id="gameplay-title">Tên Kiếp Nạn</div>
+            <div style="width: 100px;"></div> <!-- Spacer -->
+        </div>
+
+        <!-- Khung đấu Boss (ẩn/hiện tuỳ level) -->
+        <div id="battle-arena" class="battle-arena" style="display: none;">
+            <div class="character-container">
+                <div class="health-bar-bg"><div id="player-hp-fill" class="health-bar-fill" style="width: 100%;"></div><div class="hp-text" id="player-hp-text">100/100</div></div>
+                <div id="player-battle-sprite">
+                    <svg class="char-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="40" fill="#3b82f6" stroke="#1e3a8a" stroke-width="3"/>
+                        <circle cx="35" cy="40" r="6" fill="white"/><circle cx="35" cy="40" r="3" fill="black"/>
+                        <circle cx="65" cy="40" r="6" fill="white"/><circle cx="65" cy="40" r="3" fill="black"/>
+                        <path d="M 35 65 Q 50 80 65 65" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                        <line x1="80" y1="50" x2="110" y2="20" stroke="#fde047" stroke-width="6" stroke-linecap="round"/> <!-- Tia chớp -->
+                    </svg>
+                </div>
+                <div style="font-weight:bold;">Chiến Binh</div>
+            </div>
+            
+            <div class="character-container">
+                <div class="health-bar-bg"><div id="boss-hp-fill" class="health-bar-fill" style="width: 100%;"></div><div class="hp-text" id="boss-hp-text">100/100</div></div>
+                <div id="boss-battle-sprite">
+                    <svg class="char-svg boss-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="50,10 90,40 80,90 20,90 10,40" fill="#ef4444" stroke="#7f1d1d" stroke-width="3"/>
+                        <polygon points="30,30 40,45 20,40" fill="#fde047"/> <!-- Sừng -->
+                        <polygon points="70,30 60,45 80,40" fill="#fde047"/>
+                        <circle cx="35" cy="55" r="8" fill="white"/><circle cx="35" cy="55" r="3" fill="black"/>
+                        <circle cx="65" cy="55" r="8" fill="white"/><circle cx="65" cy="55" r="3" fill="black"/>
+                        <path d="M 35 75 Q 50 65 65 75" fill="none" stroke="black" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div style="font-weight:bold;" id="boss-name-label">Quái Vật</div>
+            </div>
+        </div>
+
+        <div class="game-content" id="gameplay-content">
+            <!-- Nội dung động chèn vào đây qua JS -->
+        </div>
+    </div>
+
+    <div id="screen-victory" class="screen">
+        <div class="confetti-container" id="confetti-container"></div>
+        <div class="certificate">
+            <div class="cert-title">🏆 CHỨNG NHẬN 🏆</div>
+            <div class="cert-desc">Đã trao cho chiến binh xuất sắc:</div>
+            <div class="cert-name" id="cert-name">Tên Học Sinh</div>
+            <div class="cert-class" id="cert-class">Lớp: 4A</div>
+            <div class="cert-desc" style="margin-top: 10px;">
+                Đã đánh bại Chúa Tể Thông Tin và hoàn thành xuất sắc các thử thách Bài 4: Tìm kiếm và trao đổi thông tin.<br>
+                <b style="color:var(--success-dark)">Đạt danh hiệu: CAO THỦ TÌM KIẾM</b>
+            </div>
+            
+            <button class="btn-3d success" style="margin-top: 30px;" onclick="game.resetGame()">Chơi Lại Từ Đầu</button>
+        </div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-box" id="modal-box">
+            <div class="modal-icon" id="modal-icon">⭐</div>
+            <div class="modal-message" id="modal-message">Nội dung thông báo</div>
+            <button class="btn-3d" id="modal-btn" onclick="game.closeModal()">Tiếp tục</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/**
+ * AUDIO ENGINE (Sử dụng Web Audio API để chạy Offline 100%)
+ */
+const audioManager = {
+    ctx: null,
+    enabled: true,
+    init: function() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    },
+    toggle: function() {
+        this.enabled = !this.enabled;
+        document.getElementById('btn-toggle-sound').innerText = this.enabled ? '🔊' : '🔇';
+    },
+    playTone: function(freq, type, duration, vol=0.1) {
+        if (!this.enabled) return;
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.00001, this.ctx.currentTime + duration);
+        osc.stop(this.ctx.currentTime + duration);
+    },
+    playClick: function() { this.playTone(600, 'sine', 0.1, 0.05); },
+    playSuccess: function() {
+        this.playTone(400, 'square', 0.1, 0.05);
+        setTimeout(() => this.playTone(600, 'square', 0.15, 0.05), 100);
+        setTimeout(() => this.playTone(800, 'square', 0.2, 0.05), 250);
+    },
+    playWrong: function() {
+        this.playTone(300, 'sawtooth', 0.2, 0.05);
+        setTimeout(() => this.playTone(200, 'sawtooth', 0.3, 0.05), 200);
+    },
+    playHit: function() { this.playTone(150, 'square', 0.1, 0.1); },
+    playWin: function() {
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((note, i) => {
+            setTimeout(() => this.playTone(note, 'sine', 0.2, 0.1), i * 150);
+        });
+    }
+};
+
+/**
+ * QUẢN LÝ DỮ LIỆU GAME (State)
+ */
+const gameData = {
+    player: { name: '', class: '', hp: 100, maxHp: 100 },
+    boss: { hp: 100, maxHp: 100, name: '' },
+    unlockedLevels: [1], // Level 1 mở mặc định
+    currentLevelPlaying: 0,
+    
+    // Dữ liệu nội dung các màn học
+    levels: {
+        1: {
+            title: "Mắt Thần Từ Khóa",
+            desc: "Bước 1 của tìm kiếm là xác định từ khóa. Hãy chọn từ khóa tốt nhất!",
+            q: 'Để tìm thông tin về "Các đời Vua Hùng", em sẽ gõ từ khóa nào vào ô tìm kiếm?',
+            options: [
+                { text: "Lịch sử Việt Nam", correct: false, msg: "Từ này quá rộng, sẽ ra rất nhiều kết quả không liên quan." },
+                { text: "Các đời Vua Hùng", correct: true, msg: "Chính xác! Từ khóa cần ngắn gọn và thể hiện đúng chủ đề tìm kiếm." },
+                { text: "Vua", correct: false, msg: "Từ này quá chung chung, máy tìm kiếm không biết bạn muốn tìm vua nào." }
+            ]
+        },
+        2: {
+            title: "Cổng Máy Tìm Kiếm",
+            desc: "Hãy sắp xếp 4 bước tìm kiếm thông tin theo đúng thứ tự (Bài 4).",
+            steps: [
+                { id: 's2', text: "Mở trình duyệt và gõ địa chỉ máy tìm kiếm (VD: google.com)." },
+                { id: 's4', text: "Nháy chọn một siêu liên kết để xem chi tiết." },
+                { id: 's1', text: "Xác định từ khóa cần tìm kiếm." },
+                { id: 's3', text: "Gõ từ khóa vào ô tìm kiếm và nhấn phím Enter." }
+            ],
+            correctOrder: ['s1', 's2', 's3', 's4'] // Thứ tự đúng theo logic
+        },
+        3: {
+            title: "Tháp Kết Quả",
+            desc: "Em đã gõ từ khóa 'Hồ Gươm'. Máy tìm kiếm trả về các siêu liên kết. Hãy nháy chuột vào kết quả đúng nhất!",
+            fakeLinks: [
+                { url: "www.gamevui.vn/cau-ca", title: "Game Câu cá ở Hồ Gươm", desc: "Chơi game câu cá giải trí...", correct: false },
+                { url: "www.dulich.vn/ho-guom", title: "Hồ Gươm - Biểu tượng của Thủ đô Hà Nội", desc: "Hồ Gươm (hay Hồ Hoàn Kiếm) nằm ở trung tâm Hà Nội, gắn liền với truyền thuyết trả gươm thần...", correct: true },
+                { url: "www.banhxau.com", title: "Cách làm bánh xèo ngon", desc: "Hướng dẫn làm bánh xèo giòn rụm...", correct: false }
+            ]
+        },
+        4: {
+            title: "Hỏa Diệm Sơn",
+            bossName: "Lửa Thử Thách",
+            questions: [
+                { q: "Máy tìm kiếm giúp chúng ta làm gì?", a: "Tìm kiếm thông tin trên Internet", wrong: "Chơi game offline" },
+                { q: "Từ khóa 'Danh lam thắng cảnh' dùng để làm gì?", a: "Tìm các cảnh đẹp", wrong: "Tìm bài tập Toán" },
+                { q: "Sau khi gõ từ khóa, ta nhấn phím nào?", a: "Phím Enter", wrong: "Phím Space" }
+            ]
+        },
+        5: {
+            title: "Chúa Tể Thông Tin",
+            bossName: "Chúa Tể Thông Tin",
+            questions: [
+                { q: "Muốn tìm hiểu về 'Văn Miếu – Quốc Tử Giám', từ khóa là gì?", a: "Văn Miếu – Quốc Tử Giám", wrong: "Trường học" },
+                { q: "Kết quả tìm kiếm thường là gì?", a: "Danh sách các trang web", wrong: "Một bức tranh" },
+                { q: "Làm sao để xem chi tiết một kết quả?", a: "Nháy chuột vào siêu liên kết", wrong: "Nhấn nút Tắt máy" },
+                { q: "Bước 1 của tìm kiếm thông tin là?", a: "Xác định từ khóa", wrong: "Mở máy tính lên" }
+            ]
+        }
+    }
+};
+
+/**
+ * STREAMING_CHUNK:JavaScript - Logic Giao diện và Điều hướng...
+ */
+const game = {
+    init: function() {
+        // Gán sự kiện click sound cho mọi nút
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => audioManager.playClick());
+        });
+        
+        // Cập nhật vị trí ban đầu trên map
+        this.updateMapUI();
+    },
+
+    showScreen: function(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        audioManager.init(); // Đảm bảo audio hoạt động sau tương tác đầu tiên
+    },
+
+    toggleSound: function() {
+        audioManager.toggle();
+    },
+
+    showHelp: function() {
+        this.showModal('❓ HƯỚNG DẪN', 'Điền tên và lớp để bắt đầu.<br><br>Chọn các mốc trên bản đồ để làm nhiệm vụ.<br>Kiến thức: Bài 4 - Tìm kiếm thông tin (Tin học 4).', 'Đã hiểu');
+    },
+
+    showModal: function(icon, message, btnText, type='normal', callback=null) {
+        const modal = document.getElementById('custom-modal');
+        const box = document.getElementById('modal-box');
+        document.getElementById('modal-icon').innerHTML = icon;
+        document.getElementById('modal-message').innerHTML = message;
+        const btn = document.getElementById('modal-btn');
+        btn.innerText = btnText;
+        
+        box.className = 'modal-box ' + type;
+        modal.style.display = 'flex';
+        
+        btn.onclick = () => {
+            audioManager.playClick();
+            modal.style.display = 'none';
+            if(callback) callback();
+        };
+    },
+    closeModal: function() {
+        document.getElementById('custom-modal').style.display = 'none';
+    },
+
+    // Xử lý Form đăng nhập
+    startGame: function() {
+        const name = document.getElementById('player-name').value.trim();
+        const pClass = document.getElementById('player-class').value.trim();
+        
+        if(!name || !pClass) {
+            this.showModal('⚠️', 'Bạn hãy nhập đầy đủ Họ Tên và Lớp để bắt đầu nhé!', 'Thử lại', 'danger');
+            audioManager.playWrong();
+            return;
+        }
+
+        gameData.player.name = name;
+        gameData.player.class = pClass;
+        document.getElementById('info-name').innerText = name;
+        document.getElementById('info-class').innerText = pClass;
+        
+        audioManager.playSuccess();
+        this.showScreen('screen-map');
+        this.updateMapUI();
+    },
+
+    resetGame: function() {
+        gameData.unlockedLevels = [1];
+        gameData.player.name = '';
+        gameData.player.class = '';
+        document.getElementById('player-name').value = '';
+        document.getElementById('player-class').value = '';
+        
+        const mapContainer = document.getElementById('confetti-container');
+        if(mapContainer) mapContainer.innerHTML = ''; // Xóa pháo hoa
+        
+        this.showScreen('screen-home');
+        this.updateMapUI();
+    },
+
+    updateMapUI: function() {
+        // Cập nhật trạng thái các node
+        for(let i=1; i<=5; i++) {
+            const node = document.getElementById(`node-${i}`);
+            node.className = 'level-node' + (i===5 ? ' boss' : ''); // Reset
+            
+            if(gameData.unlockedLevels.includes(i)) {
+                node.classList.add('unlocked');
+            }
+            if(gameData.unlockedLevels.includes(i+1)) {
+                node.classList.add('completed');
+                node.classList.remove('unlocked'); // Chỉ nhấp nháy level hiện tại
+            }
+        }
+
+        // Di chuyển Avatar trên map đến level cao nhất đang mở
+        let targetLevel = Math.max(...gameData.unlockedLevels);
+        if(targetLevel > 5) targetLevel = 5;
+        
+        const targetNode = document.getElementById(`node-${targetLevel}`);
+        const mapPlayer = document.getElementById('map-player');
+        
+        if (targetNode && mapPlayer) {
+            // Lấy vị trí phần trăm từ style của node thay vì pixel để responsive
+            mapPlayer.style.top = targetNode.style.top;
+            mapPlayer.style.bottom = targetNode.style.bottom;
+            mapPlayer.style.left = targetNode.style.left;
+            mapPlayer.style.right = targetNode.style.right;
+            // Điều chỉnh lệch một chút cho đẹp
+            mapPlayer.style.transform = "translate(-10px, -20px)";
+        }
+    },
+
+    enterLevel: function(level) {
+        if(!gameData.unlockedLevels.includes(level)) {
+            this.showModal('🔒', 'Hãy vượt qua kiếp nạn trước đó để mở khóa!', 'Đã hiểu', 'danger');
+            audioManager.playWrong();
+            return;
+        }
+
+        gameData.currentLevelPlaying = level;
+        const levelData = gameData.levels[level];
+        
+        document.getElementById('gameplay-title').innerText = levelData.title;
+        document.getElementById('battle-arena').style.display = (level >= 4) ? 'flex' : 'none';
+        
+        const contentDiv = document.getElementById('gameplay-content');
+        contentDiv.innerHTML = ''; // Xóa nội dung cũ
+
+        if (level === 1) {
+            // LEVEL 1: Chọn từ khóa
+            let html = `<div class="question-box">${levelData.desc}<br><br><span style="color:var(--primary-dark)">${levelData.q}</span></div>`;
+            html += `<div class="options-grid">`;
+            const labels = ['A', 'B', 'C'];
+            levelData.options.forEach((opt, idx) => {
+                html += `<button class="option-btn" onclick="game.checkLevel1(${idx})">
+                            <span class="option-index">${labels[idx]}</span>
+                            <span>${opt.text}</span>
+                         </button>`;
+            });
+            html += `</div>`;
+            contentDiv.innerHTML = html;
+
+        } else if (level === 2) {
+            // LEVEL 2: Sắp xếp các bước
+            gameData.currentSortOrder = [...levelData.steps]; // Copy array
+            this.renderSortableList();
+
+        } else if (level === 3) {
+            // LEVEL 3: Chọn kết quả
+            let html = `
+                <div style="margin-bottom:15px; font-weight:bold;">${levelData.desc}</div>
+                <div class="fake-browser">
+                    <div class="browser-header">
+                        <div style="display:flex;gap:5px;"><div style="width:12px;height:12px;border-radius:50%;background:#ef4444;"></div><div style="width:12px;height:12px;border-radius:50%;background:#f59e0b;"></div><div style="width:12px;height:12px;border-radius:50%;background:#10b981;"></div></div>
+                        <div class="fake-search-bar">🔎 Hồ Gươm</div>
+                    </div>
+                    <div class="search-results">
+            `;
+            levelData.fakeLinks.forEach((link, idx) => {
+                html += `
+                    <div class="fake-link" onclick="game.checkLevel3(${idx})">
+                        <div class="fake-url">${link.url}</div>
+                        <div class="fake-title">${link.title}</div>
+                        <div class="fake-desc">${link.desc}</div>
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+            contentDiv.innerHTML = html;
+
+        } else if (level === 4 || level === 5) {
+            // LEVEL 4 & 5: Đánh Boss
+            this.initBattle(level);
+        }
+
+        this.showScreen('screen-gameplay');
+    },
+
+    levelComplete: function(level) {
+        if(!gameData.unlockedLevels.includes(level + 1) && level < 5) {
+            gameData.unlockedLevels.push(level + 1);
+        }
+        
+        audioManager.playSuccess();
+        this.showModal('🎉', 'Tuyệt vời! Bạn đã vượt qua kiếp nạn này.', 'Tiếp tục', 'success', () => {
+            if (level === 5) {
+                this.showVictory();
+            } else {
+                this.showScreen('screen-map');
+                this.updateMapUI();
+            }
+        });
+    },
+
+    checkLevel1: function(index) {
+        const opt = gameData.levels[1].options[index];
+        if (opt.correct) {
+            this.levelComplete(1);
+        } else {
+            audioManager.playWrong();
+            this.showModal('❌', `Sai rồi!<br><br><span style="font-size:1rem;color:red;">${opt.msg}</span>`, 'Thử lại', 'danger');
+        }
+    },
+
+    renderSortableList: function() {
+        const contentDiv = document.getElementById('gameplay-content');
+        const desc = gameData.levels[2].desc;
+        let html = `<div class="question-box">${desc}</div><div class="sort-list">`;
+        
+        gameData.currentSortOrder.forEach((step, idx) => {
+            html += `
+                <div class="sort-item">
+                    <span><b>Bước ${idx+1}:</b> ${step.text}</span>
+                    <div class="sort-actions">
+                        <button class="sort-btn" onclick="game.moveSortItem(${idx}, -1)" ${idx===0 ? 'disabled' : ''}>▲</button>
+                        <button class="sort-btn" onclick="game.moveSortItem(${idx}, 1)" ${idx===gameData.currentSortOrder.length-1 ? 'disabled' : ''}>▼</button>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>
+            <button class="btn-3d success" style="margin-top:20px; align-self:center;" onclick="game.checkLevel2()">Kiểm Tra</button>
+        `;
+        contentDiv.innerHTML = html;
+    },
+
+    moveSortItem: function(index, dir) {
+        const arr = gameData.currentSortOrder;
+        if(index + dir < 0 || index + dir >= arr.length) return;
+        
+        // Swap
+        const temp = arr[index];
+        arr[index] = arr[index + dir];
+        arr[index + dir] = temp;
+        
+        audioManager.playClick();
+        this.renderSortableList();
+    },
+
+    checkLevel2: function() {
+        const currentIds = gameData.currentSortOrder.map(s => s.id);
+        const correctIds = gameData.levels[2].correctOrder;
+        
+        let isCorrect = true;
+        for(let i=0; i<4; i++) {
+            if(currentIds[i] !== correctIds[i]) isCorrect = false;
+        }
+
+        if(isCorrect) {
+            this.levelComplete(2);
+        } else {
+            audioManager.playWrong();
+            this.showModal('❌', 'Thứ tự chưa đúng! Nhớ lại 4 bước tìm kiếm thông tin nhé.', 'Sắp xếp lại', 'danger');
+        }
+    },
+
+    checkLevel3: function(index) {
+        const link = gameData.levels[3].fakeLinks[index];
+        if (link.correct) {
+            this.levelComplete(3);
+        } else {
+            audioManager.playWrong();
+            this.showModal('❌', 'Không đúng! Liên kết này không dẫn đến thông tin về Hồ Gươm.', 'Chọn lại', 'danger');
+        }
+    },
+
+    initBattle: function(level) {
+        const levelData = gameData.levels[level];
+        gameData.boss.maxHp = levelData.questions.length * 25;
+        gameData.boss.hp = gameData.boss.maxHp;
+        gameData.player.maxHp = 100;
+        gameData.player.hp = gameData.player.maxHp;
+        gameData.currentQIndex = 0;
+        
+        document.getElementById('boss-name-label').innerText = levelData.bossName;
+        
+        // Đổi hình dạng boss dựa vào level (L4: Lửa nhỏ, L5: Quái to)
+        const bossSvg = document.querySelector('.boss-svg');
+        if (level === 4) {
+            bossSvg.innerHTML = `<path d="M50 10 Q70 50 50 90 Q30 50 50 10" fill="#f59e0b"/><circle cx="40" cy="60" r="3" fill="black"/><circle cx="60" cy="60" r="3" fill="black"/>`;
+            bossSvg.style.width = "80px"; bossSvg.style.height = "80px";
+        } else {
+            bossSvg.innerHTML = `<polygon points="50,10 90,40 80,90 20,90 10,40" fill="#ef4444" stroke="#7f1d1d" stroke-width="3"/><polygon points="30,30 40,45 20,40" fill="#fde047"/><polygon points="70,30 60,45 80,40" fill="#fde047"/><circle cx="35" cy="55" r="8" fill="white"/><circle cx="35" cy="55" r="3" fill="black"/><circle cx="65" cy="55" r="8" fill="white"/><circle cx="65" cy="55" r="3" fill="black"/><path d="M 35 75 Q 50 65 65 75" fill="none" stroke="black" stroke-width="4" stroke-linecap="round"/>`;
+            bossSvg.style.width = "140px"; bossSvg.style.height = "140px";
+        }
+
+        this.updateHealthBars();
+        this.nextBattleQuestion();
+    },
+
+    updateHealthBars: function() {
+        const pPercent = Math.max(0, (gameData.player.hp / gameData.player.maxHp) * 100);
+        const bPercent = Math.max(0, (gameData.boss.hp / gameData.boss.maxHp) * 100);
+        
+        document.getElementById('player-hp-fill').style.width = pPercent + '%';
+        document.getElementById('player-hp-text').innerText = `${gameData.player.hp}/${gameData.player.maxHp}`;
+        
+        document.getElementById('boss-hp-fill').style.width = bPercent + '%';
+        document.getElementById('boss-hp-text').innerText = `${gameData.boss.hp}/${gameData.boss.maxHp}`;
+    },
+
+    nextBattleQuestion: function() {
+        const level = gameData.currentLevelPlaying;
+        const levelData = gameData.levels[level];
+        
+        if (gameData.boss.hp <= 0) {
+            setTimeout(() => this.levelComplete(level), 1000);
+            return;
+        }
+        if (gameData.player.hp <= 0) {
+            audioManager.playWrong();
+            this.showModal('💀', 'Bạn đã cạn kiệt thể lực! Hãy thử lại.', 'Làm lại', 'danger', () => {
+                this.showScreen('screen-map');
+            });
+            return;
+        }
+
+        const qData = levelData.questions[gameData.currentQIndex % levelData.questions.length];
+        
+        // Random vị trí đáp án
+        const isA_Correct = Math.random() > 0.5;
+        const ans1 = isA_Correct ? qData.a : qData.wrong;
+        const ans2 = isA_Correct ? qData.wrong : qData.a;
+        
+        const contentDiv = document.getElementById('gameplay-content');
+        contentDiv.innerHTML = `
+            <div class="question-box" style="margin-top:20px;">${qData.q}</div>
+            <div class="options-grid" style="grid-template-columns: 1fr; margin-top: auto;">
+                <button class="btn-3d" onclick="game.checkBattleAnswer(${isA_Correct})">${ans1}</button>
+                <button class="btn-3d" style="background: linear-gradient(to bottom, #8b5cf6, #7c3aed); border-color:#5b21b6; border-bottom-color:#4c1d95;" onclick="game.checkBattleAnswer(${!isA_Correct})">${ans2}</button>
+            </div>
+        `;
+    },
+
+    checkBattleAnswer: function(isCorrect) {
+        // Disable buttons
+        document.querySelectorAll('.game-content button').forEach(b => b.disabled = true);
+        
+        const playerSprite = document.getElementById('player-battle-sprite');
+        const bossSprite = document.getElementById('boss-battle-sprite');
+
+        if (isCorrect) {
+            // Player attacks
+            audioManager.playHit();
+            playerSprite.classList.add('anim-attack');
+            setTimeout(() => {
+                bossSprite.classList.add('anim-shake');
+                gameData.boss.hp -= 25;
+                this.updateHealthBars();
+            }, 150);
+            
+            setTimeout(() => {
+                playerSprite.classList.remove('anim-attack');
+                bossSprite.classList.remove('anim-shake');
+                gameData.currentQIndex++;
+                this.nextBattleQuestion();
+            }, 1000);
+            
+        } else {
+            // Boss attacks
+            audioManager.playWrong();
+            bossSprite.classList.add('anim-attack');
+            // Boss attack animation needs to go left
+            bossSprite.style.animation = "attack 0.3s ease-in-out reverse";
+            
+            setTimeout(() => {
+                playerSprite.classList.add('anim-shake');
+                gameData.player.hp -= 34; // Tối đa sai 3 lần là thua
+                this.updateHealthBars();
+            }, 150);
+
+            setTimeout(() => {
+                bossSprite.classList.remove('anim-attack');
+                bossSprite.style.animation = "";
+                playerSprite.classList.remove('anim-shake');
+                this.nextBattleQuestion(); // Hỏi lại câu đó hoặc câu khác (đang để hỏi lại/tiếp tùy logic index, ở đây tăng index để nhảy câu)
+            }, 1000);
+        }
+    },
+
+    showVictory: function() {
+        document.getElementById('cert-name').innerText = gameData.player.name;
+        document.getElementById('cert-class').innerText = "Lớp: " + gameData.player.class;
+        this.showScreen('screen-victory');
+        audioManager.playWin();
+        this.createConfetti();
+    },
+
+    createConfetti: function() {
+        const container = document.getElementById('confetti-container');
+        container.innerHTML = '';
+        const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#a855f7'];
+        
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.classList.add('confetti');
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            confetti.style.animationDelay = (Math.random() * 2) + 's';
+            container.appendChild(confetti);
+        }
+    }
+};
+
+// Khởi chạy khi tải trang
+window.onload = function() {
+    game.init();
+};
+
+</script>
+</body>
+</html>

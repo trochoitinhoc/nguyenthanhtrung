@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Giữ Điểm - Sơ đồ hình cây</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #FFC107;
+            --secondary-dark: #FFA000;
+            --danger: #F44336;
+            --danger-dark: #D32F2F;
+            --info: #2196F3;
+            --info-dark: #1976D2;
+            --bg-color: #E0F7FA;
+            --panel-bg: #FFFFFF;
+            --text-main: #333333;
+            --border-radius: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, Arial;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle, #ffffff 10%, transparent 11%), radial-gradient(circle at bottom left, #ffffff 5%, transparent 6%), radial-gradient(circle at bottom right, #ffffff 5%, transparent 6%), radial-gradient(circle at top left, #ffffff 5%, transparent 6%), radial-gradient(circle at top right, #ffffff 5%, transparent 6%);
+            background-size: 3em 3em;
+            background-color: #e0f2fe;
+            background-attachment: fixed;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            background: var(--panel-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            border: 4px solid #fff;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h1, h2, h3 {
+            color: var(--info-dark);
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 2.5rem; color: #ff5722; text-transform: uppercase; letter-spacing: 2px;}
+        h2 { font-size: 2rem; }
+
+        /* Inputs */
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--info-dark);
+        }
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            border: 3px solid #b3e5fc;
+            border-radius: 12px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .input-group input:focus {
+            border-color: var(--info);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s, filter 0.3s;
+            text-transform: uppercase;
+            margin: 10px;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 rgba(0,0,0,0.2);
+        }
+        .btn:disabled {
+            filter: grayscale(0.8);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-primary { background-color: var(--info); box-shadow: 0 6px 0 var(--info-dark); }
+        .btn-success { background-color: var(--primary); box-shadow: 0 6px 0 var(--primary-dark); }
+        .btn-warning { background-color: var(--secondary); color: #333; box-shadow: 0 6px 0 var(--secondary-dark); }
+        .btn-danger { background-color: var(--danger); box-shadow: 0 6px 0 var(--danger-dark); }
+
+        .btn.selected {
+            border: 4px solid #333;
+            transform: scale(1.05);
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+        }
+
+        /* Game Header */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f1f8e9;
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px dashed var(--primary);
+        }
+        
+        .player-info {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+            text-align: left;
+        }
+
+        /* Score Bar */
+        .score-container {
+            flex-grow: 1;
+            margin: 0 20px;
+            text-align: center;
+            position: relative;
+        }
+        .score-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--danger);
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 0px #fff;
+        }
+        .score-bar-bg {
+            width: 100%;
+            height: 25px;
+            background-color: #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid #ccc;
+        }
+        .score-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 100%;
+            transition: width 0.5s ease-in-out, background-color 0.5s;
+        }
+        
+        .audio-controls {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-icon {
+            font-size: 1.5rem;
+            background: none;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            background: white;
+            box-shadow: 0 4px 0 #ccc;
+        }
+        .btn-icon:active { transform: translateY(4px); box-shadow: 0 0 0 #ccc; }
+        .btn-icon.off { opacity: 0.5; text-decoration: line-through; }
+
+        /* Progress */
+        .progress-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--info);
+        }
+
+        /* Question Box */
+        .question-box {
+            background: #fff9c4;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border: 3px solid var(--secondary);
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Actions */
+        .action-area {
+            margin-bottom: 20px;
+        }
+        .confidence-area, .special-area {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .hint-box {
+            display: none;
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid var(--info);
+            font-size: 1.1rem;
+            font-style: italic;
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .options-area {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .option-btn {
+            padding: 15px;
+            font-size: 1.2rem;
+            background: #f5f5f5;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+        .option-btn:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+        .option-btn.selected {
+            background: #e1f5fe;
+            border-color: var(--info);
+        }
+        .option-btn.correct-show {
+            background: #c8e6c9 !important;
+            border-color: var(--primary) !important;
+            color: var(--primary-dark);
+            font-weight: bold;
+        }
+        .option-btn.wrong-show {
+            background: #ffccbc !important;
+            border-color: var(--danger) !important;
+            color: var(--danger-dark);
+        }
+
+        .submit-area {
+            text-align: center;
+        }
+        .btn-submit {
+            font-size: 1.5rem;
+            padding: 15px 40px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        /* Floating Animation */
+        .floating-text {
+            position: absolute;
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--danger);
+            text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
+            pointer-events: none;
+            z-index: 100;
+            animation: floatUp 1.5s ease-out forwards;
+        }
+        .floating-text.positive { color: var(--primary); }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            50% { transform: translateY(-50px) scale(1.5); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1); opacity: 0; }
+        }
+
+        /* Shake effect */
+        .shake {
+            animation: shakeAnim 0.5s;
+        }
+        @keyframes shakeAnim {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Result Screen */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-val { font-size: 2.5rem; font-weight: bold; margin-bottom: 5px; }
+        .stat-label { font-size: 1rem; color: #666; }
+        .stat-card.final-score { background: #fff3e0; border-color: var(--secondary); }
+        .stat-card.final-score .stat-val { color: var(--danger); font-size: 3.5rem;}
+
+        canvas#fireworks {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Special Round Banner */
+        .special-banner {
+            background: linear-gradient(45deg, #ff9800, #ff5722);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+            animation: flash 1s infinite alternate;
+            display: none;
+        }
+        @keyframes flash {
+            from { box-shadow: 0 0 5px #ff9800; }
+            to { box-shadow: 0 0 20px #ffeb3b; }
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .game-header { flex-direction: column; gap: 10px; }
+            .score-container { width: 100%; margin: 10px 0; }
+            .btn { font-size: 1.1rem; padding: 10px 20px; }
+            .option-btn { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas for fireworks -->
+    <canvas id="fireworks"></canvas>
+
+    <!-- Màn hình Đăng nhập -->
+    <div id="login-screen" class="screen active">
+        <h1>🌟 Game Giữ Điểm 🌟</h1>
+        <h2>Chủ đề: Sơ đồ hình cây</h2>
+        <p style="margin-bottom: 20px; color: #555;">Dựa trên Bài 8 - Tin học Lớp 3</p>
+        
+        <div class="input-group">
+            <label for="playerName">Họ và Tên em là gì?</label>
+            <input type="text" id="playerName" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label for="playerClass">Em học lớp mấy?</label>
+            <input type="text" id="playerClass" placeholder="Ví dụ: 3A" autocomplete="off">
+        </div>
+        
+        <button id="btn-start" class="btn btn-success" style="width: 100%; font-size: 1.5rem;" disabled>
+            🚀 BẮT ĐẦU CHƠI
+        </button>
+    </div>
+
+    <!-- Màn hình Chơi Game -->
+    <div id="game-screen" class="screen">
+        <div class="game-header">
+            <div class="player-info">
+                👤 <span id="display-name"></span><br>
+                🏫 Lớp: <span id="display-class"></span>
+            </div>
+            
+            <div class="score-container" id="score-box">
+                <div class="score-text">💯 <span id="current-score">100</span> ĐIỂM</div>
+                <div class="score-bar-bg">
+                    <div class="score-bar-fill" id="score-bar"></div>
+                </div>
+            </div>
+
+            <div class="audio-controls">
+                <button class="btn-icon" id="btn-music" title="Bật/Tắt Nhạc">🎵</button>
+                <button class="btn-icon" id="btn-sfx" title="Bật/Tắt Âm thanh">🔊</button>
+            </div>
+        </div>
+
+        <div class="progress-text">Câu hỏi <span id="current-q-num">1</span> / <span id="total-q-num">10</span></div>
+        
+        <div class="special-banner" id="special-banner">⚡ CÂU GIỮ ĐIỂM ⚡</div>
+        <div class="question-box" id="question-text">
+            Nội dung câu hỏi sẽ hiển thị ở đây.
+        </div>
+
+        <div class="action-area">
+            <!-- Vòng thường -->
+            <div class="confidence-area" id="confidence-area">
+                <h3 style="width: 100%; font-size: 1.2rem; color: #555;">Mức độ tự tin của em:</h3>
+                <button class="btn btn-success" data-conf="chac">🟢 EM CHẮC</button>
+                <button class="btn btn-warning" data-conf="phanvan">🟡 EM PHÂN VÂN</button>
+                <button class="btn btn-danger" data-conf="chuachac">🔴 EM CHƯA CHẮC</button>
+            </div>
+
+            <!-- Vòng đặc biệt -->
+            <div class="special-area" id="special-area" style="display: none;">
+                <h3 style="width: 100%; font-size: 1.2rem; color: #555;">Lựa chọn của em:</h3>
+                <button class="btn btn-primary" id="btn-answer-now">🎯 TRẢ LỜI NGAY</button>
+                <button class="btn btn-warning" id="btn-buy-hint">💡 XEM GỢI Ý (-5 ĐIỂM)</button>
+            </div>
+
+            <div class="hint-box" id="hint-box">
+                💡 <b>Gợi ý:</b> <span id="hint-text"></span>
+            </div>
+
+            <div class="options-area" id="options-area">
+                <!-- Buttons sinh tự động -->
+            </div>
+
+            <div class="submit-area">
+                <button class="btn btn-info btn-submit" id="btn-submit" disabled style="background-color: #2196F3; color: white;">🔒 CHỐT ĐÁP ÁN</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Màn hình Kết quả -->
+    <div id="result-screen" class="screen">
+        <h1>🎉 HOÀN THÀNH 🎉</h1>
+        <h2 id="result-greeting">Chúc mừng</h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card final-score">
+                <div class="stat-val" id="res-score">100</div>
+                <div class="stat-label">Điểm Còn Lại</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" style="color: var(--primary);" id="res-correct">0</div>
+                <div class="stat-label">🎯 Số câu đúng</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" style="color: var(--primary-dark);" id="res-confident">0</div>
+                <div class="stat-label">🟢 Tự tin & Đúng</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" style="color: var(--danger);" id="res-overconfident">0</div>
+                <div class="stat-label">⚠️ Quá tự tin (Sai)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" style="color: var(--secondary-dark);" id="res-hints">0</div>
+                <div class="stat-label">💡 Số lần dùng gợi ý</div>
+            </div>
+        </div>
+        <p style="font-size: 1.2rem; font-weight: bold; color: var(--info-dark);">Em đã làm rất tốt! Hãy xem lại kết quả để rút kinh nghiệm nhé.</p>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const questions = [
+            {
+                q: "Sơ đồ hình cây thường bắt đầu bằng phần nào?",
+                opts: ["A. Một cái 'gốc'", "B. Các 'cành'", "C. Các 'lá'"],
+                ans: 0,
+                hint: "Nhớ lại cấu tạo của một cái cây thật, phần nào nằm dưới cùng để giữ cây vững chắc?"
+            },
+            {
+                q: "Sơ đồ hình cây được sử dụng để làm gì?",
+                opts: ["A. Để vẽ tranh phong cảnh cho đẹp.", "B. Biểu diễn một cách sắp xếp, phân loại cụ thể.", "C. Để tính toán các con số trong môn Toán."],
+                ans: 1,
+                hint: "Khi em muốn chia đồ chơi thành các nhóm (xe cộ, rô bốt, búp bê) cho dễ tìm, em đang làm công việc gì?"
+            },
+            {
+                q: "Trong máy tính, thông tin được lưu trữ thành các phần tử nào?",
+                opts: ["A. Các ổ đĩa", "B. Các thư mục", "C. Các tệp"],
+                ans: 2,
+                hint: "Nó giống như những trang giấy, cuốn vở, hoặc bức ảnh cụ thể chứa nội dung của em."
+            },
+            {
+                q: "Biểu tượng của thư mục trên máy tính thường có hình gì?",
+                opts: ["A. Hình kẹp giấy (thường màu vàng)", "B. Hình chữ W màu xanh", "C. Hình một bức ảnh"],
+                ans: 0,
+                hint: "Vật dụng này thường dùng để kẹp các tờ giấy rời lại với nhau thành một tệp."
+            },
+            {
+                isSpecial: true,
+                q: "Các tệp được sắp xếp ở đâu để dễ quản lí và tìm kiếm nhất?",
+                opts: ["A. Để lộn xộn trên màn hình nền", "B. Sắp xếp trong các thư mục", "C. Cất giấu bên trong các tệp khác"],
+                ans: 1,
+                hint: "Giống như việc em cất sách vở, bút thước gọn gàng vào các ngăn cặp hoặc ngăn tủ."
+            },
+            {
+                q: "Một thư mục chứa các thư mục khác ở bên trong nó thì được gọi là gì?",
+                opts: ["A. Thư mục chứa thư mục con", "B. Tệp chứa tệp con", "C. Ổ đĩa con"],
+                ans: 0,
+                hint: "Một cành cây lớn có thể mọc ra các cành nhỏ hơn. Các cành nhỏ đó gọi là cành gì?"
+            },
+            {
+                q: "Ổ đĩa trong máy tính thường được đặt tên bằng các chữ cái nào?",
+                opts: ["A. 1, 2, 3...", "B. A, B, C...", "C. C, D, E..."],
+                ans: 2,
+                hint: "Hãy nhớ lại bài học, tên ổ đĩa thường bắt đầu bằng chữ cái thứ ba trong bảng chữ cái tiếng Anh."
+            },
+            {
+                q: "Ổ đĩa, thư mục và tệp trong máy tính được tổ chức, sắp xếp dưới dạng sơ đồ nào?",
+                opts: ["A. Sơ đồ vòng tròn", "B. Sơ đồ hình cây", "C. Xếp hàng ngang"],
+                ans: 1,
+                hint: "Hãy nhớ lại tiêu đề bài học số 8 của chúng ta hôm nay."
+            },
+            {
+                q: "Câu nào sau đây là SAI khi nói về việc lưu trữ trong máy tính?",
+                opts: ["A. Một ổ đĩa có thể chứa nhiều thư mục.", "B. Các thư mục con trong cùng một thư mục được phép đặt tên giống hệt nhau.", "C. Một thư mục có thể chứa cả tệp và thư mục con."],
+                ans: 1,
+                hint: "Trong một lớp học, nếu có hai bạn cùng tên ngồi chung một bàn mà không có đặc điểm gì phân biệt thì cô giáo có dễ gọi tên không?"
+            },
+            {
+                isSpecial: true,
+                q: "Dựa vào sơ đồ Hình 50 (Cây thư mục), Ổ đĩa gốc tên là gì và chứa thư mục nào đầu tiên?",
+                opts: ["A. Ổ đĩa C, chứa thư mục Truyen tranh", "B. Ổ đĩa Du lieu (D:), chứa thư mục Truyen tranh, Truyen co tich và tệp Danh muc sach.xlsx", "C. Ổ đĩa D, chỉ chứa các tệp ảnh."],
+                ans: 1,
+                hint: "Hãy tưởng tượng sơ đồ trong sách: Phần trên cùng cùng bên trái có biểu tượng ổ đĩa kèm chữ '(D:)'. Các nhánh chính tỏa ra từ đường thẳng nối với nó."
+            }
+        ];
+
+        // --- GAME ENGINE ---
+        class WebAudioEngine {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.musicEnabled = true;
+                this.sfxEnabled = true;
+                this.bgmOscillator = null;
+                this.bgmGain = null;
+                this.isPlayingBGM = false;
+                this.melodyIndex = 0;
+                this.melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // C E G C G E (C major arp)
+                this.bgmInterval = null;
+            }
+
+            init() {
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            toggleMusic() {
+                this.musicEnabled = !this.musicEnabled;
+                if (!this.musicEnabled) this.stopBGM();
+                else this.startBGM();
+                return this.musicEnabled;
+            }
+
+            toggleSFX() {
+                this.sfxEnabled = !this.sfxEnabled;
+                return this.sfxEnabled;
+            }
+
+            startBGM() {
+                if (!this.musicEnabled || this.isPlayingBGM) return;
+                this.init();
+                this.isPlayingBGM = true;
+                
+                const playNote = () => {
+                    if (!this.isPlayingBGM) return;
+                    const freq = this.melody[this.melodyIndex % this.melody.length];
+                    this.melodyIndex++;
+                    
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq / 2, this.ctx.currentTime); // Lower octave for BGM
+                    
+                    gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.05, this.ctx.currentTime + 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.4);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.4);
+                };
+
+                playNote(); // Play first immediately
+                this.bgmInterval = setInterval(playNote, 500); // 120 BPM roughly
+            }
+
+            stopBGM() {
+                this.isPlayingBGM = false;
+                clearInterval(this.bgmInterval);
+            }
+
+            playTone(frequency, type, duration, vol=0.1) {
+                if (!this.sfxEnabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(frequency, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playClick() { this.playTone(600, 'sine', 0.1); }
+            playSelect() { this.playTone(800, 'sine', 0.1); }
+            
+            playCorrect() {
+                if (!this.sfxEnabled) return;
+                this.playTone(440, 'square', 0.1, 0.1);
+                setTimeout(() => this.playTone(554.37, 'square', 0.1, 0.1), 100);
+                setTimeout(() => this.playTone(659.25, 'square', 0.3, 0.1), 200);
+            }
+
+            playWrong() {
+                if (!this.sfxEnabled) return;
+                this.playTone(300, 'sawtooth', 0.2, 0.2);
+                setTimeout(() => this.playTone(250, 'sawtooth', 0.4, 0.2), 200);
+            }
+
+            playDeduct() {
+                if (!this.sfxEnabled) return;
+                let c = 0;
+                let intv = setInterval(() => {
+                    this.playTone(150, 'square', 0.05, 0.1);
+                    c++;
+                    if(c>3) clearInterval(intv);
+                }, 80);
+            }
+
+            playWin() {
+                if (!this.sfxEnabled) return;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 'square', 0.3, 0.1), i * 150);
+                });
+            }
+        }
+
+        const audio = new WebAudioEngine();
+
+        // --- STREAMING_CHUNK:Building Game Controller... ---
+        const Game = {
+            state: {
+                name: '',
+                pClass: '',
+                score: 100,
+                qIndex: 0,
+                conf: null, // 'chac', 'phanvan', 'chuachac'
+                ansIndex: null,
+                stats: { correct: 0, confCorrect: 0, overConf: 0, hints: 0 }
+            },
+            
+            els: {
+                screens: document.querySelectorAll('.screen'),
+                nameIn: document.getElementById('playerName'),
+                classIn: document.getElementById('playerClass'),
+                btnStart: document.getElementById('btn-start'),
+                
+                dispName: document.getElementById('display-name'),
+                dispClass: document.getElementById('display-class'),
+                scoreTxt: document.getElementById('current-score'),
+                scoreBar: document.getElementById('score-bar'),
+                scoreBox: document.getElementById('score-box'),
+                
+                qNumTxt: document.getElementById('current-q-num'),
+                totNumTxt: document.getElementById('total-q-num'),
+                qTxt: document.getElementById('question-text'),
+                
+                confArea: document.getElementById('confidence-area'),
+                specArea: document.getElementById('special-area'),
+                specBanner: document.getElementById('special-banner'),
+                hintBox: document.getElementById('hint-box'),
+                hintTxt: document.getElementById('hint-text'),
+                optArea: document.getElementById('options-area'),
+                btnSubmit: document.getElementById('btn-submit'),
+                
+                btnAnsNow: document.getElementById('btn-answer-now'),
+                btnBuyHint: document.getElementById('btn-buy-hint')
+            },
+
+            init() {
+                this.bindEvents();
+                this.els.totNumTxt.innerText = questions.length;
+            },
+
+            bindEvents() {
+                // Login validation
+                const checkInputs = () => {
+                    if(this.els.nameIn.value.trim() && this.els.classIn.value.trim()) {
+                        this.els.btnStart.disabled = false;
+                    } else {
+                        this.els.btnStart.disabled = true;
+                    }
+                };
+                this.els.nameIn.addEventListener('input', checkInputs);
+                this.els.classIn.addEventListener('input', checkInputs);
+
+                this.els.btnStart.addEventListener('click', () => {
+                    audio.init();
+                    audio.playClick();
+                    audio.startBGM();
+                    this.state.name = this.els.nameIn.value.trim();
+                    this.state.pClass = this.els.classIn.value.trim();
+                    this.startGame();
+                });
+
+                // Audio toggles
+                document.getElementById('btn-music').addEventListener('click', (e) => {
+                    const isOn = audio.toggleMusic();
+                    e.target.classList.toggle('off', !isOn);
+                    audio.playClick();
+                });
+                document.getElementById('btn-sfx').addEventListener('click', (e) => {
+                    const isOn = audio.toggleSFX();
+                    e.target.classList.toggle('off', !isOn);
+                    if(isOn) audio.playClick();
+                });
+
+                // Confidence buttons
+                this.els.confArea.querySelectorAll('.btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        audio.playClick();
+                        this.els.confArea.querySelectorAll('.btn').forEach(b => b.classList.remove('selected'));
+                        e.target.classList.add('selected');
+                        this.state.conf = e.target.dataset.conf;
+                        this.handleConfidenceSelected();
+                    });
+                });
+
+                // Special round buttons
+                this.els.btnAnsNow.addEventListener('click', () => {
+                    audio.playClick();
+                    this.state.conf = 'special_now';
+                    this.els.btnAnsNow.classList.add('selected');
+                    this.els.btnBuyHint.classList.remove('selected');
+                    this.renderOptions(true);
+                });
+
+                this.els.btnBuyHint.addEventListener('click', () => {
+                    audio.playClick();
+                    this.state.conf = 'special_hint';
+                    this.els.btnBuyHint.classList.add('selected');
+                    this.els.btnAnsNow.classList.remove('selected');
+                    this.deductPoints(5);
+                    this.state.stats.hints++;
+                    this.showHint();
+                    this.renderOptions(true);
+                    this.els.btnBuyHint.disabled = true; // Only buy once
+                });
+
+                // Submit button
+                this.els.btnSubmit.addEventListener('click', () => this.checkAnswer());
+            },
+
+            showScreen(id) {
+                this.els.screens.forEach(s => s.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+            },
+
+            startGame() {
+                this.els.dispName.innerText = this.state.name;
+                this.els.dispClass.innerText = this.state.pClass;
+                this.updateScoreUI();
+                this.showScreen('game-screen');
+                this.loadQuestion();
+            },
+
+            loadQuestion() {
+                const q = questions[this.state.qIndex];
+                this.els.qNumTxt.innerText = this.state.qIndex + 1;
+                this.els.qTxt.innerText = q.q;
+                
+                // Reset state
+                this.state.conf = null;
+                this.state.ansIndex = null;
+                this.els.btnSubmit.disabled = true;
+                this.els.hintBox.style.display = 'none';
+                this.els.optArea.innerHTML = ''; // Clear options
+                
+                // Reset buttons visually
+                this.els.confArea.querySelectorAll('.btn').forEach(b => b.classList.remove('selected'));
+                this.els.btnAnsNow.classList.remove('selected');
+                this.els.btnBuyHint.classList.remove('selected');
+                this.els.btnBuyHint.disabled = false;
+
+                if (q.isSpecial) {
+                    this.els.specBanner.style.display = 'inline-block';
+                    this.els.confArea.style.display = 'none';
+                    this.els.specArea.style.display = 'flex';
+                } else {
+                    this.els.specBanner.style.display = 'none';
+                    this.els.specArea.style.display = 'none';
+                    this.els.confArea.style.display = 'flex';
+                }
+            },
+
+            handleConfidenceSelected() {
+                if (this.state.conf === 'chuachac') {
+                    this.state.stats.hints++;
+                    this.showHint();
+                } else {
+                    this.els.hintBox.style.display = 'none';
+                }
+                this.renderOptions(true);
+            },
+
+            showHint() {
+                this.els.hintTxt.innerText = questions[this.state.qIndex].hint;
+                this.els.hintBox.style.display = 'block';
+            },
+
+            renderOptions(enable = false) {
+                const q = questions[this.state.qIndex];
+                this.els.optArea.innerHTML = '';
+                
+                q.opts.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.innerText = opt;
+                    if (!enable) btn.disabled = true;
+                    
+                    btn.addEventListener('click', () => {
+                        if(btn.disabled) return;
+                        audio.playSelect();
+                        this.els.optArea.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        this.state.ansIndex = idx;
+                        this.els.btnSubmit.disabled = false;
+                    });
+                    
+                    this.els.optArea.appendChild(btn);
+                });
+            },
+
+            checkAnswer() {
+                this.els.btnSubmit.disabled = true;
+                const q = questions[this.state.qIndex];
+                const isCorrect = (this.state.ansIndex === q.ans);
+                
+                // Highlight answers
+                const optBtns = this.els.optArea.querySelectorAll('.option-btn');
+                optBtns.forEach(b => b.disabled = true);
+                
+                // Show correct
+                optBtns[q.ans].classList.add('correct-show');
+                if(!isCorrect) {
+                    optBtns[this.state.ansIndex].classList.add('wrong-show');
+                }
+
+                this.els.confArea.querySelectorAll('.btn').forEach(b=>b.disabled=true);
+                this.els.specArea.querySelectorAll('.btn').forEach(b=>b.disabled=true);
+
+                let penalty = 0;
+
+                if (isCorrect) {
+                    audio.playCorrect();
+                    this.state.stats.correct++;
+                    if(this.state.conf === 'chac') this.state.stats.confCorrect++;
+                    this.showFloatingText('+0', true); // Keep points visual
+                } else {
+                    audio.playWrong();
+                    if(q.isSpecial) {
+                        penalty = 10; // Fixed penalty for wrong on special
+                    } else {
+                        if (this.state.conf === 'chac') {
+                            penalty = 15;
+                            this.state.stats.overConf++;
+                        } else if (this.state.conf === 'phanvan') {
+                            penalty = 10;
+                        } else if (this.state.conf === 'chuachac') {
+                            penalty = 5;
+                        }
+                    }
+                    if(penalty > 0) this.deductPoints(penalty);
+                }
+
+                setTimeout(() => {
+                    this.state.qIndex++;
+                    if (this.state.qIndex < questions.length) {
+                        this.els.confArea.querySelectorAll('.btn').forEach(b=>b.disabled=false);
+                        this.loadQuestion();
+                    } else {
+                        this.endGame();
+                    }
+                }, 2500);
+            },
+
+            deductPoints(amount) {
+                this.state.score = Math.max(0, this.state.score - amount);
+                audio.playDeduct();
+                this.showFloatingText(`-${amount}`, false);
+                this.updateScoreUI();
+                
+                // Shake effect
+                this.els.scoreBox.classList.remove('shake');
+                void this.els.scoreBox.offsetWidth; // trigger reflow
+                this.els.scoreBox.classList.add('shake');
+            },
+
+            updateScoreUI() {
+                this.els.scoreTxt.innerText = this.state.score;
+                const pct = Math.max(0, (this.state.score / 100) * 100);
+                this.els.scoreBar.style.width = pct + '%';
+                
+                if (pct > 60) this.els.scoreBar.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
+                else if (pct > 30) this.els.scoreBar.style.background = 'linear-gradient(90deg, #FFC107, #FFEB3B)';
+                else this.els.scoreBar.style.background = 'linear-gradient(90deg, #F44336, #E57373)';
+            },
+
+            showFloatingText(text, isPositive) {
+                const el = document.createElement('div');
+                el.className = 'floating-text ' + (isPositive ? 'positive' : '');
+                el.innerText = text;
+                
+                // Position near score box
+                const rect = this.els.scoreBox.getBoundingClientRect();
+                el.style.left = (rect.left + rect.width/2 - 20) + 'px';
+                el.style.top = (rect.top + 10) + 'px';
+                
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1500);
+            },
+
+            endGame() {
+                audio.stopBGM();
+                audio.playWin();
+                this.showScreen('result-screen');
+                
+                document.getElementById('result-greeting').innerText = `Chúc mừng ${this.state.name}!`;
+                document.getElementById('res-score').innerText = this.state.score;
+                document.getElementById('res-correct').innerText = `${this.state.stats.correct}/${questions.length}`;
+                document.getElementById('res-confident').innerText = this.state.stats.confCorrect;
+                document.getElementById('res-overconfident').innerText = this.state.stats.overConf;
+                document.getElementById('res-hints').innerText = this.state.stats.hints;
+
+                startFireworks();
+            }
+        };
+
+        // --- STREAMING_CHUNK:Fireworks Effect... ---
+        // Simple Fireworks implementation
+        const canvas = document.getElementById('fireworks');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function createParticles(x, y) {
+            const count = 50;
+            for(let i=0; i<count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                particles.push({
+                    x: x, y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color: `hsl(${Math.random()*360}, 100%, 50%)`,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+
+        let fwAnimationId;
+        function animateFireworks() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Randomly spawn new fireworks
+            if(Math.random() < 0.05) {
+                createParticles(Math.random() * canvas.width, canvas.height/2 - Math.random() * 200);
+            }
+
+            for(let i = particles.length-1; i>=0; i--) {
+                let p = particles[i];
+                p.vy += 0.05; // gravity
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.015;
+                p.size *= 0.95;
+
+                if(p.life <= 0) {
+                    particles.splice(i, 1);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.life;
+                    ctx.fill();
+                }
+            }
+            ctx.globalAlpha = 1;
+            fwAnimationId = requestAnimationFrame(animateFireworks);
+        }
+
+        function startFireworks() {
+            createParticles(canvas.width/2, canvas.height/3);
+            if(!fwAnimationId) animateFireworks();
+        }
+
+        // Start App
+        window.onload = () => {
+            Game.init();
+        };
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Săn Kho Báu Kiến Thức - Bài 15 Tin Học 5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            user-select: none;
+        }
+        .pulse-btn {
+            animation: pulseGlow 2s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+            70% { transform: scale(1.03); box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+        }
+        .float-anim {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 min-h-screen text-white flex flex-col justify-between p-4">
+
+    <header class="max-w-4xl mx-auto w-full flex justify-between items-center py-3 px-4 bg-white/10 backdrop-blur-md rounded-2xl shadow-lg border border-white/20">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">🗺️</span>
+            <div>
+                <h1 class="text-lg md:text-xl font-bold tracking-wide text-yellow-300">SĂN KHO BÁU KIẾN THỨC</h1>
+                <p class="text-xs text-purple-200">Tin Học 5 - Bài 15: Sử dụng biểu thức</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="toggleMusic" onclick="toggleBackgroundMusic()" class="bg-purple-700 hover:bg-purple-600 px-3 py-1.5 rounded-xl text-sm font-semibold flex items-center space-x-1 shadow transition active:scale-95">
+                <span>🎵</span> <span id="musicText" class="hidden sm:inline">Nhạc: Tắt</span>
+            </button>
+            <button id="toggleSfx" onclick="toggleSoundEffects()" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-xl text-sm font-semibold flex items-center space-x-1 shadow transition active:scale-95">
+                <span>🔊</span> <span id="sfxText" class="hidden sm:inline">Tiếng: Bật</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-2xl mx-auto w-full my-auto py-6">
+
+        <!-- SCREEN 1: LOGIN -->
+        <div id="screenLogin" class="bg-white/10 backdrop-blur-md border border-white/20 p-6 md:p-8 rounded-3xl shadow-2xl text-center">
+            <div class="text-6xl mb-4 float-anim">🏴‍☠️</div>
+            <h2 class="text-2xl md:text-3xl font-bold text-yellow-300 mb-2">HÀNH TRÌNH TÌM KHO BÁU</h2>
+            <p class="text-sm md:text-base text-indigo-200 mb-6">Nhập danh tính nhà thám hiểm nhí trước khi bước vào thế giới biểu thức Scratch!</p>
+            
+            <div class="space-y-4 text-left max-w-md mx-auto">
+                <div>
+                    <label class="block text-sm font-semibold text-yellow-200 mb-1">Họ và tên học sinh:</label>
+                    <input type="text" id="inputName" placeholder="Biệt danh (không nhập tên thật)" class="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-yellow-200 mb-1">Lớp:</label>
+                    <input type="text" id="inputClass" placeholder="Ví dụ: 5A" class="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium">
+                </div>
+                <div id="loginError" class="text-red-300 text-sm font-semibold text-center hidden">Vui lòng nhập đầy đủ Họ tên và Lớp để tiếp tục!</div>
+                <button onclick="startGame()" class="w-full py-4 mt-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-indigo-950 font-bold text-lg rounded-2xl shadow-lg pulse-btn transition transform active:scale-95">
+                    🚀 BẮT ĐẦU SĂN KHO BÁU
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: MAP & STAGES -->
+        <div id="screenMap" class="hidden bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-3xl shadow-2xl text-center">
+            <div class="flex justify-between items-center mb-4 bg-black/20 p-3 rounded-2xl">
+                <div>
+                    <p class="text-xs text-purple-300">Nhà thám hiểm:</p>
+                    <p id="displayName" class="font-bold text-yellow-300 text-sm md:text-base"></p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-purple-300">Điểm thưởng:</p>
+                    <p id="displayScore" class="font-bold text-emerald-400 text-lg">0 💎</p>
+                </div>
+            </div>
+
+            <h2 class="text-xl md:text-2xl font-bold text-yellow-300 mb-2">BẢN ĐỒ KHO BÁU</h2>
+            <p class="text-xs md:text-sm text-indigo-200 mb-6">Vượt qua 5 địa điểm, giải mã biểu thức Scratch để mở rương cuối cùng!</p>
+
+            <div class="grid grid-cols-1 gap-3 max-w-md mx-auto mb-6" id="mapStagesList">
+                <!-- Generated dynamically via JS -->
+            </div>
+        </div>
+
+        <!-- SCREEN 3: CHALLENGE QUESTION -->
+        <div id="screenChallenge" class="hidden bg-white/10 backdrop-blur-md border border-white/20 p-6 md:p-8 rounded-3xl shadow-2xl">
+            <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-3">
+                <span id="challengeStageTitle" class="text-sm font-bold text-yellow-300 uppercase tracking-wider">CHẶNG 1</span>
+                <span id="challengeLocationName" class="text-xs bg-indigo-600/60 px-3 py-1 rounded-full text-indigo-200">🌴 Đảo hoang</span>
+            </div>
+
+            <div id="challengeContent" class="mb-6">
+                <!-- Question inserted dynamically -->
+            </div>
+
+            <div id="optionsContainer" class="space-y-3 mb-6">
+                <!-- Options inserted dynamically -->
+            </div>
+
+            <div id="feedbackMessage" class="hidden p-4 rounded-xl text-center font-bold mb-4"></div>
+
+            <button id="nextBtn" onclick="proceedNext()" class="hidden w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition">
+                Tiếp tục hành trình ➡️
+            </button>
+        </div>
+
+        <!-- SCREEN 4: BOSS FINAL -->
+        <div id="screenBoss" class="hidden bg-white/10 backdrop-blur-md border border-white/20 p-6 md:p-8 rounded-3xl shadow-2xl text-center">
+            <div class="text-6xl mb-3 float-anim">👑🔐</div>
+            <h2 class="text-2xl font-bold text-yellow-300 mb-2">CHẶNG 5: BOSS - RƯƠNG KHO BÁU CUỐI</h2>
+            <p class="text-xs md:text-sm text-indigo-200 mb-6">Nhập mật mã số chính xác từ toàn bộ kiến thức đã thu thập để mở rương vàng!</p>
+
+            <div class="bg-black/30 p-4 rounded-2xl mb-6 text-left border border-white/10">
+                <p class="text-xs text-yellow-200 font-semibold mb-2">💡 Gợi ý mã khóa:</p>
+                <p class="text-xs md:text-sm text-indigo-100 leading-relaxed" id="bossHintText">
+                    Trong Scratch, khi bạn có biến a = 3, b = 4 và chạy khối lệnh tính diện tích hình chữ nhật `nói kết hợp Diện tích là a * b trong 5 giây`. Hỏi kết quả số hiển thị nhân được là bao nhiêu? (Nhập số nguyên).
+                </p>
+            </div>
+
+            <div class="max-w-xs mx-auto mb-4">
+                <input type="number" id="bossCodeInput" placeholder="Nhập mã khóa (số)..." class="w-full text-center px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-bold text-xl">
+            </div>
+            <div id="bossError" class="text-red-300 text-sm font-semibold mb-3 hidden">Mã khóa chưa đúng! Hãy kiểm tra lại biểu thức Scratch nhé.</div>
+            <button onclick="submitBossCode()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-indigo-950 font-bold text-lg rounded-2xl shadow-lg pulse-btn transition">
+                🔓 MỞ RƯƠNG KHO BÁU
+            </button>
+        </div>
+
+        <!-- SCREEN 5: VICTORY / RESULT -->
+        <div id="screenVictory" class="hidden bg-white/10 backdrop-blur-md border border-white/20 p-6 md:p-8 rounded-3xl shadow-2xl text-center relative overflow-hidden">
+            <div class="text-7xl mb-3 float-anim">💎🏆🎉</div>
+            <h2 class="text-2xl md:text-3xl font-bold text-yellow-300 mb-1">RƯƠNG BẬT MỞ!</h2>
+            <p class="text-sm md:text-base text-emerald-300 font-bold mb-4">CHINH PHỤC KHO BÁU KIẾN THỨC THÀNH CÔNG!</p>
+            
+            <div class="bg-white/10 p-4 rounded-2xl mb-6 text-sm space-y-2 border border-white/20 max-w-sm mx-auto">
+                <p>👤 Thám hiểm: <span id="resName" class="font-bold text-yellow-200"></span></p>
+                <p>🏫 Lớp: <span id="resClass" class="font-bold text-yellow-200"></span></p>
+                <p>⭐ Tổng điểm: <span id="resScore" class="font-bold text-emerald-300"></span></p>
+                <p>⏱️ Trạng thái: <span class="font-bold text-cyan-300">Hoàn thành xuất sắc Bài 15!</span></p>
+            </div>
+
+            <button onclick="restartGame()" class="py-3 px-8 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg transition transform active:scale-95">
+                🔄 Chơi lại hành trình
+            </button>
+        </div>
+
+    </main>
+
+    <footer class="text-center text-xs text-purple-300 py-2">
+        Game Săn Kho Báu Kiến Thức - Thiết kế chạy hoàn toàn Offline trên Gemini Canvas 🗺️💎
+    </footer>
+
+    <script>
+        let audioCtx = null;
+        let isMusicEnabled = true;
+        let isSfxEnabled = true;
+        let musicInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Generate synthetic sound effects without external URLs
+        function playTone(freq, type, duration, delay = 0) {
+            if (!isSfxEnabled) return;
+            initAudio();
+            try {
+                setTimeout(() => {
+                    if (!audioCtx) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + duration);
+                }, delay);
+            } catch (e) {
+                console.log("Audio error", e);
+            }
+        }
+
+        function playCorrectSound() {
+            playTone(523.25, 'triangle', 0.15, 0); // C5
+            playTone(659.25, 'triangle', 0.15, 120); // E5
+            playTone(783.99, 'triangle', 0.3, 240); // G5
+        }
+
+        function playWrongSound() {
+            playTone(200, 'sawtooth', 0.2, 0);
+            playTone(150, 'sawtooth', 0.3, 150);
+        }
+
+        function playVictorySound() {
+            const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.50];
+            notes.forEach((note, index) => {
+                playTone(note, 'sine', 0.25, index * 120);
+            });
+        }
+
+        function startBackgroundMusic() {
+            if (!isMusicEnabled) return;
+            initAudio();
+            if (musicInterval) clearInterval(musicInterval);
+            
+            const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
+            let noteIdx = 0;
+            
+            musicInterval = setInterval(() => {
+                if (!isMusicEnabled) return;
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = melody[noteIdx];
+                    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                    noteIdx = (noteIdx + 1) % melody.length;
+                } catch (e) {}
+            }, 600);
+        }
+
+        function stopBackgroundMusic() {
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
+        }
+
+        function toggleBackgroundMusic() {
+            isMusicEnabled = !isMusicEnabled;
+            document.getElementById('musicText').innerText = isMusicEnabled ? "Nhạc: Bật" : "Nhạc: Tắt";
+            if (isMusicEnabled) {
+                startBackgroundMusic();
+            } else {
+                stopBackgroundMusic();
+            }
+        }
+
+        function toggleSoundEffects() {
+            isSfxEnabled = !isSfxEnabled;
+            document.getElementById('sfxText').innerText = isSfxEnabled ? "Tiếng: Bật" : "Tiếng: Tắt";
+        }
+
+        const gameStages = [
+            {
+                id: 1,
+                name: "🌴 Đảo hoang",
+                title: "Chặng 1: Tìm manh mối biểu thức Scratch",
+                question: "Trong Scratch, biểu thức tính toán gồm những thành phần nào sau đây?",
+                options: [
+                    { text: "Chỉ các số và chữ cái tiếng Việt thông thường.", correct: false },
+                    { text: "Các số, biến và phép toán.", correct: true },
+                    { text: "Chỉ các câu lệnh điều kiện và vòng lặp.", correct: false }
+                ],
+                explanation: "Đúng rồi! Sách giáo khoa trang 73 nêu rõ: Biểu thức trong Scratch gồm các số, biến và phép toán."
+            },
+            {
+                id: 2,
+                name: "🌊 Hang nước",
+                title: "Chặng 2: Ghép mảnh bản đồ phép toán so sánh",
+                question: "Phép toán so sánh nào trong Scratch được dùng để tạo biểu thức điều kiện?",
+                options: [
+                    { text: "Bé hơn (<), Bằng (=), Lớn hơn (>).", correct: true },
+                    { text: "Cộng (+), Trừ (-), Nhân (*), Chia (/).", correct: false },
+                    { text: "Phép lấy số ngẫu nhiên và phép chia lấy dư.", correct: false }
+                ],
+                explanation: "Chính xác! Ba phép toán so sánh cơ bản trong Scratch là: bé hơn, bằng, lớn hơn."
+            },
+            {
+                id: 3,
+                name: "🏛️ Đền cổ",
+                title: "Chặng 3: Giải mật mã thứ tự tính toán lồng nhau",
+                question: "Quan sát biểu thức lồng nhau: khối bên trong thực hiện 7 - 5 = 2, tiếp tục khối bên ngoài cộng thêm 8 thành 2 + 8 = 10. Scratch thực hiện thứ tự này như thế nào?",
+                options: [
+                    { text: "Từ trái sang phải.", correct: false },
+                    { text: "Từ ngoài vào trong.", correct: false },
+                    { text: "Từ trong ra ngoài.", correct: true }
+                ],
+                explanation: "Tuyệt vời! Scratch không có dấu ngoặc nên các phép toán lồng nhau thực hiện theo thứ tự từ trong ra ngoài (Hình 97 SGK)."
+            },
+            {
+                id: 4,
+                name: "⛰️ Núi đá",
+                title: "Chặng 4: Tìm chìa khóa biểu thức hình học",
+                question: "Cho hai biến a và b lưu độ dài hai cạnh hình chữ nhật. Biểu thức Scratch nào tương ứng với biểu thức toán học (a + b) * 2 để tính chu vi?",
+                options: [
+                    { text: "Ghép phép nhân (a + b) với 2.", correct: true },
+                    { text: "Ghép a nhân b cộng 2.", correct: false },
+                    { text: "Ghép a chia b trừ 2.", correct: false }
+                ],
+                explanation: "Chính xác! Chu vi hình chữ nhật tính bằng tổng chiều dài và chiều rộng nhân với 2: (a + b) * 2."
+            }
+        ];
+
+        let playerData = { name: "", classRoom: "", score: 0 };
+        let currentStageIndex = 0;
+        let stagesCompleted = [false, false, false, false, false];
+
+        function startGame() {
+            initAudio();
+            const nameInput = document.getElementById('inputName').value.trim();
+            const classInput = document.getElementById('inputClass').value.trim();
+            const errorDiv = document.getElementById('loginError');
+
+            if (!nameInput || !classInput) {
+                errorDiv.classList.remove('hidden');
+                playWrongSound();
+                return;
+            }
+
+            errorDiv.classList.add('hidden');
+            playerData.name = nameInput;
+            playerData.classRoom = classInput;
+            playerData.score = 0;
+
+            document.getElementById('displayName').innerText = `${playerData.name} (Lớp ${playerData.classRoom})`;
+
+            document.getElementById('screenLogin').classList.add('hidden');
+            document.getElementById('screenMap').classList.remove('hidden');
+
+            renderMapStages();
+            if (isMusicEnabled) startBackgroundMusic();
+            playCorrectSound();
+        }
+
+        function renderMapStages() {
+            const listContainer = document.getElementById('mapStagesList');
+            listContainer.innerHTML = "";
+
+            gameStages.forEach((stage, index) => {
+                const isCompleted = stagesCompleted[index];
+                const isCurrent = index === currentStageIndex;
+
+                let btnClass = "bg-white/10 border-white/20 text-indigo-300 opacity-60 cursor-not-allowed";
+                let badgeText = "🔒 Chưa mở";
+
+                if (isCompleted) {
+                    btnClass = "bg-emerald-600/30 border-emerald-500/50 text-emerald-200";
+                    badgeText = "✅ Đã vượt qua";
+                } else if (isCurrent) {
+                    btnClass = "bg-gradient-to-r from-purple-600 to-indigo-600 border-yellow-400 text-white pulse-btn cursor-pointer shadow-lg";
+                    badgeText = "🔥 Đang thử thách";
+                }
+
+                const item = document.createElement('div');
+                item.className = `p-4 rounded-2xl border flex justify-between items-center transition ${btnClass}`;
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3 text-left">
+                        <span class="text-2xl">${stage.name.split(' ')[0]}</span>
+                        <div>
+                            <p class="font-bold text-sm md:text-base">${stage.name}</p>
+                            <p class="text-xs opacity-80">${stage.title}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-black/30">${badgeText}</span>
+                `;
+
+                if (isCurrent) {
+                    item.onclick = () => openChallenge(index);
+                }
+                listContainer.appendChild(item);
+            });
+
+            // Boss stage item
+            const bossCompleted = stagesCompleted[4];
+            const bossUnlocked = currentStageIndex >= 4;
+            let bossClass = "bg-white/10 border-white/20 text-indigo-300 opacity-60 cursor-not-allowed";
+            let bossBadge = "🔒 Khóa Boss";
+
+            if (bossCompleted) {
+                bossClass = "bg-amber-600/30 border-amber-500/50 text-amber-200";
+                bossBadge = "👑 Đã chinh phục";
+            } else if (bossUnlocked) {
+                bossClass = "bg-gradient-to-r from-amber-600 to-yellow-600 border-yellow-300 text-indigo-950 font-bold pulse-btn cursor-pointer shadow-lg";
+                bossBadge = "⚔️ Thách đấu Boss";
+            }
+
+            const bossItem = document.createElement('div');
+            bossItem.className = `p-4 rounded-2xl border flex justify-between items-center transition ${bossClass}`;
+            bossItem.innerHTML = `
+                <div class="flex items-center space-x-3 text-left">
+                    <span class="text-2xl">🏴‍☠️</span>
+                    <div>
+                        <p class="font-bold text-sm md:text-base">Chặng 5: Rương Kho Báu</p>
+                        <p class="text-xs opacity-80">Giải mã biểu thức cuối cùng</p>
+                    </div>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-black/30">${bossBadge}</span>
+            `;
+
+            if (bossUnlocked && !bossCompleted) {
+                bossItem.onclick = () => openBossScreen();
+            }
+            listContainer.appendChild(bossItem);
+        }
+
+        let activeChallengeIndex = 0;
+
+        function openChallenge(index) {
+            initAudio();
+            activeChallengeIndex = index;
+            const stage = gameStages[index];
+
+            document.getElementById('screenMap').classList.add('hidden');
+            document.getElementById('screenChallenge').classList.remove('hidden');
+
+            document.getElementById('challengeStageTitle').innerText = `CHẶNG ${index + 1} / 4`;
+            document.getElementById('challengeLocationName').innerText = stage.name;
+            document.getElementById('challengeContent').innerHTML = `
+                <p class="text-base md:text-lg font-semibold text-white leading-relaxed">${stage.question}</p>
+            `;
+
+            const optContainer = document.getElementById('optionsContainer');
+            optContainer.innerHTML = "";
+
+            stage.options.forEach((opt, optIdx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 font-medium text-sm md:text-base transition active:scale-95";
+                btn.innerText = opt.text;
+                btn.onclick = () => checkAnswer(optIdx);
+                optContainer.appendChild(btn);
+            });
+
+            document.getElementById('feedbackMessage').classList.add('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+        }
+
+        function checkAnswer(optIdx) {
+            initAudio();
+            const stage = gameStages[activeChallengeIndex];
+            const isCorrect = stage.options[optIdx].correct;
+            const feedbackDiv = document.getElementById('feedbackMessage');
+            const optButtons = document.getElementById('optionsContainer').children;
+
+            // Disable all options
+            for (let btn of optButtons) {
+                btn.disabled = true;
+                btn.classList.add('opacity-70');
+            }
+
+            feedbackDiv.classList.remove('hidden');
+
+            if (isCorrect) {
+                playCorrectSound();
+                playerData.score += 25;
+                document.getElementById('displayScore').innerText = `${playerData.score} 💎`;
+                stagesCompleted[activeChallengeIndex] = true;
+
+                feedbackDiv.className = "p-4 rounded-xl text-center font-bold mb-4 bg-emerald-600/80 text-white border border-emerald-400";
+                feedbackDiv.innerHTML = `✅ CHÍNH XÁC! Nhận 1 mảnh bản đồ và 25 điểm.<br><span class="text-xs font-normal">${stage.explanation}</span>`;
+
+                document.getElementById('nextBtn').classList.remove('hidden');
+            } else {
+                playWrongSound();
+                feedbackDiv.className = "p-4 rounded-xl text-center font-bold mb-4 bg-red-600/80 text-white border border-red-400";
+                feedbackDiv.innerHTML = `❌ MANH MỐI GIẢ! Chưa chính xác. Hãy thử lại hoặc ôn lại kiến thức SGK nhé!`;
+                
+                // Allow retry after 1.5s
+                setTimeout(() => {
+                    for (let btn of optButtons) {
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-70');
+                    }
+                    feedbackDiv.classList.add('hidden');
+                }, 1800);
+            }
+        }
+
+        function proceedNext() {
+            initAudio();
+            currentStageIndex++;
+            document.getElementById('screenChallenge').classList.add('hidden');
+            document.getElementById('screenMap').classList.remove('hidden');
+            renderMapStages();
+        }
+
+        function openBossScreen() {
+            initAudio();
+            document.getElementById('screenMap').classList.add('hidden');
+            document.getElementById('screenBoss').classList.remove('hidden');
+        }
+
+        function submitBossCode() {
+            initAudio();
+            const inputVal = parseInt(document.getElementById('bossCodeInput').value);
+            const errorDiv = document.getElementById('bossError');
+
+            // Correct answer: a=3, b=4 => area = 3 * 4 = 12
+            if (inputVal === 12) {
+                errorDiv.classList.add('hidden');
+                stagesCompleted[4] = true;
+                playerData.score += 50;
+                playVictorySound();
+                showVictoryScreen();
+            } else {
+                playWrongSound();
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function showVictoryScreen() {
+            document.getElementById('screenBoss').classList.add('hidden');
+            document.getElementById('screenVictory').classList.remove('hidden');
+
+            document.getElementById('resName').innerText = playerData.name;
+            document.getElementById('resClass').innerText = playerData.classRoom;
+            document.getElementById('resScore').innerText = `${playerData.score} 💎 Vàng`;
+            stopBackgroundMusic();
+        }
+
+        function restartGame() {
+            initAudio();
+            currentStageIndex = 0;
+            stagesCompleted = [false, false, false, false, false];
+            playerData = { name: "", classRoom: "", score: 0 };
+            document.getElementById('inputName').value = "";
+            document.getElementById('inputClass').value = "";
+            document.getElementById('bossCodeInput').value = "";
+
+            document.getElementById('screenVictory').classList.add('hidden');
+            document.getElementById('screenLogin').classList.remove('hidden');
+            if (isMusicEnabled) startBackgroundMusic();
+        }
+    </script>
+</body>
+</html>

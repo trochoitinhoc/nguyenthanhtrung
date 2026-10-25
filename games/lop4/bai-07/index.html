@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thợ Mỏ Kiến Thức - Đào Vàng</title>
+    <style>
+        :root {
+            --primary: #D81B60;
+            --primary-dark: #880E4F;
+            --secondary: #FFC107;
+            --secondary-dark: #FFA000;
+            --danger: #D32F2F;
+            --text-light: #fff;
+            --text-dark: #333;
+            /* Tươi tắn thiên về hồng đậm */
+            --bg-layer-0: #FCE4EC; /* Mặt đất */
+            --bg-layer-1: #F8BBD0; /* Đất sâu */
+            --bg-layer-2: #F48FB1; /* Hang động */
+            --bg-layer-3: #F06292; /* Mỏ vàng */
+            --bg-layer-4: #E91E63; /* Đáy kim cương */
+            --block-dirt: #F8BBD0;
+            --block-rock: #BDBDBD;
+            --block-dug: #AD1457;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #FCE4EC;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 100%;
+            max-height: 900px;
+            background: linear-gradient(to bottom, #FFE082 0%, #FFCDD2 20%, var(--bg-layer-0) 20.1%, var(--bg-layer-4) 100%);
+            box-shadow: 0 0 20px rgba(233, 30, 99, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 100;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        #main-game { display: none; flex-direction: column; height: 100%; z-index: 10; position: relative;}
+        #main-game.active { display: flex; }
+
+        h1 { color: var(--primary-dark); font-size: 2.5rem; text-shadow: 2px 2px 0px #fff, -1px -1px 0 #333; margin-bottom: 20px;}
+        h2 { color: var(--primary); font-size: 1.8rem; margin-bottom: 15px;}
+        p { font-size: 1.1rem; line-height: 1.5; margin-bottom: 15px; color: var(--text-dark); }
+
+        input[type="text"] {
+            width: 80%;
+            max-width: 300px;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            font-size: 1.2rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus { border-color: var(--primary-dark); box-shadow: 0 0 8px rgba(216, 27, 96, 0.5); }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 var(--primary-dark), 0 10px 10px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            margin: 10px;
+            text-transform: uppercase;
+        }
+
+        .btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 var(--primary-dark), 0 2px 2px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary { background-color: var(--secondary); box-shadow: 0 5px 0 var(--secondary-dark); color: #333; }
+        .btn-secondary:active { box-shadow: 0 0 0 var(--secondary-dark); }
+        
+        .btn-danger { background-color: var(--danger); box-shadow: 0 5px 0 #b71c1c; }
+        .btn-danger:active { box-shadow: 0 0 0 #b71c1c; }
+
+        #top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: rgba(136, 14, 79, 0.8);
+            color: white;
+            font-weight: bold;
+            z-index: 20;
+        }
+
+        .stat-item { display: flex; align-items: center; gap: 5px; font-size: 1.2rem; }
+        .stat-icon { width: 24px; height: 24px; }
+
+        #controls {
+            display: flex;
+            gap: 10px;
+        }
+        .icon-btn {
+            background: none; border: none; cursor: pointer; font-size: 1.5rem; filter: grayscale(100%); transition: filter 0.2s;
+        }
+        .icon-btn.active { filter: grayscale(0%); }
+
+        #layer-info {
+            text-align: center; padding: 5px; background: rgba(255, 255, 255, 0.4); font-weight: bold; color: var(--primary-dark);
+            text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid var(--primary);
+        }
+
+        #mine-grid {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            padding: 15px;
+            background-color: rgba(255,255,255,0.1);
+            perspective: 1000px;
+        }
+
+        .block {
+            background-color: var(--block-dirt);
+            border: 2px solid rgba(233, 30, 99, 0.3);
+            border-radius: 12px;
+            border-bottom-width: 6px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s, background-color 0.3s;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .block::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M10,20 Q30,5 50,20 T90,20" stroke="rgba(233,30,99,0.2)" fill="none" stroke-width="3"/><path d="M20,50 Q40,35 60,50 T100,50" stroke="rgba(233,30,99,0.2)" fill="none" stroke-width="3"/></svg>');
+            opacity: 0.6;
+        }
+
+        .block:active:not(.dug) { transform: scale(0.95); }
+        .block.dug {
+            background-color: var(--block-dug);
+            border-bottom-width: 2px;
+            transform: translateY(4px);
+            cursor: default;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .block.dug::after { display: none; }
+
+        .block .item-svg {
+            width: 70%; height: 70%;
+            opacity: 0; transform: scale(0.5); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2;
+        }
+        .block.dug .item-svg { opacity: 1; transform: scale(1); }
+        
+        .block.revealed-flashlight { outline: 4px dashed var(--secondary); outline-offset: -4px; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popUp {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            80% { transform: translate(-50%, -80%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -100%) scale(1); opacity: 0; }
+        }
+        @keyframes pickaxeSwing {
+            0% { transform: rotate(0deg) translate(0, 0); }
+            50% { transform: rotate(-45deg) translate(-10px, -10px); }
+            100% { transform: rotate(45deg) translate(15px, 15px); }
+        }
+
+        .floating-text {
+            position: absolute; color: white; font-weight: bold; font-size: 1.5rem;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8); pointer-events: none; z-index: 30;
+            animation: popUp 1s ease-out forwards;
+        }
+
+        .pickaxe-anim {
+            position: absolute; width: 50px; height: 50px; pointer-events: none; z-index: 40;
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" stroke="%23333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M14.531 12.469L2.53 24.469M23.195 9.07c-3.14-3.14-7.653-3.766-10.793-.625-3.14 3.14-2.514 7.653.626 10.793M20.57 2.193a2.43 2.43 0 00-3.437 0l-5.656 5.656a2.43 2.43 0 000 3.438l9.093-9.094z" fill="%23D81B60"/></svg>');
+            animation: pickaxeSwing 0.2s ease-in-out;
+        }
+
+        #question-modal, #hint-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 200; display: none;
+            justify-content: center; align-items: center; padding: 15px;
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 20px; text-align: center;
+            max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 5px var(--primary);
+            animation: fadeIn 0.2s;
+        }
+        
+        .option-btn {
+            background: #f8f9fa; border: 2px solid #ced4da; padding: 15px; border-radius: 12px;
+            font-size: 1.1rem; cursor: pointer; transition: 0.2s; font-weight: 500;
+            color: var(--text-dark); text-align: left;
+        }
+        .option-btn:hover { background: #FCE4EC; border-color: var(--primary); }
+        .option-btn.active-match { background: #FCE4EC; border-color: var(--primary); font-weight: bold; transform: scale(1.02); box-shadow: 0 2px 8px rgba(233,30,99,0.3);}
+        
+        #action-bar {
+            padding: 15px; background: rgba(255,255,255,0.9); display: flex; justify-content: space-around;
+            border-top: 3px solid var(--primary);
+        }
+
+        /* SVG Data URIs cho icons */
+        .svg-gold { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="%23FFD700" stroke="%23DAA520" stroke-width="4"/><text x="50" y="65" font-family="Arial" font-size="40" font-weight="bold" fill="%23DAA520" text-anchor="middle">$</text></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .svg-diamond { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,10 90,40 50,90 10,40" fill="%2300E5FF" stroke="%2300B8D4" stroke-width="2"/><polygon points="50,10 70,40 50,90 30,40" fill="%23E0FFFF" opacity="0.6"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center;}
+        .svg-rock { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M20,80 L30,40 L60,20 L90,50 L80,90 Z" fill="%23BDBDBD" stroke="%239E9E9E" stroke-width="4"/><path d="M30,40 L50,60 L90,50" stroke="%23E0E0E0" stroke-width="2" fill="none"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center;}
+        .svg-chest { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="40" width="80" height="50" fill="%23D81B60" stroke="%23880E4F" stroke-width="4"/><path d="M10,40 Q50,10 90,40" fill="%23E91E63" stroke="%23880E4F" stroke-width="4"/><rect x="40" y="30" width="20" height="20" fill="%23FFC107"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center;}
+        .svg-map { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="20" width="70" height="60" fill="%23FFF8E1" stroke="%23FFC107" stroke-width="3"/><path d="M30,30 L70,70 M70,30 L30,70" stroke="%23D81B60" stroke-width="3" stroke-dasharray="4,4"/><circle cx="50" cy="50" r="6" fill="%23D32F2F"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center;}
+        .svg-pickaxe { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M40,60 L20,90 M80,20 C60,0 20,10 10,20 C20,10 60,0 80,20 Z" stroke="%23FFC107" stroke-width="8" fill="none"/><path d="M45,55 L85,15" stroke="%23795548" stroke-width="6"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center;}
+        .svg-flashlight { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="40" y="40" width="20" height="50" fill="%23424242" rx="5"/><polygon points="30,40 70,40 60,10 40,10" fill="%23757575"/><polygon points="40,10 60,10 80,0 20,0" fill="%23FFF59D" opacity="0.8"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center;}
+        .svg-boss { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,0 100,30 50,100 0,30" fill="%23E91E63" stroke="%23880E4F" stroke-width="4"/><polygon points="50,0 75,30 50,100 25,30" fill="%23F48FB1" opacity="0.7"/><circle cx="50" cy="40" r="15" fill="white" opacity="0.6"/></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #FF4081); animation: pulseBoss 1.5s infinite;}
+        .svg-giant-rock { background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M10,80 L25,20 L75,10 L95,50 L85,90 Z" fill="%23757575" stroke="%23424242" stroke-width="5"/><path d="M25,20 L50,60 L95,50" stroke="%239E9E9E" stroke-width="3" fill="none"/><text x="50" y="65" font-family="Arial" font-size="40" font-weight="bold" fill="%23FF5252" text-anchor="middle">?</text></svg>'); background-size: contain; background-repeat: no-repeat; background-position: center;}
+
+        @keyframes pulseBoss { 0% { transform: scale(0.9) } 50% { transform: scale(1.1) } 100% { transform: scale(0.9) } }
+        
+        .block { background-color: var(--bg-layer-2); border-color: #F06292; }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    
+    <!-- Màn hình 1: Đăng nhập -->
+    <div id="screen-login" class="screen active">
+        <h1>⛏️ THỢ MỎ KIẾN THỨC</h1>
+        <h2>ĐÀO VÀNG</h2>
+        <p style="color: var(--primary-dark); font-weight: bold;">Bài 7: Tạo bài trình chiếu</p>
+        <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off">
+        <input type="text" id="player-class" placeholder="Nhập Lớp" autocomplete="off">
+        <button class="btn" id="btn-next-intro">Tiếp tục</button>
+        <p id="login-error" style="color: var(--danger); display: none; font-weight: bold;">Vui lòng nhập đầy đủ thông tin!</p>
+    </div>
+
+    <!-- Màn hình 2: Hướng dẫn -->
+    <div id="screen-intro" class="screen">
+        <h2>📜 HƯỚNG DẪN CÁCH CHƠI</h2>
+        <div style="text-align: left; max-width: 600px; margin: 0 auto; background: #FFF3E0; padding: 15px; border-radius: 10px; border: 2px solid var(--secondary);">
+            <p><strong>1. Trả lời câu hỏi:</strong> Mỗi câu đúng em nhận <b>1 lượt đào (⛏️)</b>.</p>
+            <p><strong>2. Đào vàng:</strong> Bấm vào ô đất để đào. Em có thể tìm thấy:</p>
+            <ul style="list-style-type: none; padding-left: 0; line-height: 1.8;">
+                <li>🪨 <b>Đá thường:</b> +5 điểm &nbsp; | &nbsp; 🪙 <b>Vàng:</b> +20 điểm &nbsp; | &nbsp; 💎 <b>Kim cương:</b> +50 điểm</li>
+                <li>📦 <b>Rương bí mật:</b> Nhận ngay 50 điểm!</li>
+                <li>🗿 <b>Tảng đá khổng lồ:</b> Phải giải bài tập khó (Ghép nối, Sắp xếp...) để phá đá và nhận thưởng.</li>
+                <li>⚡ <b>Cuốc vàng:</b> Thêm 1 lượt đào. &nbsp; | &nbsp; 🔦 <b>Đèn soi:</b> Xem trước 3 ô.</li>
+            </ul>
+            <p><strong>3. Chiến thắng:</strong> Em chỉ cần <b>trả lời đúng đủ 12 câu hỏi</b> để vượt qua thử thách!</p>
+        </div>
+        <button class="btn" id="btn-start-game" style="margin-top: 20px;">BẮT ĐẦU ĐÀO VÀNG</button>
+    </div>
+
+    <!-- Màn hình 3: Màn chơi chính -->
+    <div id="main-game">
+        <div id="top-bar">
+            <div class="stat-item" title="Người chơi"><span id="display-name">Guest</span></div>
+            <div class="stat-item" title="Tiến độ">🎯 <span id="stat-progress">0/12</span></div>
+            <div class="stat-item" title="Lượt đào"><span class="stat-icon svg-pickaxe"></span> <span id="stat-digs">0</span></div>
+            <div class="stat-item" title="Điểm số">⭐ <span id="stat-score">0</span></div>
+            <div id="controls">
+                <button class="icon-btn active" id="btn-toggle-sound" title="Bật/Tắt Âm thanh">🔊</button>
+            </div>
+        </div>
+        
+        <div id="mine-grid">
+            <!-- Grid generated by JS -->
+        </div>
+
+        <div id="action-bar">
+            <button class="btn btn-secondary" id="btn-get-question">📚 Trả Lời Câu Hỏi (+1 ⛏️)</button>
+        </div>
+    </div>
+
+    <!-- Màn hình Modal Câu hỏi -->
+    <div id="question-modal">
+        <div class="modal-content">
+            <h2 id="q-title" style="color: var(--primary-dark); margin-bottom: 10px;">Câu hỏi</h2>
+            <p id="q-text" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; color: var(--text-dark);">Nội dung câu hỏi...</p>
+            <div id="q-options" style="width: 100%;">
+                <!-- Options generated by JS -->
+            </div>
+            <p id="q-hint" style="color: var(--danger); margin-top: 15px; display: none; font-weight: bold; padding: 10px; background: #FFEBEE; border-radius: 8px; border-left: 5px solid var(--danger);">Gợi ý: ...</p>
+        </div>
+    </div>
+
+    <!-- Màn hình Modal Thông báo (Hint/Boss/Rương) -->
+    <div id="hint-modal">
+        <div class="modal-content">
+            <h2 id="h-title" style="color: var(--primary);">Thông báo</h2>
+            <p id="h-text" style="font-size: 1.2rem; margin: 20px 0;"></p>
+            <button class="btn" id="btn-close-hint">Đóng</button>
+        </div>
+    </div>
+
+    <!-- Màn hình Kết thúc -->
+    <div id="screen-end" class="screen">
+        <h1 id="end-title" style="color: var(--primary-dark);">🎉 HOÀN THÀNH NHIỆM VỤ! 🎉</h1>
+        <h2 id="end-player-name">Tên người chơi</h2>
+        <div style="text-align: left; background: #FCE4EC; padding: 20px; border-radius: 15px; border: 2px solid var(--primary); margin-bottom: 20px; width: 100%; max-width: 400px; font-size: 1.1rem;">
+            <p>🎯 <b>Tổng điểm:</b> <span id="end-score" style="color: var(--danger); font-size: 1.3rem; font-weight: bold;">0</span></p>
+            <hr style="border: 1px solid #F8BBD0; margin: 10px 0;">
+            <p>⛏️ <b>Số ô đã đào:</b> <span id="end-dug">0</span></p>
+            <p>🪙 <b>Vàng thu được:</b> <span id="end-gold">0</span></p>
+            <p>💎 <b>Kim cương thu được:</b> <span id="end-diamonds">0</span></p>
+            <p>✅ <b>Trả lời đúng:</b> <span id="end-correct" style="color: #388E3C; font-weight: bold;">0</span></p>
+            <p>❌ <b>Trả lời sai:</b> <span id="end-wrong" style="color: #D32F2F; font-weight: bold;">0</span></p>
+        </div>
+        <div id="end-review" style="color: var(--danger); font-weight: bold; margin-bottom: 15px; font-size: 1.2rem; text-align: center; padding: 0 10px;">
+            <!-- Review topics injected here -->
+        </div>
+        <button class="btn btn-secondary" id="btn-restart">CHƠI LẠI</button>
+    </div>
+
+</div>
+
+<script>
+    // Dữ liệu bám sát SGK Tin 4 Bài 7, hỗ trợ nhiều dạng câu hỏi
+    const questionBank = [
+        { type: 'mcq', q: 'Phần mềm nào sau đây hỗ trợ gõ tiếng Việt?', options: ['Paint', 'Unikey', 'Word', 'PowerPoint'], a: 'Unikey', hint: 'Xem trang 30: Unikey, Vietkey, EVkey là các phần mềm hỗ trợ gõ tiếng Việt.' },
+        { type: 'mcq', q: 'Có hai kiểu gõ tiếng Việt phổ biến là gì?', options: ['VNI và Telex', 'VNI và Unicode', 'Telex và ABC', 'Unicode và TCVN3'], a: 'VNI và Telex', hint: 'Xem trang 30, mục 1: "Có hai kiểu gõ tiếng Việt phổ biến là Telex và VNI"' },
+        { type: 'fill', q: 'Điền từ: Để gõ chữ hoa, em nhấn giữ phím [...] đồng thời gõ phím chữ.', options: ['Shift', 'Ctrl', 'Alt', 'Enter'], a: 'Shift', hint: 'Xem trang 31: "Để gõ chữ hoa, em nhấn giữ phím Shift..."' },
+        { type: 'fill', q: 'Khi gõ dấu thanh tiếng Việt, em có thể gõ phím dấu thanh ở [...] của từ.', options: ['đầu', 'giữa', 'cuối', 'bất kì vị trí nào'], a: 'cuối', hint: 'Xem trang 31: "Khi gõ dấu thanh tiếng Việt, em có thể gõ phím dấu thanh ở cuối từ."' },
+        { type: 'tf', q: 'Để gõ được văn bản tiếng Việt trên máy tính, KHÔNG cần cài đặt phần mềm hỗ trợ nào cả.', a: false, hint: 'Sai. SGK trang 30: Để gõ được tiếng Việt trên máy tính, cần có phần mềm hỗ trợ.' },
+        { type: 'tf', q: 'Biểu tượng chữ V của phần mềm Unikey ở góc màn hình có nghĩa là đang ở chế độ gõ tiếng Việt.', a: true, hint: 'Đúng. Xem Lưu ý trang 32.' },
+        { type: 'sort', q: 'Sắp xếp các bước để lưu tệp trình chiếu (Chạm theo thứ tự 1-2-3-4):', 
+          items: ['Gõ tên tệp', 'Chọn lệnh Save trong File', 'Nháy chuột vào nút Save để lưu', 'Chọn đến thư mục'], 
+          a: ['Chọn lệnh Save trong File', 'Chọn đến thư mục', 'Gõ tên tệp', 'Nháy chuột vào nút Save để lưu'], 
+          hint: '1. Chọn Save trong File -> 2. Chọn thư mục -> 3. Gõ tên tệp -> 4. Nháy nút Save.' },
+        { type: 'match', q: 'Ghép nối phím gõ với dấu tương ứng (Kiểu Telex):', 
+          left: ['Phím s', 'Phím f', 'Phím r', 'Phím j'], 
+          right: ['Dấu huyền', 'Dấu nặng', 'Dấu hỏi', 'Dấu sắc'], 
+          a: { 'Phím s': 'Dấu sắc', 'Phím f': 'Dấu huyền', 'Phím r': 'Dấu hỏi', 'Phím j': 'Dấu nặng' }, 
+          hint: 'Bảng 2 trang 31: S-Sắc, F-Huyền, R-Hỏi, J-Nặng.' },
+        { type: 'match', q: 'Ghép nối kí tự gõ với chữ tương ứng (Kiểu Telex):', 
+          left: ['aa', 'oo', 'ee', 'dd', 'aw'], 
+          right: ['đ', 'ă', 'ê', 'ô', 'â'], 
+          a: { 'aa': 'â', 'oo': 'ô', 'ee': 'ê', 'dd': 'đ', 'aw': 'ă' }, 
+          hint: 'Bảng 1 trang 31: aa->â, oo->ô, ee->ê, dd->đ, aw->ă.' },
+        { type: 'mcq', q: 'Để có từ "đi chơi", em gõ theo kiểu Telex như thế nào?', options: ['di choi', 'ddi chowi', 'd9i cho7i', 'ddi choi'], a: 'ddi chowi', hint: 'Xem Ví dụ trang 31: đ->dd, i, ch, ơ->ow, i = ddi chowi.' },
+        { type: 'fill', q: 'Theo kiểu Telex, để gõ chữ "ư" em gõ chữ u và chữ [...]', options: ['a', 'w', 'e', 'o'], a: 'w', hint: 'Xem Bảng 1 trang 31: ư gõ uw.' },
+        { type: 'tf', q: 'Theo kiểu VNI, để gõ dấu sắc em gõ phím số 2.', a: false, hint: 'Sai. Bảng 3 trang 31: Kiểu VNI dấu sắc gõ phím 1 (phím 2 là dấu huyền).' },
+        { type: 'mcq', q: 'Để có từ "quê hương" kiểu Telex, em gõ:', options: ['quee huong', 'quee huwowng', 'que huwowng', 'qwee huowng'], a: 'quee huwowng', hint: 'quê -> quee, hương -> huwowng.' },
+        { type: 'fill', q: 'Theo kiểu VNI, để gõ chữ "ê" em gõ chữ e và số [...]', options: ['1', '6', '7', '8'], a: '6', hint: 'Xem Bảng 3 trang 31: ê gõ e6.' }
+    ];
+
+    // State Variables
+    let state = {
+        player: { name: '', class: '' },
+        score: 0,
+        digs: 0,
+        totalDug: 0,
+        gold: 0,
+        diamonds: 0,
+        correct: 0,
+        wrong: 0,
+        grid: [],
+        soundEnabled: true,
+        currentQuestion: null,
+        unaskedQuestions: [],
+        pendingAction: null,
+        pendingRockPos: null
+    };
+
+    // DOM Elements
+    const els = {
+        screenLogin: document.getElementById('screen-login'),
+        screenIntro: document.getElementById('screen-intro'),
+        mainGame: document.getElementById('main-game'),
+        screenEnd: document.getElementById('screen-end'),
+        pName: document.getElementById('player-name'),
+        pClass: document.getElementById('player-class'),
+        btnNextIntro: document.getElementById('btn-next-intro'),
+        loginError: document.getElementById('login-error'),
+        btnStartGame: document.getElementById('btn-start-game'),
+        dispName: document.getElementById('display-name'),
+        statProgress: document.getElementById('stat-progress'),
+        statDigs: document.getElementById('stat-digs'),
+        statScore: document.getElementById('stat-score'),
+        btnSound: document.getElementById('btn-toggle-sound'),
+        mineGrid: document.getElementById('mine-grid'),
+        btnGetQ: document.getElementById('btn-get-question'),
+        qModal: document.getElementById('question-modal'),
+        qTitle: document.getElementById('q-title'),
+        qText: document.getElementById('q-text'),
+        qOptions: document.getElementById('q-options'),
+        qHint: document.getElementById('q-hint'),
+        hModal: document.getElementById('hint-modal'),
+        hTitle: document.getElementById('h-title'),
+        hText: document.getElementById('h-text'),
+        btnCloseHint: document.getElementById('btn-close-hint'),
+        endScore: document.getElementById('end-score'),
+        endDug: document.getElementById('end-dug'),
+        endGold: document.getElementById('end-gold'),
+        endDiamonds: document.getElementById('end-diamonds'),
+        endCorrect: document.getElementById('end-correct'),
+        endWrong: document.getElementById('end-wrong'),
+        endReview: document.getElementById('end-review'),
+        endPlayerName: document.getElementById('end-player-name'),
+        btnRestart: document.getElementById('btn-restart')
+    };
+
+    const audioEngine = {
+        ctx: null,
+        bgmOsc1: null, bgmOsc2: null, bgmGain: null,
+        init: function() {
+            if (!this.ctx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+            }
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+        },
+        playTone: function(freq, type, duration, vol, detune = 0) {
+            if (!state.soundEnabled || !this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            osc.detune.setValueAtTime(detune, this.ctx.currentTime);
+            
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+        },
+        playBGM: function() {
+            if (!state.soundEnabled || !this.ctx) return;
+            this.stopBGM();
+            this.bgmGain = this.ctx.createGain();
+            this.bgmGain.gain.value = 0.05;
+            this.bgmGain.connect(this.ctx.destination);
+
+            const playNote = (freq, time, dur) => {
+                const osc = this.ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                osc.connect(this.bgmGain);
+                osc.start(time);
+                osc.stop(time + dur);
+                if(!this.bgmOsc1) this.bgmOsc1 = osc;
+                else this.bgmOsc2 = osc;
+            };
+
+            let time = this.ctx.currentTime;
+            // Vui tươi hơn
+            const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+            const loopDur = 3; 
+            
+            this.bgmInterval = setInterval(() => {
+                if(!state.soundEnabled || !this.ctx) { clearInterval(this.bgmInterval); return; }
+                let t = this.ctx.currentTime;
+                playNote(notes[0], t, 0.4);
+                playNote(notes[1], t+0.5, 0.4);
+                playNote(notes[2], t+1.0, 0.4);
+                playNote(notes[3], t+1.5, 0.4);
+                playNote(notes[4], t+2.0, 0.4);
+                playNote(notes[5], t+2.5, 0.4);
+            }, loopDur * 1000);
+        },
+        stopBGM: function() {
+            if (this.bgmInterval) clearInterval(this.bgmInterval);
+            if (this.bgmOsc1) { try{this.bgmOsc1.stop();}catch(e){} }
+            if (this.bgmOsc2) { try{this.bgmOsc2.stop();}catch(e){} }
+            this.bgmOsc1 = null; this.bgmOsc2 = null;
+        },
+        sfxClick: function() { this.playTone(600, 'sine', 0.1, 0.1); },
+        sfxCorrect: function() { 
+            this.playTone(523.25, 'sine', 0.1, 0.2); // C5
+            setTimeout(() => this.playTone(659.25, 'sine', 0.2, 0.2), 100); // E5
+        },
+        sfxWrong: function() { this.playTone(150, 'sawtooth', 0.3, 0.2); },
+        sfxDig: function() { 
+            if(!state.soundEnabled || !this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, this.ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(); osc.stop(this.ctx.currentTime + 0.1);
+        },
+        sfxItem: function() {
+            this.playTone(880, 'sine', 0.1, 0.1);
+            setTimeout(() => this.playTone(1046.50, 'sine', 0.2, 0.1), 100);
+        },
+        sfxWin: function() {
+            let t = 0;
+            [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach(freq => {
+                setTimeout(() => this.playTone(freq, 'square', 0.3, 0.2), t);
+                t += 150;
+            });
+        }
+    };
+
+    function showFireworks(x, y) {
+        const emojis = ['✨', '⭐', '💖', '🎉'];
+        for (let i = 0; i < 15; i++) {
+            const fw = document.createElement('div');
+            fw.style.position = 'absolute';
+            fw.style.left = x + 'px';
+            fw.style.top = y + 'px';
+            fw.style.fontSize = (15 + Math.random() * 20) + 'px';
+            fw.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            fw.style.pointerEvents = 'none';
+            fw.style.zIndex = 9999;
+            document.body.appendChild(fw);
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = 50 + Math.random() * 100;
+            const tx = Math.cos(angle) * velocity;
+            const ty = Math.sin(angle) * velocity;
+
+            fw.animate([
+                { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                { transform: `translate(${tx}px, ${ty}px) scale(0)`, opacity: 0 }
+            ], { duration: 600 + Math.random() * 400, easing: 'ease-out' }).onfinish = () => fw.remove();
+        }
+    }
+
+    function initUnaskedQuestions() {
+        state.unaskedQuestions = [...questionBank];
+        // Shuffle
+        for (let i = state.unaskedQuestions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [state.unaskedQuestions[i], state.unaskedQuestions[j]] = [state.unaskedQuestions[j], state.unaskedQuestions[i]];
+        }
+    }
+
+    function generateMine() {
+        let items = [];
+        const total = 12; // 4x3 lưới cố định
+        
+        // Phân bổ phần thưởng
+        items.push({ type: 'flashlight', name: 'Đèn soi', icon: 'svg-flashlight', desc: 'Nhìn trộm 3 ô xung quanh!' });
+        items.push({ type: 'chest', name: 'Rương Bí Mật', icon: 'svg-chest', desc: 'Nhận 50 điểm miễn phí!' });
+        items.push({ type: 'giant_rock', name: 'Tảng Đá Khổng Lồ', icon: 'svg-giant-rock', desc: 'Thử thách khó, phần thưởng lớn!' });
+        items.push({ type: 'diamond', name: 'Kim cương', icon: 'svg-diamond', pts: 50 });
+        items.push({ type: 'diamond', name: 'Kim cương', icon: 'svg-diamond', pts: 50 });
+        items.push({ type: 'pickaxe', name: 'Cuốc vàng', icon: 'svg-pickaxe', desc: 'Thêm 1 lượt đào miễn phí!' });
+
+        // Điền đầy bằng Đá và Vàng
+        while (items.length < total) {
+            let r = Math.random();
+            if (r < 0.4) {
+                items.push({ type: 'gold', name: 'Vàng', icon: 'svg-gold', pts: 20 });
+            } else {
+                items.push({ type: 'rock', name: 'Đá', icon: 'svg-rock', pts: 5 });
+            }
+        }
+
+        // Trộn mảng
+        for (let i = items.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [items[i], items[j]] = [items[j], items[i]];
+        }
+
+        return items.map(item => ({ ...item, status: 'hidden' }));
+    }
+
+    function renderGrid() {
+        els.mineGrid.innerHTML = '';
+        
+        state.grid.forEach((block, index) => {
+            const div = document.createElement('div');
+            div.className = `block ${block.status === 'dug' ? 'dug' : ''} ${block.status === 'revealed' ? 'revealed-flashlight' : ''}`;
+            div.dataset.index = index;
+            
+            const iconDiv = document.createElement('div');
+            iconDiv.className = `item-svg ${block.icon}`;
+            div.appendChild(iconDiv);
+
+            div.addEventListener('click', (e) => handleBlockClick(index, e));
+            els.mineGrid.appendChild(div);
+        });
+    }
+
+    function updateStats() {
+        els.statDigs.textContent = state.digs;
+        els.statScore.textContent = state.score;
+        els.statProgress.textContent = `${state.correct}/12`;
+    }
+
+    function createFloatingText(x, y, text, color = 'white') {
+        const el = document.createElement('div');
+        el.className = 'floating-text';
+        el.textContent = text;
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        if (color) el.style.color = color;
+        els.mainGame.appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
+
+    function createPickaxeAnim(x, y) {
+        const el = document.createElement('div');
+        el.className = 'pickaxe-anim';
+        el.style.left = `${x - 25}px`;
+        el.style.top = `${y - 50}px`;
+        els.mainGame.appendChild(el);
+        setTimeout(() => el.remove(), 250);
+    }
+
+    function handleBlockClick(index, event) {
+        const block = state.grid[index];
+        
+        if (block.status === 'dug') return; 
+        if (state.digs <= 0) {
+            showHint('Hết lượt đào!', 'Hãy bấm "Trả Lời Câu Hỏi" để nhận thêm lượt đào.');
+            audioEngine.sfxWrong();
+            return;
+        }
+
+        state.digs--;
+        state.totalDug++;
+        block.status = 'dug';
+        
+        const rect = event.target.getBoundingClientRect();
+        const containerRect = els.mainGame.getBoundingClientRect();
+        const x = rect.left + rect.width / 2 - containerRect.left;
+        const y = rect.top + rect.height / 2 - containerRect.top;
+
+        createPickaxeAnim(x, y);
+        audioEngine.sfxDig();
+        renderGrid();
+        updateStats();
+
+        setTimeout(() => {
+            processItem(block, x, y);
+
+            // Tự động làm mới mỏ nếu đã đào hết toàn bộ ô trên màn hình
+            if (state.grid.every(b => b.status === 'dug')) {
+                setTimeout(() => {
+                    showHint('Đã đào hết!', 'Khu mỏ đã được làm mới để bạn tiếp tục tìm kiếm.');
+                    state.grid = generateMine();
+                    renderGrid();
+                }, 1500);
+            }
+        }, 300);
+    }
+
+    function processItem(block, x, y) {
+        if (block.pts) {
+            state.score += block.pts;
+            createFloatingText(x, y, `+${block.pts}`, block.type === 'gold' ? '#FFC107' : (block.type === 'diamond' ? '#00E5FF' : '#FFF'));
+            if(block.type === 'gold') state.gold++;
+            if(block.type === 'diamond') state.diamonds++;
+            audioEngine.sfxItem();
+        } else if (block.type === 'pickaxe') {
+            state.digs++;
+            createFloatingText(x, y, `+1 ⛏️`, '#76FF03');
+            audioEngine.sfxItem();
+            showHint('May mắn!', 'Bạn tìm thấy Cuốc vàng, được cộng 1 lượt đào!');
+        } else if (block.type === 'flashlight') {
+            audioEngine.sfxItem();
+            useFlashlight(block);
+        } else if (block.type === 'chest') {
+            audioEngine.sfxItem();
+            state.score += 50;
+            createFloatingText(x, y, `+50`, '#FFC107');
+            showHint('Rương Bí Mật!', 'Bạn mở rương và nhận được 50 điểm miễn phí!');
+        } else if (block.type === 'giant_rock') {
+            audioEngine.sfxItem();
+            triggerGiantRock(block, x, y);
+        }
+        updateStats();
+    }
+
+    function triggerGiantRock(block, x, y) {
+        showHint('Tảng Đá Khổng Lồ!', 'Bạn phải trả lời đúng một thử thách khó để phá vỡ nó và nhận thưởng (50đ + 1 cuốc)!');
+        els.btnCloseHint.onclick = () => {
+            els.hModal.style.display = 'none';
+            state.pendingAction = 'giant_rock_bonus';
+            state.pendingRockPos = {x, y};
+            
+            let hardQuestions = state.unaskedQuestions.filter(q => q.type === 'sort' || q.type === 'match');
+            if(hardQuestions.length === 0) hardQuestions = questionBank.filter(q => q.type === 'sort' || q.type === 'match');
+            
+            const qData = hardQuestions[Math.floor(Math.random() * hardQuestions.length)];
+            state.unaskedQuestions = state.unaskedQuestions.filter(q => q !== qData); // Remove to avoid repeating immediately
+            
+            state.currentQuestion = qData;
+            renderQuestionModal(qData, 'THỬ THÁCH TẢNG ĐÁ 🪨');
+            
+            els.btnCloseHint.onclick = () => { els.hModal.style.display = 'none'; audioEngine.sfxClick(); };
+        };
+    }
+
+    function useFlashlight(centerBlock) {
+        const centerIdx = state.grid.indexOf(centerBlock);
+        let unDug = [];
+        state.grid.forEach((b, i) => { if(b.status === 'hidden' && i !== centerIdx) unDug.push(i); });
+        
+        unDug.sort(() => 0.5 - Math.random());
+        let toReveal = unDug.slice(0, 3);
+        
+        toReveal.forEach(idx => state.grid[idx].status = 'revealed');
+        renderGrid();
+        showHint('Đèn soi hoạt động', `Bạn đã soi thấy ${toReveal.length} ô xung quanh! Các ô được viền vàng.`);
+    }
+
+    let sortSelected = [];
+    let matchPairs = [];
+    let selectedLeftMatch = null;
+
+    function renderQuestionModal(qData, customTitle) {
+        audioEngine.sfxClick();
+        els.qTitle.textContent = customTitle || 'KIẾM LƯỢT ĐÀO ⛏️';
+        els.qTitle.style.color = 'var(--primary-dark)';
+        els.qText.textContent = qData.q;
+        els.qHint.style.display = 'none';
+        els.qOptions.innerHTML = '';
+        els.qOptions.style.display = 'flex';
+        els.qOptions.style.flexDirection = 'column';
+        els.qOptions.style.textAlign = 'left';
+
+        const type = qData.type;
+
+        if (type === 'mcq' || type === 'fill' || type === 'tf') {
+            let opts = type === 'tf' ? ['ĐÚNG', 'SAI'] : qData.options;
+            if(type !== 'tf') opts = [...opts].sort(() => 0.5 - Math.random());
+            
+            opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.style.width = '100%';
+                btn.style.marginBottom = '10px';
+                btn.textContent = opt;
+                btn.onclick = () => {
+                    let isCorrect = false;
+                    if(type === 'tf') isCorrect = (opt === 'ĐÚNG') === qData.a;
+                    else isCorrect = (opt === qData.a);
+                    handleAnswerResult(isCorrect);
+                };
+                els.qOptions.appendChild(btn);
+            });
+        } else if (type === 'sort') {
+            sortSelected = [];
+            let pool = [...qData.items].sort(() => 0.5 - Math.random());
+            
+            const container = document.createElement('div');
+            container.innerHTML = `
+                <div id="sort-pool" style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;"></div>
+                <div style="font-weight:bold; margin-bottom:5px; color:var(--primary-dark);">Thứ tự của bạn:</div>
+                <div id="sort-selected" style="display:flex; flex-direction:column; gap:8px; min-height:80px; border:2px dashed var(--primary); padding:10px; border-radius:8px;"></div>
+                <button class="btn btn-secondary" id="btn-check-sort" style="margin-top:15px; width:100%;">Kiểm Tra</button>
+            `;
+            els.qOptions.appendChild(container);
+
+            const renderSort = () => {
+                document.getElementById('sort-pool').innerHTML = '';
+                document.getElementById('sort-selected').innerHTML = '';
+                pool.forEach((item, i) => {
+                    let b = document.createElement('button');
+                    b.className = 'option-btn'; b.style.padding = '10px'; b.textContent = item;
+                    b.onclick = () => { sortSelected.push(item); pool.splice(i, 1); renderSort(); audioEngine.sfxClick(); };
+                    document.getElementById('sort-pool').appendChild(b);
+                });
+                sortSelected.forEach((item, i) => {
+                    let b = document.createElement('div');
+                    b.className = 'option-btn'; b.style.padding = '10px'; b.style.background = '#FCE4EC'; b.style.borderColor = 'var(--primary)';
+                    b.innerHTML = `<b>${i+1}.</b> ${item}`;
+                    b.onclick = () => { pool.push(item); sortSelected.splice(i, 1); renderSort(); audioEngine.sfxClick(); };
+                    document.getElementById('sort-selected').appendChild(b);
+                });
+            };
+            renderSort();
+            document.getElementById('btn-check-sort').onclick = () => {
+                if (sortSelected.length !== qData.a.length) {
+                    els.qHint.textContent = 'Hãy sắp xếp tất cả các mục!'; els.qHint.style.display = 'block';
+                    return;
+                }
+                let isCorrect = JSON.stringify(sortSelected) === JSON.stringify(qData.a);
+                handleAnswerResult(isCorrect);
+            };
+        } else if (type === 'match') {
+            matchPairs = [];
+            selectedLeftMatch = null;
+            let leftPool = [...qData.left].sort(() => 0.5 - Math.random());
+            let rightPool = [...qData.right].sort(() => 0.5 - Math.random());
+
+            const container = document.createElement('div');
+            container.innerHTML = `
+                <div style="font-size:0.95rem; margin-bottom:10px; color:#555; font-style:italic;">* Chạm một mục bên trái, sau đó chạm mục bên phải để ghép nối.</div>
+                <div style="display:flex; justify-content:space-between; gap:10px;">
+                    <div id="match-left" style="flex:1; display:flex; flex-direction:column; gap:8px;"></div>
+                    <div id="match-right" style="flex:1; display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
+                <div style="margin-top:15px; font-weight:bold; color:var(--primary-dark);">Các cặp đã ghép:</div>
+                <div id="match-results" style="display:flex; flex-direction:column; gap:5px; margin-top:5px; min-height:60px; border:2px dashed var(--primary); padding:8px; border-radius:8px; background:#fff;"></div>
+                <button class="btn btn-secondary" id="btn-check-match" style="margin-top:15px; width:100%;">Kiểm Tra</button>
+            `;
+            els.qOptions.appendChild(container);
+
+            const renderMatch = () => {
+                document.getElementById('match-left').innerHTML = '';
+                document.getElementById('match-right').innerHTML = '';
+                document.getElementById('match-results').innerHTML = '';
+
+                leftPool.forEach(item => {
+                    let b = document.createElement('button');
+                    b.className = 'option-btn' + (selectedLeftMatch === item ? ' active-match' : '');
+                    b.style.padding = '10px'; b.textContent = item;
+                    b.onclick = () => { selectedLeftMatch = item; renderMatch(); audioEngine.sfxClick(); };
+                    document.getElementById('match-left').appendChild(b);
+                });
+
+                rightPool.forEach(item => {
+                    let b = document.createElement('button');
+                    b.className = 'option-btn'; b.style.padding = '10px'; b.textContent = item;
+                    b.onclick = () => {
+                        audioEngine.sfxClick();
+                        if (selectedLeftMatch) {
+                            matchPairs.push({l: selectedLeftMatch, r: item});
+                            leftPool = leftPool.filter(x => x !== selectedLeftMatch);
+                            rightPool = rightPool.filter(x => x !== item);
+                            selectedLeftMatch = null;
+                            renderMatch();
+                        } else {
+                            els.qHint.textContent = 'Hãy chạm chọn một mục bên trái trước!'; els.qHint.style.display = 'block';
+                        }
+                    };
+                    document.getElementById('match-right').appendChild(b);
+                });
+
+                matchPairs.forEach((pair, i) => {
+                    let div = document.createElement('div');
+                    div.style.cssText = "background:#FCE4EC; border:1px solid var(--primary); padding:8px 10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; font-size:1rem;";
+                    div.innerHTML = `<span><b>${pair.l}</b> ➡️ ${pair.r}</span> <span style="color:var(--danger); cursor:pointer; font-weight:bold; font-size:1.2rem; padding:0 10px;">❌</span>`;
+                    div.querySelector('span:last-child').onclick = () => {
+                        leftPool.push(pair.l); rightPool.push(pair.r);
+                        matchPairs.splice(i, 1);
+                        renderMatch();
+                        audioEngine.sfxClick();
+                    };
+                    document.getElementById('match-results').appendChild(div);
+                });
+            };
+            renderMatch();
+            document.getElementById('btn-check-match').onclick = () => {
+                if (leftPool.length > 0) {
+                    els.qHint.textContent = 'Hãy ghép nối tất cả các mục!'; els.qHint.style.display = 'block';
+                    return;
+                }
+                let isCorrect = true;
+                matchPairs.forEach(p => {
+                    if (qData.a[p.l] !== p.r) isCorrect = false;
+                });
+                handleAnswerResult(isCorrect);
+            };
+        }
+
+        els.qModal.style.display = 'flex';
+    }
+
+    function showQuestion() {
+        if (state.unaskedQuestions.length === 0) initUnaskedQuestions();
+        
+        let normalQIdx = state.unaskedQuestions.findIndex(q => q.type === 'mcq' || q.type === 'fill' || q.type === 'tf');
+        if(normalQIdx === -1) normalQIdx = 0; 
+        
+        const qData = state.unaskedQuestions.splice(normalQIdx, 1)[0];
+        state.currentQuestion = qData;
+        state.pendingAction = 'get_dig';
+        
+        renderQuestionModal(qData, 'KIẾM LƯỢT ĐÀO ⛏️');
+    }
+
+    function handleAnswerResult(isCorrect) {
+        if (isCorrect) {
+            audioEngine.sfxCorrect();
+            state.correct++;
+            
+            const modalRect = els.qModal.querySelector('.modal-content').getBoundingClientRect();
+            showFireworks(modalRect.left + modalRect.width / 2, modalRect.top + modalRect.height / 2);
+
+            setTimeout(() => {
+                els.qModal.style.display = 'none';
+                
+                if (state.pendingAction === 'giant_rock_bonus') {
+                    state.score += 50;
+                    state.digs++;
+                    createFloatingText(state.pendingRockPos.x, state.pendingRockPos.y, `+50 đ, +1 ⛏️`, '#FFC107');
+                    showHint('Xuất sắc!', 'Tảng Đá Khổng Lồ đã vỡ vụn! Bạn nhận 50 điểm và 1 cuốc vàng.');
+                } else { // get_dig
+                    state.digs++;
+                    const btnRect = els.btnGetQ.getBoundingClientRect();
+                    createFloatingText(btnRect.left + 50, btnRect.top - 20, '+1 ⛏️', '#E91E63');
+                }
+                state.pendingAction = null;
+                updateStats();
+
+                if (state.correct >= 12) {
+                    setTimeout(alertWin, 1000);
+                }
+            }, 800); 
+        } else {
+            audioEngine.sfxWrong();
+            state.wrong++;
+            els.qHint.textContent = `CHƯA CHÍNH XÁC – Gợi ý: ${state.currentQuestion.hint}`;
+            els.qHint.style.display = 'block';
+            
+            if(state.pendingAction === 'giant_rock_bonus') {
+                setTimeout(() => {
+                    els.qModal.style.display = 'none';
+                    showHint('Rất tiếc!', 'Bạn giải sai rồi. Tảng đá vẫn trơ trơ và bạn mất 1 lượt đào.');
+                    state.pendingAction = null;
+                }, 4000);
+            }
+        }
+    }
+
+    function showHint(title, text) {
+        els.hTitle.textContent = title;
+        els.hText.textContent = text;
+        els.hModal.style.display = 'flex';
+        els.btnCloseHint.onclick = () => { els.hModal.style.display = 'none'; audioEngine.sfxClick(); };
+    }
+
+    function alertWin() {
+        audioEngine.stopBGM();
+        switchScreen(els.screenEnd);
+        els.endPlayerName.textContent = `${state.player.name} - Lớp ${state.player.class}`;
+        els.endScore.textContent = state.score;
+        els.endDug.textContent = state.totalDug;
+        els.endGold.textContent = state.gold;
+        els.endDiamonds.textContent = state.diamonds;
+        els.endCorrect.textContent = state.correct;
+        els.endWrong.textContent = state.wrong;
+
+        let reviewHTML = '';
+        if (state.wrong > 3) {
+            reviewHTML = '⚠️ CẦN ÔN LẠI: Hãy xem kĩ lại Bảng 1, Bảng 2 về quy tắc gõ phím Telex trong Bài 7 (Trang 30-31).';
+        } else if (state.correct >= 12) {
+            reviewHTML = '🌟 XUẤT SẮC: Bạn đã hoàn thành nhiệm vụ và nắm vững kiến thức bài 7!';
+            els.endReview.style.color = '#388E3C';
+        }
+        els.endReview.innerHTML = reviewHTML;
+        
+        for(let i=0; i<30; i++) {
+            setTimeout(() => {
+                showFireworks(Math.random()*window.innerWidth, Math.random()*window.innerHeight);
+            }, i * 150);
+        }
+        audioEngine.sfxWin();
+    }
+
+    function switchScreen(screenEl) {
+        document.querySelectorAll('.screen, #main-game').forEach(s => s.classList.remove('active'));
+        screenEl.classList.add('active');
+    }
+
+    function initGame() {
+        state.score = 0; state.digs = 0; state.totalDug = 0;
+        state.gold = 0; state.diamonds = 0; state.correct = 0; state.wrong = 0;
+        initUnaskedQuestions();
+        loadMine();
+        audioEngine.playBGM();
+        switchScreen(els.mainGame);
+        els.dispName.textContent = state.player.name;
+    }
+
+    function loadMine() {
+        state.grid = generateMine();
+        renderGrid();
+        updateStats();
+        showHint('Sẵn sàng!', 'Hãy trả lời đủ 12 câu hỏi để chiến thắng!');
+    }
+
+    // Event Listeners
+    els.btnNextIntro.addEventListener('click', () => {
+        const name = els.pName.value.trim();
+        const cls = els.pClass.value.trim();
+        if (!name || !cls) {
+            els.loginError.style.display = 'block';
+            return;
+        }
+        els.loginError.style.display = 'none';
+        state.player.name = name;
+        state.player.class = cls;
+        audioEngine.init(); 
+        audioEngine.sfxClick();
+        switchScreen(els.screenIntro);
+    });
+
+    els.btnStartGame.addEventListener('click', () => {
+        audioEngine.sfxClick();
+        initGame();
+    });
+
+    els.btnGetQ.addEventListener('click', () => { 
+        audioEngine.sfxClick(); 
+        if (state.unaskedQuestions.length === 0) {
+            initUnaskedQuestions();
+        }
+        showQuestion(); 
+    });
+
+    els.btnSound.addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        if (state.soundEnabled) {
+            els.btnSound.classList.add('active');
+            els.btnSound.textContent = '🔊';
+            audioEngine.playBGM();
+        } else {
+            els.btnSound.classList.remove('active');
+            els.btnSound.textContent = '🔇';
+            audioEngine.stopBGM();
+        }
+    });
+
+    els.btnRestart.addEventListener('click', () => {
+        audioEngine.sfxClick();
+        switchScreen(els.screenLogin);
+        els.pName.value = '';
+        els.pClass.value = '';
+    });
+
+</script>
+</body>
+</html>

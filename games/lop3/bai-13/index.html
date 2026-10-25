@@ -1,0 +1,898 @@
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trò Chơi Đập Túi Mù - Tin Học Lớp 3 Bài 13</title>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Font Quicksand -->
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- FontAwesome for Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<!-- Canvas Confetti for winning celebration -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #ffe4e6 0%, #fbcfe8 50%, #f472b6 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-4px, 0px) rotate(-4deg); }
+            40% { transform: translate(2px, -2px) rotate(3deg); }
+            60% { transform: translate(-4px, 2px) rotate(0deg); }
+            80% { transform: translate(2px, -2px) rotate(2deg); }
+            100% { transform: translate(0px, 0px) rotate(0deg); }
+        }
+        @keyframes pulse-zoom {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .animate-shake {
+            animation: shake 0.35s ease-in-out infinite;
+        }
+        .animate-explode {
+            animation: pulse-zoom 0.5s ease-out forwards;
+        }
+        .bag-card {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .bag-card:hover:not(.opened) {
+            transform: translateY(-8px) scale(1.03);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f472b6;
+            border-radius: 10px;
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.relative{position:relative}.inset-0{inset:0px}.z-50{z-index:50}.mb-1{margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.mb-4{margin-bottom:1rem}.mb-5{margin-bottom:1.25rem}.mb-6{margin-bottom:1.5rem}.ml-2{margin-left:0.5rem}.mr-1{margin-right:0.25rem}.mr-2{margin-right:0.5rem}.mt-2{margin-top:0.5rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-6{height:1.5rem}.max-h-\[90vh\]{max-height:90vh}.w-full{width:100%}.w-px{width:1px}.max-w-5xl{max-width:64rem}.max-w-lg{max-width:32rem}.max-w-xl{max-width:36rem}.flex-1{flex:1 1 0%}.transform{transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@keyframes bounce{0%, 100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)}50%{transform:none;animation-timing-function:cubic-bezier(0,0,0.2,1)}}.animate-bounce{animation:bounce 1s infinite}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}.justify-start{justify-content:flex-start}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-3 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.75rem * var(--tw-space-x-reverse));margin-left:calc(0.75rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.overflow-y-auto{overflow-y:auto}.rounded-2xl{border-radius:1rem}.rounded-3xl{border-radius:1.5rem}.rounded-full{border-radius:9999px}.rounded-xl{border-radius:0.75rem}.border-2{border-width:2px}.border-4{border-width:4px}.border-b-2{border-bottom-width:2px}.border-pink-100{--tw-border-opacity:1;border-color:rgb(252 231 243 / var(--tw-border-opacity, 1))}.border-pink-200{--tw-border-opacity:1;border-color:rgb(251 207 232 / var(--tw-border-opacity, 1))}.border-pink-300{--tw-border-opacity:1;border-color:rgb(249 168 212 / var(--tw-border-opacity, 1))}.border-pink-400{--tw-border-opacity:1;border-color:rgb(244 114 182 / var(--tw-border-opacity, 1))}.border-pink-500{--tw-border-opacity:1;border-color:rgb(236 72 153 / var(--tw-border-opacity, 1))}.bg-amber-100{--tw-bg-opacity:1;background-color:rgb(254 243 199 / var(--tw-bg-opacity, 1))}.bg-black\/60{background-color:rgb(0 0 0 / 0.6)}.bg-black\/70{background-color:rgb(0 0 0 / 0.7)}.bg-pink-100{--tw-bg-opacity:1;background-color:rgb(252 231 243 / var(--tw-bg-opacity, 1))}.bg-pink-300{--tw-bg-opacity:1;background-color:rgb(249 168 212 / var(--tw-bg-opacity, 1))}.bg-pink-50{--tw-bg-opacity:1;background-color:rgb(253 242 248 / var(--tw-bg-opacity, 1))}.bg-pink-500{--tw-bg-opacity:1;background-color:rgb(236 72 153 / var(--tw-bg-opacity, 1))}.bg-rose-100{--tw-bg-opacity:1;background-color:rgb(255 228 230 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/95{background-color:rgb(255 255 255 / 0.95)}.bg-gradient-to-r{background-image:linear-gradient(to right, var(--tw-gradient-stops))}.from-pink-500{--tw-gradient-from:#ec4899 var(--tw-gradient-from-position);--tw-gradient-to:rgb(236 72 153 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.to-rose-500{--tw-gradient-to:#f43f5e var(--tw-gradient-to-position)}.p-2{padding:0.5rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-3\.5{padding-top:0.875rem;padding-bottom:0.875rem}.pb-3{padding-bottom:0.75rem}.text-left{text-align:left}.text-center{text-align:center}.text-2xl{font-size:1.5rem;line-height:2rem}.text-5xl{font-size:3rem;line-height:1}.text-\[10px\]{font-size:10px}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-extrabold{font-weight:800}.font-medium{font-weight:500}.tracking-wide{letter-spacing:0.025em}.text-amber-700{--tw-text-opacity:1;color:rgb(180 83 9 / var(--tw-text-opacity, 1))}.text-emerald-600{--tw-text-opacity:1;color:rgb(5 150 105 / var(--tw-text-opacity, 1))}.text-pink-600{--tw-text-opacity:1;color:rgb(219 39 119 / var(--tw-text-opacity, 1))}.text-pink-700{--tw-text-opacity:1;color:rgb(190 24 93 / var(--tw-text-opacity, 1))}.text-rose-700{--tw-text-opacity:1;color:rgb(190 18 60 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow{--tw-shadow:0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 1px 3px 0 var(--tw-shadow-color), 0 1px 2px -1px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:bg-pink-200:hover{--tw-bg-opacity:1;background-color:rgb(251 207 232 / var(--tw-bg-opacity, 1))}.hover\:bg-pink-600:hover{--tw-bg-opacity:1;background-color:rgb(219 39 119 / var(--tw-bg-opacity, 1))}.hover\:bg-rose-200:hover{--tw-bg-opacity:1;background-color:rgb(254 205 211 / var(--tw-bg-opacity, 1))}.hover\:from-pink-600:hover{--tw-gradient-from:#db2777 var(--tw-gradient-from-position);--tw-gradient-to:rgb(219 39 119 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.hover\:to-rose-600:hover{--tw-gradient-to:#e11d48 var(--tw-gradient-to-position)}.hover\:underline:hover{-webkit-text-decoration-line:underline;text-decoration-line:underline}.focus\:border-pink-500:focus{--tw-border-opacity:1;border-color:rgb(236 72 153 / var(--tw-border-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.active\:scale-95:active{--tw-scale-x:.95;--tw-scale-y:.95;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@media (min-width: 640px){.sm\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.sm\:flex-row{flex-direction:row}.sm\:gap-4{gap:1rem}.sm\:p-4{padding:1rem}.sm\:p-6{padding:1.5rem}.sm\:p-8{padding:2rem}.sm\:py-4{padding-top:1rem;padding-bottom:1rem}.sm\:text-left{text-align:left}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-3xl{font-size:1.875rem;line-height:2.25rem}.sm\:text-6xl{font-size:3.75rem;line-height:1}.sm\:text-base{font-size:1rem;line-height:1.5rem}.sm\:text-lg{font-size:1.125rem;line-height:1.75rem}.sm\:text-sm{font-size:0.875rem;line-height:1.25rem}.sm\:text-xl{font-size:1.25rem;line-height:1.75rem}}@media (min-width: 768px){.md\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}}</style></head>
+<body class="text-slate-800 flex flex-col items-center justify-start p-3 sm:p-6">
+<header class="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-3xl shadow-xl p-4 mb-4 flex flex-col sm:flex-row items-center justify-between border-4 border-pink-300 gap-3">
+<div class="flex items-center space-x-3 text-center sm:text-left">
+<span class="bg-pink-500 text-white p-3 rounded-2xl shadow-md text-2xl animate-bounce">🖱️</span>
+<div>
+<h1 class="text-xl sm:text-2xl font-extrabold text-pink-600 tracking-wide">BÀI 13: LUYỆN TẬP SỬ DỤNG CHUỘT</h1>
+<p class="text-xs sm:text-sm font-bold text-slate-500">Trò Chơi Đập Túi Mù Khám Phá Tin Học 3</p>
+</div>
+</div>
+<div class="flex items-center space-x-3 flex-wrap justify-center">
+<!-- Background Music Toggle Button -->
+<button class="bg-pink-100 hover:bg-pink-200 text-pink-700 px-3 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition flex items-center space-x-2 border-2 border-pink-300 shadow-sm" id="bg-music-btn" onclick="toggleBackgroundMusic()">
+<i class="fa-solid fa-volume-xmark" id="music-icon"></i>
+<span id="music-text">Bật Nhạc Nền</span>
+</button>
+<div class="hidden items-center space-x-3 bg-pink-50 px-3 py-1.5 rounded-2xl border-2 border-pink-200" id="game-stats">
+<div class="text-center">
+<span class="text-[10px] text-slate-500 block">Lượt</span>
+<span class="font-extrabold text-pink-600 text-xs sm:text-sm" id="stat-turn-name">Đội 1</span>
+</div>
+<div class="h-6 w-px bg-pink-300"></div>
+<div class="text-center">
+<span class="text-[10px] text-slate-500 block">Điểm</span>
+<span class="font-extrabold text-emerald-600 text-base" id="stat-score">0</span>
+</div>
+<button class="bg-rose-100 hover:bg-rose-200 text-rose-700 p-2 rounded-xl text-xs font-bold transition ml-2" onclick="backToSetup()" title="Trang Chủ">
+<i class="fa-solid fa-house"></i>
+</button>
+</div>
+</div>
+</header>
+<div class="w-full max-w-xl bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border-4 border-pink-300 text-center" id="setup-screen">
+<div class="inline-block bg-pink-100 text-pink-600 px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold mb-3">
+            ✨ ÔN TẬP KIẾN THỨC BÀI 13 ✨
+        </div>
+<h2 class="text-2xl sm:text-3xl font-extrabold text-slate-700 mb-2">Nhập Thông Tin Người Chơi</h2>
+<p class="text-slate-500 mb-5 text-xs sm:text-sm">Chọn chế độ chơi và nhập tên các đội hoặc cá nhân tham gia ôn tập kỹ năng chuột!</p>
+<div class="mb-5 text-left">
+<label class="block font-bold text-slate-700 mb-2 text-sm">Chế độ chơi:</label>
+<div class="grid grid-cols-2 gap-3">
+<button class="p-3 rounded-2xl border-2 border-pink-500 bg-pink-500 text-white font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm" id="mode-solo-btn" onclick="setMode('solo')" type="button">
+<i class="fa-solid fa-user"></i> <span>Cá Nhân</span>
+</button>
+<button class="p-3 rounded-2xl border-2 border-pink-200 bg-white text-pink-600 font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm" id="mode-team-btn" onclick="setMode('team')" type="button">
+<i class="fa-solid fa-users"></i> <span>Theo Đội (2-4)</span>
+</button>
+</div>
+</div>
+<div class="mb-6 text-left" id="team-inputs-container">
+<label class="block font-bold text-slate-700 mb-2 text-sm">Tên Học Sinh / Tên Đội:</label>
+<div class="space-y-3" id="inputs-list">
+<input class="team-name-input w-full p-3 rounded-2xl border-2 border-pink-200 focus:outline-none focus:border-pink-500 font-medium text-sm" placeholder="Nhập tên Người chơi / Đội 1" type="text" value="Đội 1"/>
+<input class="team-name-input w-full p-3 rounded-2xl border-2 border-pink-200 focus:outline-none focus:border-pink-500 font-medium text-sm" placeholder="Nhập tên Người chơi / Đội 2" type="text" value="Đội 2"/>
+</div>
+<button class="hidden mt-2 text-xs text-pink-600 font-extrabold hover:underline" id="add-team-btn" onclick="addTeamInput()" type="button">
+<i class="fa-solid fa-plus mr-1"></i> Thêm đội (Tối đa 4)
+            </button>
+</div>
+<button class="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-extrabold py-3.5 sm:py-4 rounded-2xl shadow-lg transform active:scale-95 transition text-base sm:text-lg" onclick="startGame()">
+<i class="fa-solid fa-gamepad mr-2"></i> BẮT ĐẦU ĐẬP TÚI MÙ! 🎒
+        </button>
+</div>
+<div class="w-full max-w-5xl hidden flex-col items-center" id="game-board-screen">
+<div class="w-full bg-white/95 backdrop-blur-sm rounded-2xl p-3 sm:p-4 mb-4 shadow-md border-2 border-pink-300 flex flex-col sm:flex-row items-center justify-between gap-2">
+<div class="flex items-center space-x-3 text-center sm:text-left">
+<div class="bg-pink-500 text-white font-extrabold px-4 py-2 rounded-xl text-xs sm:text-sm shadow" id="current-turn-badge">
+                    Lượt của: Đội 1
+                </div>
+<p class="text-xs sm:text-sm font-bold text-slate-600">Chọn 1 túi mù để mở thử thách và phần thưởng!</p>
+</div>
+<div class="flex items-center space-x-2">
+<span class="text-xs font-bold text-slate-500">Túi còn lại: <span class="text-pink-600 font-extrabold text-base" id="bags-left">12</span>/12</span>
+</div>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 w-full mb-6" id="bags-grid">
+<!-- Dynamically populated via JS -->
+</div>
+</div>
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 z-50" id="challenge-modal">
+<div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-8 shadow-2xl border-4 border-pink-300 relative transform transition-all max-h-[90vh] overflow-y-auto">
+<div class="flex items-center justify-between mb-3 pb-3 border-b-2 border-pink-100">
+<div class="flex items-center space-x-2">
+<span class="text-2xl" id="modal-bag-icon">🎒</span>
+<h3 class="text-lg sm:text-xl font-extrabold text-pink-600" id="modal-title">Thử Thách Túi Mù</h3>
+</div>
+<div class="flex items-center space-x-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-xl text-xs sm:text-sm font-bold">
+<i class="fa-solid fa-clock"></i>
+<span id="timer-display">30</span>s
+                </div>
+</div>
+<div class="mb-4 text-sm sm:text-base" id="modal-body">
+<!-- Dynamically populated question content -->
+</div>
+<div class="hidden mb-4 p-3 rounded-2xl text-center font-bold text-sm" id="feedback-area"></div>
+<div class="flex justify-end space-x-3" id="modal-actions">
+<button class="w-full bg-pink-500 hover:bg-pink-600 text-white font-extrabold px-6 py-3 rounded-2xl shadow-md transition text-base" id="submit-answer-btn" onclick="checkAnswer()">
+                    Xác Nhận Đáp Án
+                </button>
+</div>
+</div>
+</div>
+<div class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center p-4 z-50" id="victory-screen">
+<div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border-4 border-pink-400 text-center relative max-h-[90vh] overflow-y-auto">
+<div class="text-5xl sm:text-6xl mb-3 animate-bounce">🏆</div>
+<h2 class="text-2xl sm:text-3xl font-extrabold text-pink-600 mb-1">KẾT QUẢ CHUNG CUỘC</h2>
+<p class="text-lg sm:text-xl font-extrabold text-slate-700 mb-5" id="winner-announcement">Đội chiến thắng là Đội 1!</p>
+<div class="bg-pink-50 rounded-2xl p-4 mb-6 space-y-2 border-2 border-pink-200 text-left" id="final-scoreboard">
+<!-- Final scores list -->
+</div>
+<div class="flex space-x-3">
+<button class="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-extrabold py-3.5 rounded-2xl shadow-lg transition text-base" onclick="resetGame()">
+<i class="fa-solid fa-rotate-right mr-2"></i> Chơi Lại Từ Đầu
+                </button>
+</div>
+</div>
+</div>
+<script>
+        const AudioFX = {
+            ctx: null,
+            bgMusicInterval: null,
+            isBgMusicPlaying: false,
+            bgStep: 0,
+            
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            
+            playTone(freq, type, duration, gainVal = 0.5, delay = 0) {
+                this.init();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                setTimeout(() => {
+                    try {
+                        let osc = this.ctx.createOscillator();
+                        let gain = this.ctx.createGain();
+                        osc.type = type;
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                        
+                        gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                        
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start();
+                        osc.stop(this.ctx.currentTime + duration);
+                    } catch(e) {}
+                }, delay * 1000);
+            },
+
+            playShake() {
+                this.init();
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                try {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(320, this.ctx.currentTime + 0.35);
+                    gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.35);
+                } catch(e){}
+            },
+
+            playExplode() {
+                this.init();
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                try {
+                    let bufferSize = this.ctx.sampleRate * 0.45;
+                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    let data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    let noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    let filter = this.ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                    filter.frequency.exponentialRampToValueAtTime(90, this.ctx.currentTime + 0.45);
+                    
+                    let gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
+                    
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    noise.start();
+                } catch(e){}
+            },
+
+            playReward() {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, index) => {
+                    this.playTone(freq, 'sine', 0.25, 0.5, index * 0.08);
+                });
+            },
+
+            playCorrect() {
+                const melody = [587.33, 587.33, 587.33, 783.99, 880.00, 1046.50];
+                const times = [0, 0.12, 0.24, 0.4, 0.6, 0.75];
+                const lengths = [0.1, 0.1, 0.15, 0.18, 0.3, 0.45];
+                melody.forEach((freq, idx) => {
+                    this.playTone(freq, 'triangle', lengths[idx], 0.6, times[idx]);
+                });
+            },
+
+            playWrong() {
+                this.init();
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                try {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.35);
+                } catch(e){}
+            },
+
+            playTick() {
+                this.playTone(880, 'sine', 0.06, 0.3, 0);
+            },
+
+            playVictory() {
+                const melody = [523.25, 523.25, 523.25, 659.25, 783.99, 659.25, 783.99, 1046.50];
+                const times = [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5];
+                const lengths = [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.25, 0.7];
+                melody.forEach((freq, idx) => {
+                    this.playTone(freq, 'triangle', lengths[idx], 0.6, times[idx]);
+                });
+            },
+
+            toggleBgMusic() {
+                this.init();
+                if (this.isBgMusicPlaying) {
+                    this.stopBgMusic();
+                } else {
+                    this.startBgMusic();
+                }
+            },
+
+            startBgMusic() {
+                this.isBgMusicPlaying = true;
+                const btn = document.getElementById('bg-music-btn');
+                const icon = document.getElementById('music-icon');
+                const text = document.getElementById('music-text');
+                btn.className = "bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition flex items-center space-x-2 border-2 border-emerald-300 shadow-sm animate-pulse";
+                icon.className = "fa-solid fa-volume-high";
+                text.innerText = "Tắt Nhạc Nền";
+
+                const tune = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 293.66, 349.23, 440.00, 523.25, 440.00, 349.23];
+                this.bgStep = 0;
+                
+                if (this.bgMusicInterval) clearInterval(this.bgMusicInterval);
+                this.bgMusicInterval = setInterval(() => {
+                    if (!this.isBgMusicPlaying) return;
+                    let freq = tune[this.bgStep % tune.length];
+                    this.playTone(freq, 'sine', 0.25, 0.18, 0);
+                    this.bgStep++;
+                }, 350);
+            },
+
+            stopBgMusic() {
+                this.isBgMusicPlaying = false;
+                if (this.bgMusicInterval) clearInterval(this.bgMusicInterval);
+                const btn = document.getElementById('bg-music-btn');
+                const icon = document.getElementById('music-icon');
+                const text = document.getElementById('music-text');
+                btn.className = "bg-pink-100 hover:bg-pink-200 text-pink-700 px-3 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition flex items-center space-x-2 border-2 border-pink-300 shadow-sm";
+                icon.className = "fa-solid fa-volume-xmark";
+                text.innerText = "Bật Nhạc Nền";
+            }
+        };
+
+        function toggleBackgroundMusic() {
+            AudioFX.toggleBgMusic();
+        }
+
+        // Questions pool strictly tailored to Lesson 13: Luyện tập sử dụng chuột (Tin học lớp 3)
+        const questionsPool = [
+            {
+                type: "mcq",
+                title: "Khởi động: Cách cầm chuột đúng",
+                question: "Hình nào sau đây (trong SGK trang 59) minh hoạ cách cầm chuột đúng?",
+                options: ["A", "B", "C (Đặt tay ôm nhẹ lên chuột, ngón trỏ đặt vào nút trái, ngón giữa đặt vào nút phải)", "D. Cả 3 cách đều sai"],
+                correct: 2,
+                reward: 10,
+                explanation: "Chính xác! Đặt tay ôm nhẹ lên thân chuột, ngón trỏ đặt vào nút trái, ngón giữa đặt vào nút phải là cách cầm chuột đúng."
+            },
+            {
+                type: "mcq",
+                title: "Phần mềm luyện tập",
+                question: "Tên phần mềm luyện tập chuột được giới thiệu trong Bài 13 là gì?",
+                options: ["A. Paint", "B. Basic Mouse Skills", "C. Word", "D. PowerPoint"],
+                correct: 1,
+                reward: 10,
+                explanation: "Chính xác! Phần mềm được sử dụng là 'Basic Mouse Skills'."
+            },
+            {
+                type: "mcq",
+                title: "Thao tác mở phần mềm",
+                question: "Để khởi động phần mềm luyện tập chuột trên màn hình nền, em thực hiện thao tác nào?",
+                options: ["A. Nháy chuột", "B. Nháy đúp chuột vào biểu tượng phần mềm", "C. Nháy nút phải chuột", "D. Kéo thả chuột"],
+                correct: 1,
+                reward: 15,
+                explanation: "Đúng rồi! Em cần nháy đúp chuột vào biểu tượng Basic Mouse Skills trên màn hình nền."
+            },
+            {
+                type: "mcq",
+                title: "Các mức luyện tập",
+                question: "Phần mềm Basic Mouse Skills có bao nhiêu mức luyện tập chính?",
+                options: ["A. 3 mức", "B. 4 mức", "C. 5 mức", "D. 6 mức"],
+                correct: 2,
+                reward: 15,
+                explanation: "Chính xác! Phần mềm gồm 5 mức luyện tập với các thao tác chuột khác nhau."
+            },
+            {
+                type: "matching",
+                title: "Ghép nối: Mức và Thao tác chuột",
+                question: "Hãy ghép đúng mức luyện tập với thao tác chuột tương ứng trong phần mềm:",
+                pairs: [
+                    { id: 1, term: "Mức 1", match: "Luyện thao tác di chuyển chuột" },
+                    { id: 2, term: "Mức 2", match: "Luyện thao tác nháy chuột" },
+                    { id: 3, term: "Mức 3", match: "Luyện thao tác nháy đúp chuột" },
+                    { id: 4, term: "Mức 4", match: "Luyện thao tác nháy nút phải chuột" }
+                ],
+                reward: 20,
+                explanation: "Xuất sắc! Các em đã nhớ rất rõ các mức từ 1 đến 4."
+            },
+            {
+                type: "fill_blank",
+                title: "Điền từ: Mức 5",
+                question: "Chọn từ điền vào chỗ trống: 'Ở mức 5, nhiệm vụ của em là ... biểu tượng vào trong cửa sổ nhỏ.'",
+                blanks: [
+                    { label: "Thao tác ở mức 5", options: ["kéo thả", "nháy đúp", "cuộn"], correct: "kéo thả" }
+                ],
+                reward: 15,
+                explanation: "Chính xác! Mức 5 là luyện tập thao tác kéo thả chuột."
+            },
+            {
+                type: "mcq",
+                title: "Quy định số lần ở mỗi mức",
+                question: "Với mỗi mức luyện tập trong phần mềm, phần mềm quy định bao nhiêu lần luyện tập?",
+                options: ["A. 5 lần", "B. 10 lần", "C. 15 lần", "D. 20 lần"],
+                correct: 1,
+                reward: 15,
+                explanation: "Chính xác! Mỗi mức quy định 10 lần luyện tập."
+            },
+            {
+                type: "mcq",
+                title: "Phím chuyển mức / luyện tập lại",
+                question: "Khi kết thúc một mức luyện tập, để chuyển sang mức tiếp theo trong phần mềm, em nhấn phím nào?",
+                options: ["A. Nhấn phím N", "B. Nhấn phím Q", "C. Nhấn phím F2", "D. Nhấn phím Esc"],
+                correct: 0,
+                reward: 15,
+                explanation: "Chính xác! Nhấn phím N để chuyển sang mức tiếp theo."
+            },
+            {
+                type: "matching",
+                title: "Ghép nối: Sử dụng nút cuộn chuột",
+                question: "Hãy ghép đúng thao tác cuộn chuột với tác dụng khi soạn thảo/trình chiếu:",
+                pairs: [
+                    { id: 1, term: "Lăn nút cuộn tiến", match: "Chuyển tới trang chiếu sau trang chiếu hiện tại" },
+                    { id: 2, term: "Lăn nút cuộn lùi", match: "Chuyển tới trang chiếu trước trang chiếu hiện tại" }
+                ],
+                reward: 20,
+                explanation: "Rất chính xác! Nút cuộn giúp di chuyển giữa các trang chiếu cực kỳ tiện lợi."
+            },
+            {
+                type: "lucky",
+                title: "🎁 TÚI MÙ MAY MẮN ĐẶC BIỆT!",
+                question: "Chúc mừng bạn đã mở được Túi May Mắn! Nhận ngay phần thưởng nóng hổi!",
+                isLucky: true,
+                reward: 20,
+                explanation: "Bạn nhận được +20 điểm thưởng bất ngờ từ thần tài túi mù!"
+            },
+            {
+                type: "lucky_double",
+                title: "⭐ NGÔI SAO MAY MẮN",
+                question: "Ôi thật tuyệt vời! Bạn nhận được đặc quyền NHÂN ĐÔI điểm số của lượt này!",
+                isDouble: true,
+                reward: 15,
+                explanation: "Điểm thưởng của đội được nhân đôi!"
+            },
+            {
+                type: "mcq",
+                title: "Vận dụng thực tế: Nháy đúp chuột",
+                question: "Em cần sử dụng thao tác 'nháy đúp chuột' trong tình huống nào sau đây?",
+                options: ["A. Mở một thư mục hoặc khởi động phần mềm", "B. Tô đen chọn văn bản", "C. Kéo cửa sổ", "D. Đổi tên tệp"],
+                correct: 0,
+                reward: 20,
+                explanation: "Chính xác! Nháy đúp chuột dùng để mở thư mục hoặc khởi động phần mềm."
+            }
+        ];
+
+        let gameMode = 'solo';
+        let teams = [{name: 'Đội 1', score: 0}, {name: 'Đội 2', score: 0}];
+        let currentTurnIndex = 0;
+        let bags = [];
+        let openedBagsCount = 0;
+        let currentActiveBagIndex = null;
+        let currentTimer = null;
+        let timeLeft = 30;
+
+        function setMode(mode) {
+            gameMode = mode;
+            const soloBtn = document.getElementById('mode-solo-btn');
+            const teamBtn = document.getElementById('mode-team-btn');
+            const addBtn = document.getElementById('add-team-btn');
+            const inputsList = document.getElementById('inputs-list');
+
+            if (mode === 'solo') {
+                soloBtn.className = "p-3 rounded-2xl border-2 border-pink-500 bg-pink-500 text-white font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm";
+                teamBtn.className = "p-3 rounded-2xl border-2 border-pink-200 bg-white text-pink-600 font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm";
+                addBtn.classList.add('hidden');
+                inputsList.innerHTML = `<input type="text" class="team-name-input w-full p-3 rounded-2xl border-2 border-pink-200 focus:outline-none focus:border-pink-500 font-medium text-sm" placeholder="Biệt danh (không nhập tên thật)" value="Học sinh 1">`;
+            } else {
+                teamBtn.className = "p-3 rounded-2xl border-2 border-pink-500 bg-pink-500 text-white font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm";
+                soloBtn.className = "p-3 rounded-2xl border-2 border-pink-200 bg-white text-pink-600 font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm";
+                addBtn.classList.remove('hidden');
+                inputsList.innerHTML = `
+                    <input type="text" class="team-name-input w-full p-3 rounded-2xl border-2 border-pink-200 focus:outline-none focus:border-pink-500 font-medium text-sm" placeholder="Tên Đội 1" value="Đội 1">
+                    <input type="text" class="team-name-input w-full p-3 rounded-2xl border-2 border-pink-200 focus:outline-none focus:border-pink-500 font-medium text-sm" placeholder="Tên Đội 2" value="Đội 2">
+                `;
+            }
+        }
+
+        function addTeamInput() {
+            const inputsList = document.getElementById('inputs-list');
+            const count = inputsList.children.length;
+            if (count < 4) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'team-name-input w-full p-3 rounded-2xl border-2 border-pink-200 focus:outline-none focus:border-pink-500 font-medium text-sm';
+                input.placeholder = `Tên Đội ${count + 1}`;
+                input.value = `Đội ${count + 1}`;
+                inputsList.appendChild(input);
+                if (count + 1 >= 4) {
+                    document.getElementById('add-team-btn').classList.add('hidden');
+                }
+            }
+        }
+
+        function startGame() {
+            const nameInputs = document.querySelectorAll('.team-name-input');
+            teams = [];
+            nameInputs.forEach((input, index) => {
+                const name = input.value.trim() || `Đội ${index + 1}`;
+                teams.push({ name: name, score: 0 });
+            });
+
+            currentTurnIndex = 0;
+            openedBagsCount = 0;
+
+            let shuffledQuestions = [...questionsPool].sort(() => Math.random() - 0.5);
+            bags = [];
+            const bagColors = [
+                'bg-rose-400 border-rose-500', 'bg-pink-400 border-pink-500', 
+                'bg-purple-400 border-purple-500', 'bg-fuchsia-400 border-fuchsia-500',
+                'bg-amber-400 border-amber-500', 'bg-emerald-400 border-emerald-500',
+                'bg-sky-400 border-sky-500', 'bg-indigo-400 border-indigo-500',
+                'bg-rose-500 border-rose-600', 'bg-pink-500 border-pink-600',
+                'bg-purple-500 border-purple-600', 'bg-fuchsia-500 border-fuchsia-600'
+            ];
+            const bagIcons = ['🖱️', '⭐', '🎒', '💻', '🎮', '🚀', '👑', '🧸', '💡', '🔥', '🎯', '✨'];
+
+            for (let i = 0; i < 12; i++) {
+                bags.push({
+                    id: i + 1,
+                    color: bagColors[i % bagColors.length],
+                    icon: bagIcons[i % bagIcons.length],
+                    opened: false,
+                    questionData: shuffledQuestions[i % shuffledQuestions.length]
+                });
+            }
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-board-screen').classList.remove('hidden');
+            document.getElementById('game-stats').classList.remove('hidden');
+            document.getElementById('game-stats').classList.add('flex');
+
+            renderBags();
+            updateTurnDisplay();
+        }
+
+        function backToSetup() {
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('game-board-screen').classList.add('hidden');
+            document.getElementById('game-stats').classList.add('hidden');
+            document.getElementById('game-stats').classList.remove('flex');
+            if (currentTimer) clearInterval(currentTimer);
+        }
+
+        function updateTurnDisplay() {
+            const badge = document.getElementById('current-turn-badge');
+            const turnNameStat = document.getElementById('stat-turn-name');
+            const scoreStat = document.getElementById('stat-score');
+            const currentTeam = teams[currentTurnIndex];
+            badge.innerText = `Lượt của: ${currentTeam.name}`;
+            turnNameStat.innerText = `${currentTeam.name}`;
+            scoreStat.innerText = `${currentTeam.score}`;
+            document.getElementById('bags-left').innerText = (12 - openedBagsCount);
+        }
+
+        function renderBags() {
+            const grid = document.getElementById('bags-grid');
+            grid.innerHTML = '';
+            bags.forEach((bag, idx) => {
+                const card = document.createElement('div');
+                if (bag.opened) {
+                    card.className = `bag-card opened bg-slate-200 border-4 border-slate-300 rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center opacity-50 cursor-not-allowed h-36 sm:h-44 shadow-inner`;
+                    card.innerHTML = `
+                        <span class="text-2xl sm:text-3xl mb-1">📦</span>
+                        <span class="font-extrabold text-slate-400 text-xs sm:text-sm">Túi #${bag.id}</span>
+                        <span class="text-[10px] sm:text-xs text-slate-400 mt-1">Đã mở</span>
+                    `;
+                } else {
+                    card.className = `bag-card ${bag.color} text-white rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer shadow-lg transform hover:scale-105 transition h-36 sm:h-44 border-b-8`;
+                    card.innerHTML = `
+                        <span class="text-3xl sm:text-4xl mb-1 sm:mb-2 animate-pulse">${bag.icon}</span>
+                        <span class="font-extrabold text-base sm:text-lg">TÚI MÙ #${bag.id}</span>
+                        <span class="text-[10px] sm:text-xs bg-white/30 px-2.5 py-0.5 sm:py-1 rounded-full mt-1 sm:mt-2 font-bold">Bấm để đập! 💥</span>
+                    `;
+                    card.onclick = () => triggerBagAnimation(idx, card);
+                    card.ontouchend = (e) => {
+                        e.preventDefault();
+                        triggerBagAnimation(idx, card);
+                    };
+                }
+                grid.appendChild(card);
+            });
+            document.getElementById('bags-left').innerText = (12 - openedBagsCount);
+        }
+
+        function triggerBagAnimation(index, element) {
+            if (bags[index].opened) return;
+            currentActiveBagIndex = index;
+
+            AudioFX.playShake();
+            element.classList.add('animate-shake');
+
+            setTimeout(() => {
+                AudioFX.playExplode();
+                element.classList.remove('animate-shake');
+                element.classList.add('animate-explode');
+
+                setTimeout(() => {
+                    bags[index].opened = true;
+                    openedBagsCount++;
+                    renderBags();
+                    openChallengeModal(bags[index].questionData, bags[index].id);
+                }, 400);
+            }, 500);
+        }
+
+        function openChallengeModal(qData, bagId) {
+            const modal = document.getElementById('challenge-modal');
+            const titleEl = document.getElementById('modal-title');
+            const iconEl = document.getElementById('modal-bag-icon');
+            const bodyEl = document.getElementById('modal-body');
+            const feedbackEl = document.getElementById('feedback-area');
+            const actionsEl = document.getElementById('modal-actions');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            titleEl.innerText = `${qData.title} (Túi #${bagId})`;
+            iconEl.innerText = qData.isLucky ? '🎁' : (qData.isDouble ? '⭐' : '❓');
+            feedbackEl.classList.add('hidden');
+            feedbackEl.innerText = '';
+
+            let bodyHtml = `<p class="text-base sm:text-lg font-bold text-slate-700 mb-3">${qData.question}</p>`;
+
+            if (qData.isLucky || qData.isDouble) {
+                bodyHtml += `
+                    <div class="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl text-center my-3">
+                        <p class="text-amber-700 font-extrabold text-lg sm:text-xl mb-1">🎉 PHẦN THƯỞNG BẤT NGỜ!</p>
+                        <p class="text-slate-600 font-medium text-sm sm:text-base">${qData.explanation}</p>
+                    </div>
+                `;
+                actionsEl.innerHTML = `
+                    <button onclick="claimLuckyReward(${qData.reward}, ${qData.isDouble || false})" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Nhận Thưởng & Tiếp Tục 🎉
+                    </button>
+                `;
+            } else if (qData.type === 'matching') {
+                bodyHtml += `<div class="space-y-3 my-2" id="matching-container">`;
+                qData.pairs.forEach((p, idx) => {
+                    bodyHtml += `
+                        <div class="flex flex-col sm:flex-row items-center justify-between bg-pink-50 p-2.5 rounded-2xl border-2 border-pink-200 gap-2">
+                            <span class="font-extrabold text-pink-700 text-sm">${p.term}</span>
+                            <i class="fa-solid fa-arrow-right text-pink-400 hidden sm:inline"></i>
+                            <select class="match-select p-2 rounded-xl border-2 border-pink-300 font-medium text-xs sm:text-sm bg-white" data-index="${idx}">
+                                <option value="">-- Chọn tác dụng phù hợp --</option>
+                                <option value="Luyện thao tác di chuyển chuột">Luyện thao tác di chuyển chuột</option>
+                                <option value="Luyện thao tác nháy chuột">Luyện thao tác nháy chuột</option>
+                                <option value="Luyện thao tác nháy đúp chuột">Luyện thao tác nháy đúp chuột</option>
+                                <option value="Luyện thao tác nháy nút phải chuột">Luyện thao tác nháy nút phải chuột</option>
+                                <option value="Chuyển tới trang chiếu sau trang chiếu hiện tại">Chuyển tới trang chiếu sau trang chiếu hiện tại</option>
+                                <option value="Chuyển tới trang chiếu trước trang chiếu hiện tại">Chuyển tới trang chiếu trước trang chiếu hiện tại</option>
+                            </select>
+                        </div>
+                    `;
+                });
+                bodyHtml += `</div>`;
+                actionsEl.innerHTML = `
+                    <button onclick="checkMatchingAnswer()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Xác Nhận Ghép Nối
+                    </button>
+                `;
+            } else if (qData.type === 'fill_blank') {
+                bodyHtml += `<div class="space-y-3 my-2" id="fill-blank-container">`;
+                qData.blanks.forEach((b, idx) => {
+                    bodyHtml += `
+                        <div class="flex flex-col sm:flex-row items-center justify-between bg-pink-50 p-3 rounded-2xl border-2 border-pink-200 gap-2">
+                            <span class="font-extrabold text-pink-700 text-sm">${b.label}:</span>
+                            <select class="blank-select p-2 rounded-xl border-2 border-pink-300 font-medium text-sm bg-white w-full sm:w-64" data-index="${idx}">
+                                <option value="">-- Chọn từ thích hợp --</option>
+                                ${b.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                });
+                bodyHtml += `</div>`;
+                actionsEl.innerHTML = `
+                    <button onclick="checkFillBlankAnswer()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Xác Nhận Điền Từ
+                    </button>
+                `;
+            } else {
+                bodyHtml += `<div class="space-y-2" id="options-container">`;
+                qData.options.forEach((opt, idx) => {
+                    bodyHtml += `
+                        <label class="flex items-center space-x-3 p-3 rounded-2xl border-2 border-pink-100 hover:bg-pink-50 cursor-pointer font-medium text-slate-700 text-sm sm:text-base transition">
+                            <input type="radio" name="quiz-option" value="${idx}" class="w-5 h-5 text-pink-600 focus:ring-pink-500">
+                            <span>${opt}</span>
+                        </label>
+                    `;
+                });
+                bodyHtml += `</div>`;
+
+                actionsEl.innerHTML = `
+                    <button id="submit-answer-btn" onclick="checkAnswer()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Xác Nhận Đáp Án
+                    </button>
+                `;
+            }
+
+            bodyEl.innerHTML = bodyHtml;
+
+            timeLeft = 30;
+            document.getElementById('timer-display').innerText = timeLeft;
+            if (currentTimer) clearInterval(currentTimer);
+            currentTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-display').innerText = timeLeft;
+                if (timeLeft <= 5 && timeLeft > 0) {
+                    AudioFX.playTick();
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(currentTimer);
+                    handleTimeOut(qData);
+                }
+            }, 1000);
+        }
+
+        function checkAnswer() {
+            if (currentTimer) clearInterval(currentTimer);
+            const selected = document.querySelector('input[name="quiz-option"]:checked');
+            const feedbackEl = document.getElementById('feedback-area');
+            const currentBag = bags[currentActiveBagIndex].questionData;
+
+            if (!selected) {
+                feedbackEl.classList.remove('hidden');
+                feedbackEl.className = "mb-4 p-3 rounded-2xl text-center font-bold bg-amber-100 text-amber-700 text-sm";
+                feedbackEl.innerText = "⚠️ Vui lòng chọn một đáp án trước khi xác nhận!";
+                return;
+            }
+
+            let isCorrect = false;
+            const selectedVal = parseInt(selected.value);
+            if (selectedVal === currentBag.correct) {
+                isCorrect = true;
+            }
+
+            processResult(isCorrect, currentBag);
+        }
+
+        function checkMatchingAnswer() {
+            if (currentTimer) clearInterval(currentTimer);
+            const selects = document.querySelectorAll('.match-select');
+            const currentBag = bags[currentActiveBagIndex].questionData;
+
+            let allCorrect = true;
+            selects.forEach((sel, idx) => {
+                if (sel.value !== currentBag.pairs[idx].match) {
+                    allCorrect = false;
+                }
+            });
+
+            processResult(allCorrect, currentBag);
+        }
+
+        function checkFillBlankAnswer() {
+            if (currentTimer) clearInterval(currentTimer);
+            const selects = document.querySelectorAll('.blank-select');
+            const currentBag = bags[currentActiveBagIndex].questionData;
+
+            let allCorrect = true;
+            selects.forEach((sel, idx) => {
+                if (sel.value !== currentBag.blanks[idx].correct) {
+                    allCorrect = false;
+                }
+            });
+
+            processResult(allCorrect, currentBag);
+        }
+
+        function processResult(isCorrect, currentBag) {
+            const feedbackEl = document.getElementById('feedback-area');
+            const actionsEl = document.getElementById('modal-actions');
+
+            feedbackEl.classList.remove('hidden');
+            if (isCorrect) {
+                AudioFX.playCorrect();
+                AudioFX.playReward();
+                
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.5 }
+                });
+
+                feedbackEl.className = "mb-4 p-3 rounded-2xl text-center font-bold bg-emerald-100 text-emerald-700 text-sm sm:text-base";
+                feedbackEl.innerText = `✅ CHÍNH XÁC! ${currentBag.explanation}`;
+                
+                let earned = currentBag.reward || 10;
+                teams[currentTurnIndex].score += earned;
+            } else {
+                AudioFX.playWrong();
+                feedbackEl.className = "mb-4 p-3 rounded-2xl text-center font-bold bg-rose-100 text-rose-700 text-sm sm:text-base";
+                feedbackEl.innerText = `❌ CHƯA ĐÚNG! ${currentBag.explanation}`;
+            }
+
+            actionsEl.innerHTML = `
+                <button onclick="closeModalAndNext()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                    Tiếp Tục Chơi ➔
+                </button>
+            `;
+        }
+
+        function claimLuckyReward(rewardVal, isDouble) {
+            if (currentTimer) clearInterval(currentTimer);
+            AudioFX.playReward();
+            confetti({ particleCount: 80, spread: 75, origin: { y: 0.5 } });
+            
+            if (isDouble) {
+                teams[currentTurnIndex].score += 15;
+            } else {
+                teams[currentTurnIndex].score += rewardVal;
+            }
+            closeModalAndNext();
+        }
+
+        function handleTimeOut(qData) {
+            AudioFX.playWrong();
+            const feedbackEl = document.getElementById('feedback-area');
+            const actionsEl = document.getElementById('modal-actions');
+            feedbackEl.classList.remove('hidden');
+            feedbackEl.className = "mb-4 p-3 rounded-2xl text-center font-bold bg-amber-100 text-amber-700 text-sm";
+            feedbackEl.innerText = `⏰ Hết giờ!`;
+
+            actionsEl.innerHTML = `
+                <button onclick="closeModalAndNext()" class="w-full bg-slate-500 hover:bg-slate-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                    Tiếp Tục ➔
+                </button>
+            `;
+        }
+
+        function closeModalAndNext() {
+            const modal = document.getElementById('challenge-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            currentTurnIndex = (currentTurnIndex + 1) % teams.length;
+            updateTurnDisplay();
+
+            if (openedBagsCount >= 12) {
+                triggerVictory();
+            }
+        }
+
+        function triggerVictory() {
+            AudioFX.playVictory();
+            confetti({
+                particleCount: 220,
+                spread: 120,
+                origin: { y: 0.5 }
+            });
+
+            let sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+            let winner = sortedTeams[0];
+
+            const victoryScreen = document.getElementById('victory-screen');
+            const winnerAnnouncement = document.getElementById('winner-announcement');
+            const finalScoreboard = document.getElementById('final-scoreboard');
+
+            victoryScreen.classList.remove('hidden');
+            victoryScreen.classList.add('flex');
+            winnerAnnouncement.innerText = `🎉 Chúc mừng ${winner.name} đã giành chiến thắng xuất sắc! 🏆`;
+
+            let sbHtml = `<h4 class="font-extrabold text-pink-600 mb-2 text-sm sm:text-base">Bảng Điểm Tổng Kết:</h4>`;
+            sortedTeams.forEach((t, idx) => {
+                sbHtml += `
+                    <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl shadow-sm border border-pink-100">
+                        <span class="font-bold text-slate-700 text-sm sm:text-base">${idx + 1}. ${t.name}</span>
+                        <span class="font-extrabold text-emerald-600 text-sm sm:text-base">${t.score} điểm</span>
+                    </div>
+                `;
+            });
+            finalScoreboard.innerHTML = sbHtml;
+        }
+
+        function resetGame() {
+            document.getElementById('victory-screen').classList.add('hidden');
+            document.getElementById('victory-screen').classList.remove('flex');
+            startGame();
+        }
+    </script>
+
+</body></html>

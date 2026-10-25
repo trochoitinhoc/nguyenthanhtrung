@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Xây Thành Phố Kiến Thức</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Baloo 2', cursive;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            touch-action: manipulation; /* Tối ưu cảm ứng */
+            overflow-x: hidden;
+        }
+        
+        /* Nút bấm 3D */
+        .btn-3d {
+            transition: all 0.1s ease-in-out;
+            box-shadow: 0 4px 0 0 rgba(0,0,0,0.15);
+        }
+        .btn-3d:active, .btn-3d.active-press {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 0 rgba(0,0,0,0.15);
+        }
+        .btn-3d:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: translateY(4px);
+            box-shadow: 0 0 0 0 rgba(0,0,0,0.15);
+        }
+
+        /* Hiệu ứng rung khi sai */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-2deg); }
+            50% { transform: translateX(5px) rotate(2deg); }
+            75% { transform: translateX(-5px) rotate(-2deg); }
+        }
+        .shake-error {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Hiệu ứng pop-up khi xây nhà */
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .building-pop {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Hiệu ứng thành phố thăng cấp */
+        @keyframes glowCity {
+            0% { box-shadow: 0 0 10px #fde047; }
+            50% { box-shadow: 0 0 40px #fbbf24, inset 0 0 20px #fef08a; }
+            100% { box-shadow: 0 0 10px #fde047; }
+        }
+        .city-level-up {
+            animation: glowCity 2s ease-in-out infinite;
+            border-color: #fbbf24 !important;
+        }
+
+        /* Bản đồ Grid */
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            background-color: #86efac;
+            border: 4px solid #4ade80;
+            border-radius: 12px;
+            padding: 8px;
+            min-height: 250px;
+        }
+        @media (max-width: 640px) {
+            .city-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .plot {
+            background-color: #bbf7d0;
+            border-radius: 8px;
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            border: 2px dashed #86efac;
+            position: relative;
+        }
+        .plot::after {
+            content: '+';
+            color: #4ade80;
+            font-size: 1.5rem;
+            font-weight: bold;
+            opacity: 0.5;
+        }
+        .plot.occupied {
+            border: none;
+            background-color: transparent;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .plot.occupied::after { content: ''; }
+
+        /* Scrollbar ẩn */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center p-2 text-gray-800">
+
+    <div id="start-screen" class="bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl max-w-md w-full text-center border-4 border-white transition-all transform duration-500 hover:scale-105">
+        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2 leading-tight">XÂY THÀNH PHỐ<br>KIẾN THỨC</h1>
+        <p class="text-gray-600 mb-6 font-semibold">Cùng ôn tập Tin Học 4 - Bài 5!</p>
+        
+        <div class="text-6xl mb-6 animate-bounce">🏗️</div>
+
+        <div class="space-y-4">
+            <input type="text" id="player-name" placeholder="Tên của Kỹ Sư là gì?" class="w-full px-5 py-3 rounded-xl border-2 border-blue-200 focus:outline-none focus:border-blue-500 text-lg font-semibold text-center placeholder-gray-400 bg-blue-50" maxlength="15">
+            <input type="text" id="player-class" placeholder="Học lớp mấy? (VD: 4A)" class="w-full px-5 py-3 rounded-xl border-2 border-blue-200 focus:outline-none focus:border-blue-500 text-lg font-semibold text-center placeholder-gray-400 bg-blue-50" maxlength="10">
+            
+            <button onclick="startGame()" class="btn-3d w-full bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white font-extrabold py-4 px-6 rounded-xl text-xl mt-4 border-2 border-green-600">
+                BẮT ĐẦU XÂY DỰNG 🚀
+            </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-4">* Đeo tai nghe để trải nghiệm âm thanh tốt nhất</p>
+    </div>
+
+    <div id="game-screen" class="hidden flex-col h-full w-full max-w-6xl mx-auto p-2 sm:p-4">
+        
+        <!-- Thanh Trạng Thái (HUD) -->
+        <div class="bg-white rounded-2xl p-3 shadow-lg flex flex-wrap justify-between items-center border-b-4 border-gray-200 mb-4 gap-2 z-10 relative">
+            <div class="flex items-center gap-2">
+                <button id="bgm-btn" onclick="toggleBGM()" class="text-2xl hover:scale-110 transition-transform bg-gray-100 p-2 rounded-full border-2 border-gray-300 shadow-sm" title="Bật/Tắt Nhạc Nền">🔇</button>
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-2xl border-2 border-blue-300">👦</div>
+                <div>
+                    <h2 id="hud-name" class="font-bold text-blue-800 leading-tight">...</h2>
+                    <p id="hud-class" class="text-xs font-bold text-gray-500">...</p>
+                </div>
+            </div>
+            
+            <div id="level-badge" class="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-4 py-2 rounded-xl font-bold text-center border-2 border-purple-700 shadow-sm transition-all duration-300">
+                <div class="text-xs text-purple-200">Cấp độ TP</div>
+                <div class="text-xl leading-none" id="hud-level">1</div>
+            </div>
+
+            <div class="flex gap-3">
+                <div class="bg-yellow-100 px-4 py-2 rounded-xl border-2 border-yellow-400 flex items-center gap-2 shadow-sm transition-transform duration-200" id="coin-box">
+                    <span class="text-2xl">🪙</span>
+                    <span id="hud-coins" class="font-extrabold text-yellow-700 text-xl">0</span>
+                </div>
+                <div class="bg-orange-100 px-4 py-2 rounded-xl border-2 border-orange-400 flex items-center gap-2 shadow-sm transition-transform duration-200" id="material-box">
+                    <span class="text-2xl">🧱</span>
+                    <span id="hud-materials" class="font-extrabold text-orange-700 text-xl">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout chính: Chia đôi màn hình trên Desktop, xếp dọc trên Mobile -->
+        <div class="flex flex-col lg:flex-row flex-1 gap-4 overflow-hidden">
+            
+            <div class="flex-1 bg-white rounded-3xl p-4 sm:p-6 shadow-xl border-4 border-blue-100 flex flex-col overflow-y-auto">
+                
+                <!-- Vùng thông báo khi trả lời -->
+                <div id="alert-box" class="hidden w-full p-4 rounded-xl mb-4 text-center font-bold text-lg border-2 animate-bounce">
+                    Thông báo
+                </div>
+
+                <div id="question-area" class="flex-1 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <span id="q-counter" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold text-sm">Câu 1/10</span>
+                        <div id="q-reward" class="text-sm font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full flex gap-1 items-center">
+                            Thưởng: ...
+                        </div>
+                    </div>
+                    
+                    <h3 id="q-text" class="text-xl sm:text-2xl font-extrabold text-gray-800 mb-6">Nội dung câu hỏi...</h3>
+                    
+                    <!-- Container chứa các tùy chọn (Trắc nghiệm, Nối, Sắp xếp) -->
+                    <div id="q-options" class="flex flex-col gap-3 flex-1 pb-4">
+                        <!-- Render bằng JS -->
+                    </div>
+                </div>
+                
+                <!-- Khu vực nút hành động sau khi hết câu hỏi -->
+                <div id="post-question-area" class="hidden flex-col items-center justify-center flex-1 h-full text-center">
+                    <div class="text-6xl mb-4">🎉</div>
+                    <h2 class="text-2xl font-bold text-green-600 mb-2">Đã hoàn thành các thử thách!</h2>
+                    <p class="text-gray-600 mb-6">Hãy dùng hết tài nguyên để xây dựng thành phố của bạn nhé.</p>
+                    <button onclick="endGame()" class="btn-3d bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-8 rounded-xl text-lg border-2 border-purple-700">
+                        XEM TỔNG KẾT THÀNH TÍCH 🏆
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col gap-4">
+                
+                <!-- Bản đồ Thành phố -->
+                <div class="bg-white rounded-3xl p-4 shadow-xl border-4 border-green-200 flex flex-col transition-colors duration-500" id="city-container">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-extrabold text-green-700 text-xl flex items-center gap-2">🏙️ Bản Đồ Thành Phố</h3>
+                        <span id="building-count" class="text-sm font-bold bg-green-100 text-green-800 px-2 py-1 rounded">0/12 Công trình</span>
+                    </div>
+                    
+                    <div id="city-grid" class="city-grid flex-1">
+                        <!-- Ô đất sinh ra bằng JS -->
+                    </div>
+                    <div id="city-hint" class="text-center text-xs text-green-600 font-bold mt-2 h-4">
+                        <!-- Lời nhắc -->
+                    </div>
+                    
+                    <!-- Nút mở cửa sổ vật tư to và nổi bật -->
+                    <button onclick="openShopModal()" class="mt-4 btn-3d w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-extrabold py-4 rounded-xl border-2 border-orange-600 flex items-center justify-center gap-2 text-lg sm:text-xl shadow-lg">
+                        <span class="text-2xl">🛒</span> MỞ CỬA SỔ VẬT TƯ & CÔNG TRÌNH
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- CỬA SỔ VẬT TƯ & CÔNG TRÌNH (Modal Popup) -->
+    <div id="shop-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border-4 border-yellow-400 flex flex-col max-h-[90vh] transform transition-all scale-100">
+            <!-- Header của Cửa sổ -->
+            <div class="bg-gradient-to-r from-yellow-300 to-orange-400 p-4 rounded-t-2xl flex justify-between items-center border-b-4 border-yellow-500">
+                <h2 class="text-xl sm:text-2xl font-black text-white drop-shadow-md flex items-center gap-2">🛒 CỬA SỔ VẬT TƯ & CÔNG TRÌNH</h2>
+                <button onclick="closeShopModal()" class="text-white hover:text-red-600 text-4xl font-black transition-colors leading-none">&times;</button>
+            </div>
+            
+            <!-- Hiển thị tài nguyên đang có -->
+            <div class="p-4 bg-yellow-50 flex flex-wrap justify-between items-center border-b-2 border-yellow-200 gap-2">
+                <div class="font-bold text-gray-700 text-lg">Tài nguyên hiện có:</div>
+                <div class="flex gap-4">
+                    <div class="bg-white px-4 py-2 rounded-xl border-2 border-yellow-400 font-extrabold text-yellow-700 text-lg shadow-sm">🪙 <span id="modal-coins">0</span></div>
+                    <div class="bg-white px-4 py-2 rounded-xl border-2 border-orange-400 font-extrabold text-orange-700 text-lg shadow-sm">🧱 <span id="modal-materials">0</span></div>
+                </div>
+            </div>
+
+            <!-- Danh sách vật tư / công trình để mua -->
+            <div class="p-4 overflow-y-auto flex-1 bg-gray-50">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="shop-container">
+                    <!-- Items sinh ra bằng JS -->
+                </div>
+            </div>
+            
+            <!-- Nút đóng -->
+            <div class="p-4 border-t-2 border-gray-200 bg-white rounded-b-2xl text-center">
+                <button onclick="closeShopModal()" class="btn-3d w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-10 rounded-xl text-lg border-2 border-gray-600">ĐÓNG CỬA SỔ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="end-screen" class="hidden bg-white/95 backdrop-blur-xl p-8 rounded-3xl shadow-2xl max-w-2xl w-full text-center border-4 border-yellow-400">
+        <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-2">CHÚC MỪNG!</h1>
+        <h2 id="end-player-name" class="text-2xl font-bold text-blue-700 mb-6">Kỹ sư Thu An - 4A</h2>
+        
+        <div class="relative w-40 h-40 mx-auto mb-6">
+            <div class="absolute inset-0 bg-yellow-300 rounded-full animate-ping opacity-20"></div>
+            <div class="relative w-full h-full bg-gradient-to-br from-yellow-300 to-yellow-600 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                <span class="text-6xl">🏆</span>
+            </div>
+            <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white font-black px-4 py-1 rounded-full border-2 border-white shadow-sm whitespace-nowrap text-sm">
+                KIẾN TRÚC SƯ TRI THỨC
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-8 bg-blue-50 p-4 rounded-2xl border-2 border-blue-100">
+            <div>
+                <p class="text-gray-500 font-bold text-sm">Cấp Độ Thành Phố</p>
+                <p id="end-level" class="text-3xl font-black text-purple-600">3</p>
+            </div>
+            <div>
+                <p class="text-gray-500 font-bold text-sm">Công Trình Đã Xây</p>
+                <p id="end-buildings" class="text-3xl font-black text-green-600">10</p>
+            </div>
+            <div>
+                <p class="text-gray-500 font-bold text-sm">Xu Thu Thập</p>
+                <p id="end-coins" class="text-xl font-bold text-yellow-600">🪙 100</p>
+            </div>
+            <div>
+                <p class="text-gray-500 font-bold text-sm">Vật Liệu Thu Thập</p>
+                <p id="end-materials" class="text-xl font-bold text-orange-600">🧱 5</p>
+            </div>
+        </div>
+
+        <button onclick="resetGame()" class="btn-3d w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-10 rounded-xl text-xl border-2 border-blue-700 mx-auto block">
+            🔄 CHƠI LẠI TỪ ĐẦU
+        </button>
+    </div>
+
+    <script>
+        // --- TRẠNG THÁI GAME (STATE) ---
+        let state = {
+            name: "",
+            className: "",
+            coins: 0,
+            materials: 0,
+            totalCoinsEarned: 0,
+            totalMaterialsEarned: 0,
+            currentQIdx: 0,
+            buildings: [],
+            level: 1
+        };
+
+        const maxPlots = 12; // Bản đồ 4x3 = 12 ô đất
+
+        // --- HỆ THỐNG ÂM THANH OFFLINE (WEB AUDIO API) ---
+        let audioCtx;
+        let isPlayingBGM = false;
+        let nextNoteTime = 0;
+        let noteIdx = 0;
+        let bgmTimerID;
+        // Giai điệu nhẹ nhàng (Tone C Major, lặp lại)
+        const bgmNotes = [261.63, 293.66, 329.63, 261.63, 261.63, 293.66, 329.63, 261.63, 329.63, 349.23, 392.00, 329.63, 349.23, 392.00]; 
+        const beatLength = 0.5;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Phát 1 nốt nhạc BGM
+        function playBGMNote(freq, time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.015, time); // Âm lượng cực nhỏ
+            gain.gain.exponentialRampToValueAtTime(0.001, time + beatLength - 0.05);
+            osc.start(time);
+            osc.stop(time + beatLength);
+        }
+
+        // Lên lịch phát nhạc liên tục
+        function scheduleBGMNotes() {
+            if(!isPlayingBGM) return;
+            while(nextNoteTime < audioCtx.currentTime + 0.1) {
+                playBGMNote(bgmNotes[noteIdx], nextNoteTime);
+                nextNoteTime += beatLength;
+                noteIdx = (noteIdx + 1) % bgmNotes.length;
+            }
+            bgmTimerID = requestAnimationFrame(scheduleBGMNotes);
+        }
+
+        function toggleBGM() {
+            initAudio();
+            isPlayingBGM = !isPlayingBGM;
+            const btn = document.getElementById('bgm-btn');
+            if(isPlayingBGM) {
+                btn.innerText = '🔊';
+                btn.classList.replace('bg-gray-100', 'bg-green-100');
+                btn.classList.replace('border-gray-300', 'border-green-400');
+                nextNoteTime = audioCtx.currentTime + 0.1;
+                scheduleBGMNotes();
+            } else {
+                btn.innerText = '🔇';
+                btn.classList.replace('bg-green-100', 'bg-gray-100');
+                btn.classList.replace('border-green-400', 'border-gray-300');
+                cancelAnimationFrame(bgmTimerID);
+            }
+        }
+
+        // Phát hiệu ứng âm thanh (SFX)
+        function playSound(type) {
+            if (!audioCtx) return;
+            const t = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'coin') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, t);
+                osc.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                osc.start(t); osc.stop(t + 0.2);
+            } 
+            else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, t);
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.3);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                osc.start(t); osc.stop(t + 0.3);
+            } 
+            else if (type === 'build') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(300, t);
+                osc.frequency.setValueAtTime(400, t + 0.1);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.linearRampToValueAtTime(0, t + 0.2);
+                osc.start(t); osc.stop(t + 0.2);
+            }
+            else if (type === 'levelUp') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, t);
+                osc.frequency.setValueAtTime(600, t + 0.1);
+                osc.frequency.setValueAtTime(800, t + 0.2);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.linearRampToValueAtTime(0, t + 0.5);
+                osc.start(t); osc.stop(t + 0.5);
+            }
+        }
+
+        // --- DỮ LIỆU CÂU HỎI (Bám sát Tin Học 4 - Bài 5) ---
+        const questions = [
+            {
+                id: 1, type: 'easy', format: 'choice',
+                text: "Khi di chuyển (Move) một thư mục, thư mục đó sẽ tồn tại ở đâu?",
+                options: [
+                    { text: "Ở vị trí mới, không còn ở vị trí cũ.", isCorrect: true },
+                    { text: "Ở cả vị trí cũ và vị trí mới.", isCorrect: false },
+                    { text: "Bị xoá hoàn toàn khỏi máy tính.", isCorrect: false }
+                ],
+                hint: "Nhớ lại xem: Di chuyển (Move) giống như em bưng một cuốn sách từ bàn này sang bàn khác.",
+                reward: { coins: 15, materials: 0 }
+            },
+            {
+                id: 2, type: 'easy', format: 'choice',
+                text: "Khi sao chép (Copy) một thư mục, thư mục đó sẽ tồn tại ở đâu?",
+                options: [
+                    { text: "Chỉ ở vị trí mới.", isCorrect: false },
+                    { text: "Ở cả vị trí cũ và vị trí mới.", isCorrect: true },
+                    { text: "Chỉ ở vị trí cũ.", isCorrect: false }
+                ],
+                hint: "Sao chép (Copy) giống như chụp lại một bức ảnh, bản gốc vẫn còn đó.",
+                reward: { coins: 15, materials: 0 }
+            },
+            {
+                id: 3, type: 'hard', format: 'match',
+                text: "Hãy NỐI lệnh tiếng Anh với chức năng tương ứng (Bấm 1 ô bên trái, sau đó bấm 1 ô bên phải):",
+                pairs: [
+                    { left: "Copy", right: "Sao chép" },
+                    { left: "Move to", right: "Di chuyển" },
+                    { left: "Rename", right: "Đổi tên" }
+                ],
+                hint: "Copy: Sao chép, Move: Di chuyển, Rename: Đổi tên.",
+                reward: { coins: 20, materials: 1 }
+            },
+            {
+                id: 4, type: 'easy', format: 'choice',
+                text: "Xóa, đổi tên hoặc di chuyển tệp của CHƯƠNG TRÌNH máy tính sẽ dẫn đến tác hại gì?",
+                options: [
+                    { text: "Máy tính chạy nhanh hơn.", isCorrect: false },
+                    { text: "Lỗi chương trình, treo máy tính.", isCorrect: true },
+                    { text: "Tốn nhiều bộ nhớ hơn.", isCorrect: false }
+                ],
+                hint: "Tệp của chương trình là tệp quan trọng để máy hoạt động. Không nên tự ý đụng vào!",
+                reward: { coins: 15, materials: 0 }
+            },
+            {
+                id: 5, type: 'hard', format: 'order',
+                text: "Sắp xếp thứ tự ĐÚNG để DI CHUYỂN thư mục 'Thu An' sang thư mục 'Nhom 2' (Chạm vào các bước bên dưới để sắp xếp):",
+                steps: [
+                    "Chọn thư mục Thu An",
+                    "Chọn lệnh Move to",
+                    "Chọn thư mục Nhom 2"
+                ],
+                hint: "Bước 1: Chọn đối tượng, Bước 2: Dùng lệnh di chuyển (Move to), Bước 3: Chọn đích đến.",
+                reward: { coins: 20, materials: 1 }
+            },
+            {
+                id: 6, type: 'easy', format: 'choice',
+                text: "Việc sao chép tệp đến QUÁ NHIỀU thư mục trên máy tính gây ra hậu quả gì?",
+                options: [
+                    { text: "Máy tính bị treo.", isCorrect: false },
+                    { text: "Khó quản lý tệp, làm tốn bộ nhớ.", isCorrect: true },
+                    { text: "Mất toàn bộ dữ liệu.", isCorrect: false }
+                ],
+                hint: "Copy quá nhiều nơi sẽ làm em không nhớ bản chính thức ở đâu và tốn chỗ lưu trữ (bộ nhớ).",
+                reward: { coins: 15, materials: 0 }
+            },
+            {
+                id: 7, type: 'hard', format: 'choice',
+                text: "Để ĐỔI TÊN tệp 'Gioi thieu' thành 'Gioi thieu nhom', em dùng lệnh nào?",
+                options: [
+                    { text: "Lệnh Rename", isCorrect: true },
+                    { text: "Lệnh Move to", isCorrect: false },
+                    { text: "Lệnh Copy", isCorrect: false }
+                ],
+                hint: "Re = Làm lại, Name = Tên. Rename là Đổi tên.",
+                reward: { coins: 20, materials: 1 }
+            },
+            {
+                id: 8, type: 'easy', format: 'choice',
+                text: "Khi máy tính dùng chung, sao chép hoặc di chuyển thư mục của NGƯỜI KHÁC sẽ dẫn đến điều gì?",
+                options: [
+                    { text: "Làm máy tính đẹp hơn.", isCorrect: false },
+                    { text: "Làm đảo lộn trật tự, gây khó khăn cho người khác.", isCorrect: true },
+                    { text: "Giúp người đó quản lý tệp tốt hơn.", isCorrect: false }
+                ],
+                hint: "Đồ của người khác nếu mình tự ý di chuyển thì họ sẽ không tìm thấy.",
+                reward: { coins: 15, materials: 0 }
+            },
+            {
+                id: 9, type: 'hard', format: 'order',
+                text: "Sắp xếp thứ tự ĐÚNG để SAO CHÉP tệp (Copy):",
+                steps: [
+                    "Chọn tệp cần sao chép",
+                    "Chọn lệnh Copy",
+                    "Mở thư mục đích",
+                    "Chọn lệnh Paste"
+                ],
+                hint: "Chọn tệp -> Copy -> Chọn nơi đến -> Paste (Dán).",
+                reward: { coins: 25, materials: 2 }
+            },
+            {
+                id: 10, type: 'hard', format: 'choice',
+                text: "Câu Vận dụng: Em có 1 tệp ảnh. Em muốn tệp đó VỪA nằm trong thư mục của em, VỪA có trong thư mục của bạn. Em làm thế nào?",
+                options: [
+                    { text: "Dùng lệnh Move to (Di chuyển)", isCorrect: false },
+                    { text: "Dùng lệnh Delete (Xoá)", isCorrect: false },
+                    { text: "Dùng lệnh Copy (Sao chép)", isCorrect: true }
+                ],
+                hint: "Muốn có ở cả hai nơi thì phải tạo ra một bản sao (Copy).",
+                reward: { coins: 25, materials: 2 }
+            }
+        ];
+
+        // --- DỮ LIỆU CỬA HÀNG (SHOP) ---
+        const shopItems = [
+            { id: 'house', name: 'Nhà Ở', emoji: '🏠', costCoins: 20, costMat: 0, desc: 'Tăng dân số' },
+            { id: 'tree', name: 'Công Viên', emoji: '🌲', costCoins: 15, costMat: 0, desc: 'Không khí sạch' },
+            { id: 'school', name: 'Trường Học', emoji: '🏫', costCoins: 40, costMat: 1, desc: 'Nơi học tập' },
+            { id: 'lib', name: 'Thư Viện', emoji: '📚', costCoins: 35, costMat: 1, desc: 'Đọc sách' },
+            { id: 'hospital', name: 'Bệnh Viện', emoji: '🏥', costCoins: 50, costMat: 2, desc: 'Khám bệnh' },
+            { id: 'stadium', name: 'Sân Vận Động', emoji: '🏟️', costCoins: 80, costMat: 3, desc: 'Thể thao' },
+        ];
+
+        function startGame() {
+            const nameInput = document.getElementById('player-name').value.trim();
+            const classInput = document.getElementById('player-class').value.trim();
+            
+            if (!nameInput) {
+                // Flash input if empty
+                const inputEl = document.getElementById('player-name');
+                inputEl.classList.add('shake-error', 'border-red-500');
+                setTimeout(() => inputEl.classList.remove('shake-error', 'border-red-500'), 500);
+                return;
+            }
+
+            initAudio(); // Initialize Web Audio Context
+            if (!isPlayingBGM) toggleBGM(); // Auto start music
+
+            state.name = nameInput;
+            state.className = classInput || "Không rõ";
+            
+            document.getElementById('hud-name').innerText = state.name;
+            document.getElementById('hud-class').innerText = "Lớp: " + state.className;
+            
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            
+            updateHUD();
+            renderShop();
+            renderCity();
+            renderQuestion();
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-coins').innerText = state.coins;
+            document.getElementById('hud-materials').innerText = state.materials;
+            document.getElementById('hud-level').innerText = state.level;
+            document.getElementById('building-count').innerText = `${state.buildings.length}/${maxPlots} Ô đất`;
+            
+            // Cập nhật luôn số dư trong cửa sổ (Modal)
+            const modalCoins = document.getElementById('modal-coins');
+            if (modalCoins) modalCoins.innerText = state.coins;
+            const modalMaterials = document.getElementById('modal-materials');
+            if (modalMaterials) modalMaterials.innerText = state.materials;
+
+            // Highlight effect when values change
+            const cb = document.getElementById('coin-box');
+            cb.classList.add('scale-110', 'bg-yellow-200');
+            setTimeout(() => cb.classList.remove('scale-110', 'bg-yellow-200'), 200);
+        }
+
+        function renderQuestion() {
+            if (state.currentQIdx >= questions.length) {
+                // Đã hết câu hỏi
+                document.getElementById('question-area').classList.add('hidden');
+                document.getElementById('post-question-area').classList.remove('hidden');
+                document.getElementById('post-question-area').classList.add('flex');
+                return;
+            }
+
+            const q = questions[state.currentQIdx];
+            const format = q.format || 'choice';
+            
+            document.getElementById('q-counter').innerText = `Thử thách ${state.currentQIdx + 1}/${questions.length}`;
+            
+            // Hiển thị phần thưởng
+            let rewardText = `+${q.reward.coins}🪙`;
+            if (q.reward.materials > 0) rewardText += ` & +${q.reward.materials}🧱`;
+            document.getElementById('q-reward').innerText = "Thưởng: " + rewardText;
+            
+            document.getElementById('q-text').innerText = q.text;
+
+            const optsContainer = document.getElementById('q-options');
+            optsContainer.innerHTML = ''; // Xóa nội dung cũ
+            
+            if (format === 'choice') {
+                // --- TRẮC NGHIỆM ĐA LỰA CHỌN ---
+                let shuffledOpts = [...q.options].sort(() => Math.random() - 0.5);
+
+                shuffledOpts.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-3d text-left bg-white border-2 border-blue-200 p-4 rounded-xl font-bold text-gray-700 hover:bg-blue-50 hover:border-blue-400 focus:outline-none";
+                    btn.innerHTML = `<span class="inline-block w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-center leading-6 mr-2">${String.fromCharCode(65 + index)}</span> ${opt.text}`;
+                    btn.onclick = () => checkAnswer(opt.isCorrect, q, btn);
+                    optsContainer.appendChild(btn);
+                });
+            }
+            else if (format === 'match') {
+                // --- GHÉP NỐI CẶP (Nối tiếng Anh với tiếng Việt) ---
+                let matchedPairs = 0;
+                let selectedLeftBtn = null;
+                let selectedRightBtn = null;
+                
+                const container = document.createElement('div');
+                container.className = "flex gap-4 w-full h-full";
+                const leftCol = document.createElement('div');
+                leftCol.className = "flex-1 flex flex-col gap-3 justify-center";
+                const rightCol = document.createElement('div');
+                rightCol.className = "flex-1 flex flex-col gap-3 justify-center";
+                
+                // Trộn vị trí các nút
+                let leftItems = q.pairs.map(p => ({text: p.left, matchId: p.left})).sort(()=>Math.random()-0.5);
+                let rightItems = q.pairs.map(p => ({text: p.right, matchId: p.left})).sort(()=>Math.random()-0.5);
+                
+                const checkMatch = () => {
+                    if(selectedLeftBtn && selectedRightBtn) {
+                        if(selectedLeftBtn.dataset.match === selectedRightBtn.dataset.match) {
+                            // Ghép Đúng
+                            playSound('coin');
+                            selectedLeftBtn.className = "bg-green-500 text-white border-2 border-green-600 p-4 rounded-xl font-bold shadow-inner transform scale-95 transition-all";
+                            selectedRightBtn.className = "bg-green-500 text-white border-2 border-green-600 p-4 rounded-xl font-bold shadow-inner transform scale-95 transition-all";
+                            selectedLeftBtn.disabled = true;
+                            selectedRightBtn.disabled = true;
+                            selectedLeftBtn = null; selectedRightBtn = null;
+                            matchedPairs++;
+                            
+                            if(matchedPairs === q.pairs.length) {
+                                setTimeout(() => checkAnswer(true, q, null), 500);
+                            }
+                        } else {
+                            // Ghép Sai
+                            playSound('wrong');
+                            selectedLeftBtn.classList.remove('bg-blue-200', 'border-blue-500', 'ring-4', 'ring-blue-100');
+                            selectedRightBtn.classList.remove('bg-blue-200', 'border-blue-500', 'ring-4', 'ring-blue-100');
+                            selectedLeftBtn.classList.add('bg-red-100', 'border-red-400', 'shake-error');
+                            selectedRightBtn.classList.add('bg-red-100', 'border-red-400', 'shake-error');
+                            
+                            const tLeft = selectedLeftBtn, tRight = selectedRightBtn;
+                            selectedLeftBtn = null; selectedRightBtn = null;
+                            
+                            setTimeout(() => {
+                                tLeft.className = "btn-3d bg-white border-2 border-gray-300 p-4 rounded-xl font-bold text-gray-700 cursor-pointer hover:bg-gray-50 text-center";
+                                tRight.className = "btn-3d bg-white border-2 border-gray-300 p-4 rounded-xl font-bold text-gray-700 cursor-pointer hover:bg-gray-50 text-center";
+                            }, 500);
+                        }
+                    }
+                };
+
+                leftItems.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-3d bg-white border-2 border-gray-300 p-4 rounded-xl font-bold text-gray-700 cursor-pointer hover:bg-gray-50 text-center";
+                    btn.innerText = item.text;
+                    btn.dataset.match = item.matchId;
+                    btn.onclick = () => {
+                        if(selectedLeftBtn && selectedLeftBtn !== btn) {
+                            selectedLeftBtn.classList.remove('bg-blue-200', 'border-blue-500', 'ring-4', 'ring-blue-100');
+                        }
+                        selectedLeftBtn = btn;
+                        btn.classList.add('bg-blue-200', 'border-blue-500', 'ring-4', 'ring-blue-100');
+                        checkMatch();
+                    };
+                    leftCol.appendChild(btn);
+                });
+
+                rightItems.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-3d bg-white border-2 border-gray-300 p-4 rounded-xl font-bold text-gray-700 cursor-pointer hover:bg-gray-50 text-center";
+                    btn.innerText = item.text;
+                    btn.dataset.match = item.matchId;
+                    btn.onclick = () => {
+                        if(selectedRightBtn && selectedRightBtn !== btn) {
+                            selectedRightBtn.classList.remove('bg-blue-200', 'border-blue-500', 'ring-4', 'ring-blue-100');
+                        }
+                        selectedRightBtn = btn;
+                        btn.classList.add('bg-blue-200', 'border-blue-500', 'ring-4', 'ring-blue-100');
+                        checkMatch();
+                    };
+                    rightCol.appendChild(btn);
+                });
+
+                container.appendChild(leftCol);
+                container.appendChild(rightCol);
+                optsContainer.appendChild(container);
+            }
+            else if (format === 'order') {
+                // --- SẮP XẾP BƯỚC (Chạm để nhặt/thả - thay vì kéo thả phức tạp) ---
+                let currentOrder = [];
+                let availableSteps = [...q.steps].sort(()=>Math.random()-0.5);
+                
+                const topBox = document.createElement('div');
+                topBox.className = "flex flex-col gap-2 p-4 pt-6 border-4 border-dashed border-blue-300 rounded-xl min-h-[150px] mb-4 bg-blue-50 relative";
+                const bottomBox = document.createElement('div');
+                bottomBox.className = "flex flex-col gap-2 p-2";
+                
+                const renderOrderUI = () => {
+                    topBox.innerHTML = '<div class="absolute -top-3 left-4 bg-white px-2 text-sm text-blue-600 font-black rounded-full border-2 border-blue-300 shadow-sm">Khu vực sắp xếp (Chạm để bỏ ra)</div>';
+                    bottomBox.innerHTML = '<div class="text-sm text-gray-500 font-bold mb-1">Các bước đang có (Chạm để đưa lên trên):</div>';
+                    
+                    // Render các bước đã xếp
+                    currentOrder.forEach((step, idx) => {
+                        let btn = document.createElement('button');
+                        btn.className = "btn-3d bg-green-100 border-2 border-green-500 p-3 rounded-xl font-bold text-left text-green-900 shadow-sm flex items-center";
+                        btn.innerHTML = `<span class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center mr-3 flex-shrink-0">${idx + 1}</span> <span>${step}</span>`;
+                        btn.onclick = () => {
+                            availableSteps.push(step);
+                            currentOrder.splice(idx, 1);
+                            playSound('build'); // Âm thanh tạch tạch nhẹ
+                            renderOrderUI();
+                        };
+                        topBox.appendChild(btn);
+                    });
+                    
+                    if (currentOrder.length === 0) {
+                        topBox.innerHTML += '<div class="text-gray-400 text-center italic mt-4 w-full h-full flex items-center justify-center">Trống</div>';
+                    }
+
+                    // Render các bước chưa xếp
+                    availableSteps.forEach((step, idx) => {
+                        let btn = document.createElement('button');
+                        btn.className = "btn-3d bg-white border-2 border-gray-300 p-3 rounded-xl font-bold text-left text-gray-700 shadow-sm";
+                        btn.innerText = step;
+                        btn.onclick = () => {
+                            currentOrder.push(step);
+                            availableSteps.splice(idx, 1);
+                            playSound('coin'); 
+                            renderOrderUI();
+                            
+                            // Tự động kiểm tra nếu xếp đủ
+                            if(availableSteps.length === 0) {
+                                let isCorrect = true;
+                                for(let i=0; i<q.steps.length; i++) {
+                                    if(currentOrder[i] !== q.steps[i]) isCorrect = false;
+                                }
+                                
+                                if(isCorrect) {
+                                    setTimeout(() => checkAnswer(true, q, null), 400);
+                                } else {
+                                    setTimeout(() => {
+                                        checkAnswer(false, q, null);
+                                        // Reset lại nếu sai
+                                        availableSteps = [...q.steps].sort(()=>Math.random()-0.5);
+                                        currentOrder = [];
+                                        renderOrderUI();
+                                    }, 400);
+                                }
+                            }
+                        };
+                        bottomBox.appendChild(btn);
+                    });
+                };
+                
+                renderOrderUI();
+                optsContainer.appendChild(topBox);
+                optsContainer.appendChild(bottomBox);
+            }
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alert-box');
+            box.innerText = msg;
+            box.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'border-green-400', 'bg-red-100', 'text-red-800', 'border-red-400');
+            
+            if(type === 'success') {
+                box.classList.add('bg-green-100', 'text-green-800', 'border-green-400');
+            } else {
+                box.classList.add('bg-red-100', 'text-red-800', 'border-red-400');
+            }
+            
+            setTimeout(() => {
+                box.classList.add('hidden');
+            }, 3000);
+        }
+
+        function checkAnswer(isCorrect, qInfo, btnElement) {
+            if (isCorrect) {
+                // Đúng
+                playSound('coin');
+                if(btnElement) {
+                    btnElement.classList.remove('bg-white', 'border-blue-200');
+                    btnElement.classList.add('bg-green-400', 'text-white', 'border-green-500');
+                }
+                
+                state.coins += qInfo.reward.coins;
+                state.totalCoinsEarned += qInfo.reward.coins;
+                if (qInfo.reward.materials > 0) {
+                    state.materials += qInfo.reward.materials;
+                    state.totalMaterialsEarned += qInfo.reward.materials;
+                }
+                updateHUD();
+                
+                let successMsg = `Chính xác! Nhận ${qInfo.reward.coins}🪙`;
+                if(qInfo.reward.materials > 0) successMsg += ` và ${qInfo.reward.materials}🧱`;
+                showAlert(successMsg, 'success');
+
+                state.currentQIdx++;
+                
+                // Thay vì tự động chuyển câu hỏi, đưa người chơi đến màn hình nghỉ ngơi / mua sắm
+                setTimeout(() => showShopBreak(qInfo.reward), 800);
+                
+                // Khuyến khích nhắc nhở xây nhà
+                if (state.coins >= 20 && state.buildings.length === 0) {
+                    setTimeout(() => {
+                        document.getElementById('city-hint').innerText = "💡 Bạn đã có đủ Xu, hãy thử mua công trình ở Cửa Hàng nhé!";
+                        document.getElementById('city-hint').classList.add('animate-pulse');
+                    }, 1200);
+                }
+
+            } else {
+                // Sai
+                playSound('wrong');
+                if(btnElement) {
+                    btnElement.classList.add('bg-red-200', 'border-red-400', 'shake-error');
+                    setTimeout(() => {
+                        btnElement.classList.remove('bg-red-200', 'border-red-400', 'shake-error');
+                    }, 500);
+                }
+                showAlert(`Sai rồi! Gợi ý: ${qInfo.hint}`, 'error');
+            }
+        }
+
+        function showShopBreak(reward) {
+            const optsContainer = document.getElementById('q-options');
+            
+            let isLastQuestion = state.currentQIdx >= questions.length;
+            let btnText = isLastQuestion ? "Hoàn thành thử thách ➡️" : "Câu tiếp theo ➡️";
+
+            // Thay thế khu vực trả lời bằng thông báo yêu cầu mua sắm
+            optsContainer.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-center p-4 sm:p-6 bg-green-50 rounded-2xl border-4 border-green-200 shadow-inner">
+                    <div class="text-5xl mb-3 animate-bounce">🛒</div>
+                    <h4 class="text-2xl font-black text-green-700 mb-2">Đã nhận thưởng!</h4>
+                    <p class="text-gray-700 mb-4 font-bold text-lg">Bạn có thêm <span class="text-yellow-600">${reward.coins}🪙</span> ${reward.materials > 0 ? `và <span class="text-orange-600">${reward.materials}🧱</span>` : ''}</p>
+                    <p class="text-blue-800 font-bold mb-6">Đã đến lúc dùng điểm! Hãy mở <span class="bg-yellow-200 px-2 py-1 rounded border border-yellow-400 text-yellow-800">Cửa Sổ Vật Tư</span> để đổi điểm lấy công trình xây thành phố nhé!</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 w-full justify-center">
+                        <button onclick="openShopModal()" class="btn-3d bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-extrabold py-3 px-6 rounded-xl border-2 border-orange-600 flex items-center justify-center gap-2 text-lg shadow-lg">
+                            <span>🛒 MỞ CỬA SỔ MUA SẮM</span>
+                        </button>
+
+                        <button onclick="renderQuestion()" class="btn-3d bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-extrabold py-3 px-6 rounded-xl border-2 border-indigo-700 flex items-center justify-center gap-2 text-lg">
+                            <span>${btnText}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- CÁC HÀM XỬ LÝ CỬA SỔ VẬT TƯ (MODAL) ---
+        function openShopModal() {
+            document.getElementById('shop-modal').classList.remove('hidden');
+            renderShop();
+            playSound('coin'); 
+        }
+
+        function closeShopModal() {
+            document.getElementById('shop-modal').classList.add('hidden');
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shop-container');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            shopItems.forEach(item => {
+                const canBuy = state.coins >= item.costCoins && state.materials >= item.costMat;
+                
+                const card = document.createElement('div');
+                card.className = `bg-white border-4 ${canBuy ? 'border-green-300 transform hover:-translate-y-1 transition-transform' : 'border-gray-200 opacity-75'} rounded-2xl p-4 flex flex-col items-center text-center shadow-md relative`;
+                
+                const emojiDiv = document.createElement('div');
+                emojiDiv.className = "text-5xl mb-2 drop-shadow-md";
+                emojiDiv.innerText = item.emoji;
+                
+                const nameDiv = document.createElement('div');
+                nameDiv.className = "font-black text-gray-800 text-lg mb-1";
+                nameDiv.innerText = item.name;
+
+                const descDiv = document.createElement('div');
+                descDiv.className = "text-xs font-bold text-gray-500 mb-3 h-8";
+                descDiv.innerText = item.desc;
+
+                const costDiv = document.createElement('div');
+                costDiv.className = "flex gap-2 justify-center mb-4";
+                
+                let coinHtml = `<span class="${state.coins >= item.costCoins ? 'text-yellow-700 bg-yellow-100 border-yellow-300' : 'text-red-600 bg-red-50 border-red-200'} font-bold px-2 py-1 rounded-md border">${item.costCoins}🪙</span>`;
+                let matHtml = item.costMat > 0 ? `<span class="${state.materials >= item.costMat ? 'text-orange-700 bg-orange-100 border-orange-300' : 'text-red-600 bg-red-50 border-red-200'} font-bold px-2 py-1 rounded-md border">${item.costMat}🧱</span>` : '';
+                
+                costDiv.innerHTML = coinHtml + matHtml;
+                
+                const btn = document.createElement('button');
+                btn.className = `btn-3d w-full font-bold py-2 px-4 rounded-xl text-white text-sm transition-colors ${canBuy ? 'bg-green-500 hover:bg-green-600 border-2 border-green-700' : 'bg-gray-400 border-2 border-gray-500 cursor-not-allowed'}`;
+                btn.innerText = canBuy ? "MUA & XÂY DỰNG" : "CHƯA ĐỦ TÀI NGUYÊN";
+                btn.onclick = () => {
+                    if (canBuy) buyBuilding(item);
+                    else playSound('wrong');
+                };
+                
+                card.appendChild(emojiDiv);
+                card.appendChild(nameDiv);
+                card.appendChild(descDiv);
+                card.appendChild(costDiv);
+                card.appendChild(btn);
+                container.appendChild(card);
+            });
+        }
+
+        function buyBuilding(item) {
+            if (state.buildings.length >= maxPlots) {
+                alert("Thành phố đã hết đất trống! Hãy hoàn thành nốt các câu hỏi để kết thúc.");
+                return;
+            }
+            if (state.coins >= item.costCoins && state.materials >= item.costMat) {
+                // Trừ tiền
+                state.coins -= item.costCoins;
+                state.materials -= item.costMat;
+                // Thêm nhà
+                state.buildings.push(item);
+                updateHUD();
+                playSound('build');
+                
+                // Đóng cửa sổ mua sắm ngay lập tức để học sinh thấy công trình hiện ra trên bản đồ
+                closeShopModal();
+                
+                // Ẩn lời nhắc
+                document.getElementById('city-hint').innerText = "";
+                
+                // Cập nhật cấp độ (Cứ 3 nhà lên 1 cấp)
+                let newLevel = Math.floor(state.buildings.length / 3) + 1;
+                if (newLevel > state.level) {
+                    state.level = newLevel;
+                    playSound('levelUp');
+                    const cityCont = document.getElementById('city-container');
+                    cityCont.classList.add('city-level-up');
+                    setTimeout(() => cityCont.classList.remove('city-level-up'), 2000);
+                    showAlert(`🎉 Thành phố thăng lên Cấp ${state.level}!`, 'success');
+                }
+                updateHUD();
+                renderCity();
+            } else {
+                playSound('wrong');
+                showAlert("Không đủ tài nguyên! Hãy trả lời thêm câu hỏi.", 'error');
+            }
+        }
+
+        function renderCity() {
+            const grid = document.getElementById('city-grid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < maxPlots; i++) {
+                const plot = document.createElement('div');
+                
+                if (i < state.buildings.length) {
+                    plot.className = "plot occupied building-pop flex items-center justify-center text-4xl sm:text-5xl drop-shadow-xl";
+                    plot.innerText = state.buildings[i].emoji;
+                } else {
+                    plot.className = "plot";
+                }
+                grid.appendChild(plot);
+            }
+        }
+
+        function endGame() {
+            playSound('levelUp');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('flex');
+            
+            document.getElementById('end-screen').classList.remove('hidden');
+            document.getElementById('end-screen').classList.add('block');
+            
+            document.getElementById('end-player-name').innerText = `Kỹ sư ${state.name} - ${state.className}`;
+            document.getElementById('end-level').innerText = state.level;
+            document.getElementById('end-buildings').innerText = state.buildings.length;
+            document.getElementById('end-coins').innerText = `🪙 ${state.totalCoinsEarned}`;
+            document.getElementById('end-materials').innerText = `🧱 ${state.totalMaterialsEarned}`;
+        }
+
+        function resetGame() {
+            state = {
+                name: state.name, // Giữ lại tên
+                className: state.className,
+                coins: 0, materials: 0,
+                totalCoinsEarned: 0, totalMaterialsEarned: 0,
+                currentQIdx: 0,
+                buildings: [],
+                level: 1
+            };
+            
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('block');
+            
+            // Nếu muốn đổi tên thì hiện lại màn hình start, ở đây cho vô thẳng game
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('flex');
+            
+            document.getElementById('question-area').classList.remove('hidden');
+            document.getElementById('post-question-area').classList.add('hidden');
+            document.getElementById('post-question-area').classList.remove('flex');
+            
+            updateHUD();
+            renderCity();
+            renderQuestion();
+        }
+    </script>
+</body>
+</html>

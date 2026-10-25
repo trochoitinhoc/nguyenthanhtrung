@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THẦY TRÒ ĐƯỜNG TĂNG – VƯỢT KIẾP NẠN KIẾN THỨC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        title: ['Comfortaa', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+            color: #f3f4f6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .title-font { font-family: 'Comfortaa', cursive; }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
+            50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.9); }
+        }
+        .glow-box { animation: pulse-glow 2s infinite; }
+        @keyframes hit-effect {
+            0% { transform: scale(1) translateX(0); }
+            25% { transform: scale(1.1) translateX(-10px) rotate(-5deg); filter: hue-rotate(90deg); }
+            50% { transform: scale(0.9) translateX(10px) rotate(5deg); }
+            75% { transform: scale(1.05) translateX(-5px); }
+            100% { transform: scale(1) translateX(0); }
+        }
+        .hit-anim { animation: hit-effect 0.6s ease-in-out; }
+        @keyframes fire-flicker {
+            0%, 100% { opacity: 0.9; transform: scaleY(1); }
+            50% { opacity: 0.7; transform: scaleY(0.95); }
+        }
+        .fire-anim { animation: fire-flicker 0.8s infinite; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.5); border-radius: 4px; }
+        #fireworks-canvas {
+            pointer-events: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between select-none">
+
+    <!-- Fireworks Canvas Layer -->
+    <canvas id="fireworks-canvas"></canvas>
+
+    <!-- Header -->
+    <header class="bg-black/40 backdrop-blur-md border-b border-amber-500/30 sticky top-0 z-50 px-4 py-3 shadow-lg">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="confirmHome()">
+                <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-red-600 rounded-full flex items-center justify-center shadow-lg border-2 border-amber-200">
+                    <i class="fa-solid fa-scroll text-xl text-yellow-100"></i>
+                </div>
+                <div>
+                    <h1 class="title-font text-base md:text-xl font-bold bg-gradient-to-r from-amber-300 via-yellow-200 to-orange-400 bg-clip-text text-transparent">
+                        THẦY TRÒ ĐƯỜNG TĂNG
+                    </h1>
+                    <p class="text-xs text-amber-200/80 font-semibold tracking-wide">Vượt Kiếp Nạn Kiến Thức • Tin học 4 Bài 9</p>
+                </div>
+            </div>
+
+            <!-- Student Info & Game Stats & Controls -->
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <div id="student-tag" class="hidden bg-indigo-950/80 border border-indigo-400/40 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-200">
+                    <i class="fa-solid fa-user-graduate text-amber-400 mr-1"></i> <span id="display-name"></span> (<span id="display-class"></span>)
+                </div>
+                <div id="game-stats" class="hidden items-center space-x-2 md:space-x-4 text-sm font-bold">
+                    <div class="bg-amber-950/80 border border-amber-500/40 px-3 py-1.5 rounded-xl flex items-center space-x-1 text-amber-300 shadow">
+                        <i class="fa-solid fa-star text-yellow-400"></i>
+                        <span id="stat-score">0đ</span>
+                    </div>
+                    <div class="bg-red-950/80 border border-red-500/40 px-3 py-1.5 rounded-xl flex items-center space-x-1 text-red-300 shadow">
+                        <i class="fa-solid fa-fire text-orange-500"></i>
+                        <span id="stat-streak">0 chuỗi</span>
+                    </div>
+                </div>
+                <button id="audio-toggle-btn" onclick="toggleAudio()" title="Bật/Tắt âm thanh" class="bg-indigo-900 hover:bg-indigo-800 text-amber-300 w-10 h-10 rounded-xl flex items-center justify-center border border-amber-500/40 shadow transition">
+                    <i id="audio-icon" class="fa-solid fa-volume-xmark"></i>
+                </button>
+                <button onclick="confirmHome()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-xl shadow transition flex items-center space-x-1.5 text-xs font-bold border border-amber-400">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="hidden sm:inline">Trang chủ</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main id="app-container" class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center items-center my-auto">
+        <!-- Dynamic views injected here -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-xs text-amber-200/60 font-medium">
+        Bám sát SGK Tin học lớp 4 - Bộ sách Kết nối tri thức với cuộc sống (Bài 9: Hiệu ứng chuyển trang)
+    </footer>
+
+    <!-- Home Confirmation Modal -->
+    <div id="home-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gradient-to-b from-indigo-950 to-slate-900 border-2 border-amber-500 rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl text-center">
+            <div class="w-16 h-16 bg-amber-500/20 border-2 border-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-400 text-2xl">
+                <i class="fa-solid fa-triangle-exclamation animate-bounce"></i>
+            </div>
+            <h3 class="title-font text-xl font-bold text-amber-300 mb-2">Xác nhận về Trang chủ</h3>
+            <p class="text-gray-300 text-sm mb-6 leading-relaxed">Bạn có muốn quay về Trang chủ và bắt đầu lại hành trình không? Toàn bộ tiến trình hiện tại sẽ bị xóa.</p>
+            <div class="flex space-x-3">
+                <button onclick="closeHomeModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-4 rounded-2xl transition border border-slate-600">
+                    Tiếp tục chơi
+                </button>
+                <button onclick="executeHomeReset()" class="flex-1 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold py-3 px-4 rounded-2xl shadow-lg transition border border-amber-400">
+                    Quay về Trang chủ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Knowledge Modal -->
+    <div id="knowledge-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-gradient-to-b from-indigo-950 to-slate-900 border-2 border-amber-500 rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-amber-500/30 pb-3">
+                <h3 class="title-font text-xl font-bold text-amber-300 flex items-center space-x-2">
+                    <i class="fa-solid fa-book-open text-yellow-400"></i>
+                    <span>Kiến Thức Cần Ôn Lại - Tin Học 4 Bài 9</span>
+                </h3>
+                <button onclick="closeKnowledgeModal()" class="text-gray-400 hover:text-white text-xl p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="overflow-y-auto custom-scrollbar pr-2 space-y-4 text-sm text-gray-200 text-left">
+                <div class="bg-black/30 p-4 rounded-2xl border border-amber-500/20">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center space-x-2"><i class="fa-solid fa-circle-check text-xs"></i><span>1. Khái niệm hiệu ứng chuyển trang</span></h4>
+                    <p class="text-gray-300 leading-relaxed">Hiệu ứng chuyển trang (Transition) là cách thức trang chiếu xuất hiện khi trình chiếu, giúp bài thuyết trình sinh động và hấp dẫn hơn.</p>
+                </div>
+                <div class="bg-black/30 p-4 rounded-2xl border border-amber-500/20">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center space-x-2"><i class="fa-solid fa-circle-check text-xs"></i><span>2. Các bước tạo hiệu ứng chuyển trang</span></h4>
+                    <ul class="list-disc pl-5 space-y-1 text-gray-300">
+                        <li><b>Bước 1:</b> Chọn trang chiếu muốn tạo hiệu ứng.</li>
+                        <li><b>Bước 2:</b> Chọn dải lệnh <b>Transitions</b>.</li>
+                        <li><b>Bước 3:</b> Chọn một hiệu ứng trên nhóm lệnh <i>Transition to This Slide</i> (nhấn nút mũi tên trỏ xuống để mở rộng danh sách ẩn).</li>
+                    </ul>
+                </div>
+                <div class="bg-black/30 p-4 rounded-2xl border border-amber-500/20">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center space-x-2"><i class="fa-solid fa-circle-check text-xs"></i><span>3. Lưu ý quan trọng</span></h4>
+                    <p class="text-gray-300 leading-relaxed">Hiệu ứng chuyển trang được đặt cho <b>từng trang chiếu riêng biệt</b> và mỗi trang chiếu <b>chỉ sử dụng được một kiểu hiệu ứng duy nhất</b>.</p>
+                </div>
+                <div class="bg-black/30 p-4 rounded-2xl border border-amber-500/20">
+                    <h4 class="font-bold text-amber-400 mb-1 flex items-center space-x-2"><i class="fa-solid fa-circle-check text-xs"></i><span>4. Một số hiệu ứng phổ biến thực hành</span></h4>
+                    <p class="text-gray-300">Push, Flip, Shape, Box, Wipe, Rotate, Zoom, Pan, v.v.</p>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-amber-500/30 text-center">
+                <button onclick="closeKnowledgeModal()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 px-6 rounded-xl shadow transition">Đã hiểu bài học</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-box" class="fixed bottom-6 right-6 z-50 transform translate-y-32 opacity-0 transition-all duration-300 bg-slate-900 border-2 border-amber-500 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center space-x-3 max-w-md">
+        <div id="toast-icon" class="text-2xl text-amber-400"></div>
+        <div>
+            <h5 id="toast-title" class="font-bold text-amber-300 text-sm">Thông báo</h5>
+            <p id="toast-desc" class="text-xs text-gray-300"></p>
+        </div>
+    </div>
+
+    <script>
+        // ================= Web Audio & Sound Effects Engine =================
+        let audioCtx = null;
+        let isAudioMuted = true;
+        let bgmInterval = null;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleAudio() {
+            initAudioContext();
+            isAudioMuted = !isAudioMuted;
+            const icon = document.getElementById('audio-icon');
+            if (isAudioMuted) {
+                icon.className = "fa-solid fa-volume-xmark";
+                stopBGM();
+                showToast("Đã tắt âm thanh", "Nhạc nền đã được tắt.", false);
+            } else {
+                icon.className = "fa-solid fa-volume-high";
+                startBGM();
+                showToast("Đã bật âm thanh", "Nhạc nền vui nhộn đang phát.", true);
+            }
+        }
+
+        // Play Sound Effects
+        function playCorrectSound() {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                // Triumphant chime / gong
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+                    gain.gain.setValueAtTime(0.3, now + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.1);
+                    osc.stop(now + idx * 0.1 + 0.4);
+                });
+            } catch(e) {}
+        }
+
+        function playWrongSound() {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                const now = audioCtx.currentTime;
+                // Buzzer / Alarm
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.setValueAtTime(110, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } catch(e) {}
+        }
+
+        // Background Music Loop (Joyful Adventure Chiptune-style melody)
+        function startBGM() {
+            if (bgmInterval) clearInterval(bgmInterval);
+            const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 440.00, 493.88, 523.25, 392.00, 329.63, 293.66];
+            let noteIdx = 0;
+            bgmInterval = setInterval(() => {
+                if (isAudioMuted || !audioCtx) return;
+                try {
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(notes[noteIdx], now);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                    noteIdx = (noteIdx + 1) % notes.length;
+                } catch(e) {}
+            }, 300);
+        }
+
+        function stopBGM() {
+            if (bgmInterval) {
+                clearInterval(bgmInterval);
+                bgmInterval = null;
+            }
+        }
+
+        // ================= Canvas Fireworks Engine =================
+        const canvas = document.getElementById('fireworks-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class FireworkParticle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.02 + 0.015;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1; // gravity
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function triggerFireworks() {
+            const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+            const cx = window.innerWidth * (0.2 + Math.random() * 0.6);
+            const cy = window.innerHeight * (0.2 + Math.random() * 0.4);
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            for (let i = 0; i < 60; i++) {
+                particles.push(new FireworkParticle(cx, cy, color));
+            }
+        }
+
+        function animateFireworks() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+            requestAnimationFrame(animateFireworks);
+        }
+        animateFireworks();
+
+        // ================= Game State & Logic =================
+        let gameState = {
+            currentScreen: 'home', // 'home', 'login', 'guide', 'map', 'play', 'fire_mountain', 'boss', 'summary'
+            studentName: '',
+            studentClass: '',
+            currentLevel: 1,
+            score: 0,
+            correctCount: 0,
+            wrongCount: 0,
+            streak: 0,
+            maxStreak: 0,
+            startTime: null,
+            elapsedTime: 0,
+            timerInterval: null,
+            inventory: {
+                fan: 1,      // Quạt Ba Tiêu
+                cloud: 1,    // Cân Đẩu Vân
+                eye: 1,      // Hỏa Nhãn Kim Tinh
+                peach: 1,    // Đào Tiên
+                scroll: 1    // Bí Kíp
+            },
+            usedTreasures: 0,
+            bossDefeated: false,
+            fireMountainProgress: 0, // 0 to 3
+            currentQuestion: null,
+            eliminatedOptionIndex: null
+        };
+
+        // 8 Levels Data (Bám sát SGK Tin học 4 Bài 9)
+        const levelsData = [
+            {
+                id: 1,
+                name: "Kiếp 1: Rừng Yêu Quái",
+                type: "mcq",
+                title: "🌲 Khái niệm Hiệu ứng chuyển trang",
+                question: "Hiệu ứng chuyển trang (Transition) trong phần mềm trình chiếu là gì?",
+                options: [
+                    "Là cách thức các đối tượng (chữ, hình ảnh) xuất hiện trên trang chiếu",
+                    "Là cách thức trang chiếu xuất hiện khi trình chiếu",
+                    "Là màu sắc nền và font chữ của trang chiếu",
+                    "Là âm thanh phát ra khi mở tệp trình chiếu"
+                ],
+                correct: 1,
+                explanation: "SGK trang 39 định nghĩa: Hiệu ứng chuyển trang là cách thức trang chiếu xuất hiện khi trình chiếu.",
+                hint: "Xem lại phần 1 SGK trang 39: 'Hiệu ứng chuyển trang là cách thức trang chiếu xuất hiện khi trình chiếu'."
+            },
+            {
+                id: 2,
+                name: "Kiếp 2: Sông Lớn Nguy Hiểm",
+                type: "mcq",
+                title: "🌊 Dải Lệnh Hiệu Ứng",
+                question: "Để tạo hiệu ứng chuyển trang trong phần mềm trình chiếu, ta chọn dải lệnh nào?",
+                options: ["Home", "Design", "Transitions", "Animations"],
+                correct: 2,
+                explanation: "Để tạo hiệu ứng chuyển trang, ta chọn dải lệnh Transitions trên thanh công cụ.",
+                hint: "Xem lại SGK trang 39: Bước 2: Chọn một hiệu ứng chuyển trang trên nhóm lệnh Transition to This Slide của dải lệnh Transitions."
+            },
+            {
+                id: 3,
+                name: "Kiếp 3: Cổng Thành Cổ",
+                type: "mcq",
+                title: "🔒 Nhóm Lệnh Chuyển Trang",
+                question: "Trong dải lệnh Transitions, nhóm lệnh chứa các hiệu ứng chuyển trang có tên là gì?",
+                options: ["Transition to This Slide", "Timing", "Animation Styles", "Slide Show Setup"],
+                correct: 0,
+                explanation: "Nhóm lệnh chứa các hiệu ứng chuyển trang là 'Transition to This Slide'.",
+                hint: "Xem lại SGK trang 39: 'Chọn một hiệu ứng chuyển trang trên nhóm lệnh Transition to This Slide của dải lệnh Transitions'."
+            },
+            {
+                id: 4,
+                name: "Kiếp 4: Động Yêu Tinh Sương Mù",
+                type: "true_false",
+                title: "🕷️ Nhận Định Hiệu Ứng",
+                question: "Nhận định sau đây đúng hay sai? 'Mỗi trang chiếu có thể có nhiều kiểu hiệu ứng chuyển trang.'",
+                options: ["Đúng", "Sai"],
+                correct: 1, // Sai
+                explanation: "Lưu ý SGK (trang 40): Hiệu ứng chuyển trang được đặt cho từng trang chiếu và mỗi trang chiếu chỉ sử dụng được MỘT kiểu hiệu ứng duy nhất.",
+                hint: "Xem lại Lưu ý SGK trang 40: Mỗi trang chiếu chỉ sử dụng được một kiểu hiệu ứng duy nhất."
+            },
+            {
+                id: 5,
+                name: "Kiếp 5: Núi Cao Hiểm Trở",
+                type: "mcq",
+                title: "⛰️ Danh Sách Hiệu Ứng Ẩn",
+                question: "Để xuất hiện danh sách tất cả các kiểu hiệu ứng chuyển trang ẩn (More), ta nháy chuột vào nút lệnh nào?",
+                options: [
+                    "Nút mũi tên trỏ xuống (More) ở nhóm Transition to This Slide",
+                    "Nút lệnh F5 trên bàn phím",
+                    "Nút lệnh Save hình đĩa mềm",
+                    "Nút lệnh New Slide"
+                ],
+                correct: 0,
+                explanation: "SGK trang 40 hướng dẫn nháy nút mũi tên trỏ xuống để xuất hiện danh sách các hiệu ứng.",
+                hint: "Xem lại SGK trang 40: 'Nháy nút này để xuất hiện danh sách các hiệu ứng'."
+            },
+            {
+                id: 6,
+                name: "Kiếp 6: Rừng Mê Cung Tệp Tin",
+                type: "matching_practice",
+                title: "🌲 Thực Hành Tệp 'Canh dep que huong'",
+                question: "Trong phần thực hành tệp 'Canh dep que huong', các hiệu ứng được gán cho các trang như thế nào là chính xác?",
+                options: [
+                    "Trang 1: Push, Trang 2: Flip, Trang 3: Shape, Trang 4: Box",
+                    "Trang 1: Wipe, Trang 2: Rotate, Trang 3: Zoom, Trang 4: Pan",
+                    "Trang 1: Cut, Trang 2: Fade, Trang 3: Push, Trang 4: Split",
+                    "Trang 1: Box, Trang 2: Shape, Trang 3: Flip, Trang 4: Push"
+                ],
+                correct: 0,
+                explanation: "SGK trang 40 nhiệm vụ: Trang 1: Push, Trang 2: Flip, Trang 3: Shape, Trang 4: Box.",
+                hint: "Xem lại bảng thực hành trang 40: Trang 1 (Push), Trang 2 (Flip), Trang 3 (Shape), Trang 4 (Box)."
+            }
+        ];
+
+        // Fire Mountain Questions (Kiếp 7 - 3 câu liên tiếp)
+        const fireMountainQuestions = [
+            {
+                question: "Câu 1 (Hỏa Diệm Sơn): Các nút lệnh của hiệu ứng chuyển trang nằm trên dải lệnh nào?",
+                options: ["Design", "Animations", "Home", "Transitions"],
+                correct: 3,
+                hint: "Nằm trên dải lệnh tên là Transitions."
+            },
+            {
+                question: "Câu 2 (Hỏa Diệm Sơn): Phát biểu 'Hiệu ứng chuyển trang giúp cho bài thuyết trình sinh động và hấp dẫn hơn' đúng hay sai?",
+                options: ["Đúng", "Sai"],
+                correct: 0,
+                hint: "Hiệu ứng làm bài sinh động và hấp dẫn hơn là hoàn toàn chính xác."
+            },
+            {
+                question: "Câu 3 (Hỏa Diệm Sơn): Trong bài giới thiệu Hồ Hoàn Kiếm (Trang 1: Wipe, Trang 2: Rotate, Trang 3: Zoom, Trang 4: Pan), hỏi trang 3 dùng hiệu ứng gì?",
+                options: ["Rotate", "Zoom", "Pan", "Wipe"],
+                correct: 1,
+                hint: "Hãy xem lại yêu cầu cho Trang 3 trong bài Hồ Hoàn Kiếm."
+            }
+        ];
+
+        // Boss Question (Kiếp 8 - Boss Cuối)
+        const bossQuestion = {
+            title: "👑 Đại Yêu Vương Hỏa Diệm Sư",
+            question: "Lưu ý quan trọng nhất khi sử dụng hiệu ứng chuyển trang trong phần mềm trình chiếu là gì?",
+            options: [
+                "Mỗi trang chiếu có thể áp dụng bao nhiêu hiệu ứng tùy ý cùng lúc",
+                "Hiệu ứng chuyển trang được đặt cho từng trang chiếu và mỗi trang chiếu chỉ sử dụng được MỘT kiểu hiệu ứng duy nhất",
+                "Hiệu ứng chuyển trang chỉ dùng được khi kết nối Internet",
+                "Phải dùng tất cả các hiệu ứng trong danh sách cho một trang chiếu"
+            ],
+            correct: 1,
+            explanation: "Tuyệt đỉnh! Bạn đã nắm vững kiến thức cốt lõi của Bài 9 SGK Tin học 4.",
+            hint: "Xem lại phần lưu ý trọng tâm SGK: Mỗi trang chiếu chỉ sử dụng một kiểu hiệu ứng duy nhất."
+        };
+
+        // Initialize App on Load
+        window.onload = function() {
+            renderHomeScreen();
+        };
+
+        // Toast Notification Function
+        function showToast(title, desc, isSuccess = true) {
+            const toast = document.getElementById('toast-box');
+            const icon = document.getElementById('toast-icon');
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-desc').innerText = desc;
+            icon.className = isSuccess ? "fa-solid fa-circle-check text-2xl text-emerald-400" : "fa-solid fa-triangle-exclamation text-2xl text-amber-400";
+            
+            toast.classList.remove('translate-y-32', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-32', 'opacity-0');
+            }, 3500);
+        }
+
+        // Screen 1: Home Screen
+        function renderHomeScreen() {
+            gameState.currentScreen = 'home';
+            document.getElementById('game-stats').classList.add('hidden');
+            document.getElementById('student-tag').classList.add('hidden');
+            const container = document.getElementById('app-container');
+            container.innerHTML = `
+                <div class="text-center max-w-3xl mx-auto space-y-6 py-6">
+                    <div class="inline-block animate-float mb-2">
+                        <div class="w-28 h-28 mx-auto bg-gradient-to-tr from-amber-500 via-red-600 to-yellow-400 rounded-full flex items-center justify-center shadow-2xl border-4 border-amber-200 glow-box">
+                            <i class="fa-solid fa-book-bookmark text-5xl text-yellow-100"></i>
+                        </div>
+                    </div>
+                    <h1 class="title-font text-3xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-amber-300 via-yellow-100 to-orange-400 bg-clip-text text-transparent drop-shadow-lg">
+                        THẦY TRÒ ĐƯỜNG TĂNG<br><span class="text-2xl md:text-4xl text-amber-400">VƯỢT KIẾP NẠN KIẾN THỨC</span>
+                    </h1>
+                    <p class="text-base md:text-lg text-amber-100/90 font-medium px-4 leading-relaxed bg-black/30 py-3 rounded-2xl border border-amber-500/30">
+                        Khám phá hành trình thỉnh kinh kỳ thú dựa chính xác vào <b>Tin học 4 Bài 9: Hiệu ứng chuyển trang (SGK Kết nối tri thức)</b>. Vượt 8 kiếp nạn, thu thập pháp bảo và đánh bại Đại Yêu Vương!
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-4 pt-4">
+                        <button onclick="renderLoginScreen()" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white title-font text-lg font-bold px-8 py-4 rounded-2xl shadow-xl transition transform hover:scale-105 border-2 border-amber-300 flex items-center space-x-3">
+                            <i class="fa-solid fa-play text-yellow-200"></i>
+                            <span>BẮT ĐẦU THỈNH KINH</span>
+                        </button>
+                        <button onclick="openGuideModal()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 title-font text-base font-bold px-6 py-4 rounded-2xl shadow-lg transition border-2 border-amber-500/50 flex items-center space-x-2">
+                            <i class="fa-solid fa-circle-question"></i>
+                            <span>HƯỚNG DẪN CÁCH CHƠI</span>
+                        </button>
+                    </div>
+                    <div class="pt-6 flex justify-center items-center space-x-6 text-xs text-amber-300/80 font-bold">
+                        <span class="flex items-center space-x-1"><i class="fa-solid fa-user-tie text-amber-400"></i><span>Đường Tăng</span></span>
+                        <span class="flex items-center space-x-1"><i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i><span>Tôn Ngộ Không</span></span>
+                        <span class="flex items-center space-x-1"><i class="fa-solid fa-shield-halved text-amber-400"></i><span>Trư Bát Giới</span></span>
+                        <span class="flex items-center space-x-1"><i class="fa-solid fa-staff-snake text-amber-400"></i><span>Sa Tăng</span></span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Screen 1.5: Login Screen (Họ tên & Lớp)
+        function renderLoginScreen() {
+            gameState.currentScreen = 'login';
+            const container = document.getElementById('app-container');
+            container.innerHTML = `
+                <div class="max-w-md w-full mx-auto bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-950 border-2 border-amber-500 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-amber-500/20 border-2 border-amber-400 rounded-full flex items-center justify-center mx-auto mb-3 text-amber-400 text-2xl">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                        <h2 class="title-font text-2xl font-bold text-amber-300">THÔNG TIN SĨ TỬ</h2>
+                        <p class="text-xs text-gray-300 mt-1">Hãy nhập họ tên và lớp trước khi bước vào hành trình thỉnh kinh.</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-amber-300 mb-1">HỌ VÀ TÊN</label>
+                            <input type="text" id="input-name" placeholder="Biệt danh (không nhập tên thật)" value="${gameState.studentName}" class="w-full bg-slate-800 border-2 border-amber-500/40 focus:border-amber-400 rounded-2xl px-4 py-3 text-white text-sm outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-300 mb-1">LỚP</label>
+                            <input type="text" id="input-class" placeholder="Ví dụ: Lớp 4A" value="${gameState.studentClass}" class="w-full bg-slate-800 border-2 border-amber-500/40 focus:border-amber-400 rounded-2xl px-4 py-3 text-white text-sm outline-none transition">
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3 pt-2">
+                        <button onclick="renderHomeScreen()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold py-3.5 px-4 rounded-2xl border border-slate-700 transition">
+                            Quay lại
+                        </button>
+                        <button onclick="submitLogin()" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold py-3.5 px-4 rounded-2xl shadow-lg border border-amber-300 transition">
+                            BẮT ĐẦU CHƠI
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function submitLogin() {
+            const name = document.getElementById('input-name').value.trim();
+            const cls = document.getElementById('input-class').value.trim();
+            if (!name || !cls) {
+                showToast("Thiếu thông tin", "Vui lòng nhập đầy đủ Họ tên và Lớp của bạn!", false);
+                return;
+            }
+            gameState.studentName = name;
+            gameState.studentClass = cls;
+            
+            // Update header display
+            document.getElementById('display-name').innerText = name;
+            document.getElementById('display-class').innerText = cls;
+            document.getElementById('student-tag').classList.remove('hidden');
+
+            startGame();
+        }
+
+        // Screen 2: Guide Modal
+        function openGuideModal() {
+            const modalHtml = `
+                <div id="guide-screen" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                    <div class="bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-950 border-2 border-amber-500 rounded-3xl p-6 md:p-8 max-w-3xl w-full shadow-2xl max-h-[90vh] flex flex-col">
+                        <div class="flex justify-between items-center mb-4 border-b border-amber-500/30 pb-3">
+                            <h2 class="title-font text-xl md:text-2xl font-bold text-amber-300 flex items-center space-x-2">
+                                <i class="fa-solid fa-compass text-yellow-400"></i>
+                                <span>HƯỚNG DẪN CÁCH CHƠI TÂY DU KÝ</span>
+                            </h2>
+                            <button onclick="closeGuide()" class="text-gray-400 hover:text-white text-2xl px-2"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="overflow-y-auto custom-scrollbar pr-2 space-y-4 text-sm text-gray-200 text-left">
+                            <div class="bg-amber-950/40 p-4 rounded-2xl border border-amber-500/30">
+                                <h4 class="font-bold text-amber-300 mb-1 flex items-center space-x-2"><i class="fa-solid fa-route text-yellow-400"></i><span>1. Hành Trình Vượt Kiếp Nạn</span></h4>
+                                <p class="text-gray-300">Đoàn thỉnh kinh gồm 4 thầy trò sẽ vượt qua 8 kiếp nạn kiến thức bám sát Bài 9 Tin học 4. Mỗi kiếp nạn có thử thách riêng (trắc nghiệm, đúng/sai, thực hành tệp).</p>
+                            </div>
+                            <div class="bg-amber-950/40 p-4 rounded-2xl border border-amber-500/30">
+                                <h4 class="font-bold text-amber-300 mb-1 flex items-center space-x-2"><i class="fa-solid fa-wand-magic-sparkles text-yellow-400"></i><span>2. Hệ Thống Pháp Bảo Kỳ Diệu</span></h4>
+                                <ul class="list-disc pl-5 space-y-1 text-gray-300">
+                                    <li><b>🪭 Quạt Ba Tiêu:</b> Giúp dập tắt lửa tại ải đặc biệt Hỏa Diệm Sơn.</li>
+                                    <li><b>☁️ Cân Đẩu Vân:</b> Vượt nhanh qua câu hỏi khó.</li>
+                                    <li><b>👁️ Hỏa Nhãn Kim Tinh:</b> Loại bỏ một đáp án sai.</li>
+                                    <li><b>🍑 Đào Tiên:</b> Thêm một lượt cứu trợ khi trả lời sai.</li>
+                                    <li><b>📜 Bí Kíp:</b> Mở gợi ý kiến thức SGK trực tiếp.</li>
+                                </ul>
+                            </div>
+                            <div class="bg-amber-950/40 p-4 rounded-2xl border border-amber-500/30">
+                                <h4 class="font-bold text-amber-300 mb-1 flex items-center space-x-2"><i class="fa-solid fa-fire text-yellow-400"></i><span>3. Cửa Ải Đặc Biệt & Đại Boss</span></h4>
+                                <p class="text-gray-300"><b>Hỏa Diệm Sơn:</b> Trả lời đúng 3 câu liên tiếp để Quạt Ba Tiêu dập tắt lửa. <br><b>Đại Yêu Vương (Boss cuối):</b> Trả lời đúng câu hỏi tổng hợp để tung đòn kết thúc và thỉnh kinh thành công!</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-amber-500/30 flex justify-end space-x-4">
+                            <button onclick="closeGuide()" class="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold py-3 px-8 rounded-2xl shadow-lg transition border border-amber-300">
+                                ĐÃ HIỂU
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const existing = document.getElementById('guide-screen');
+            if (existing) existing.remove();
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function closeGuide() {
+            const el = document.getElementById('guide-screen');
+            if (el) el.remove();
+        }
+
+        function startGame() {
+            gameState.currentLevel = 1;
+            gameState.score = 0;
+            gameState.correctCount = 0;
+            gameState.wrongCount = 0;
+            gameState.streak = 0;
+            gameState.maxStreak = 0;
+            gameState.startTime = new Date();
+            gameState.elapsedTime = 0;
+            gameState.bossDefeated = false;
+            gameState.fireMountainProgress = 0;
+            gameState.inventory = { fan: 1, cloud: 1, eye: 1, peach: 1, scroll: 1 };
+            gameState.usedTreasures = 0;
+            
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(() => {
+                gameState.elapsedTime++;
+            }, 1000);
+
+            document.getElementById('game-stats').classList.remove('hidden');
+            updateStatsDisplay();
+            renderMapScreen();
+            triggerFireworks();
+        }
+
+        function updateStatsDisplay() {
+            document.getElementById('stat-score').innerText = gameState.score + 'đ';
+            document.getElementById('stat-streak').innerText = gameState.streak + ' chuỗi';
+        }
+
+        // Screen 3: Journey Map Screen with 4 Characters Moving
+        function renderMapScreen() {
+            gameState.currentScreen = 'map';
+            const container = document.getElementById('app-container');
+            
+            let nodesHtml = '';
+            const totalStages = 8;
+            for (let i = 1; i <= totalStages; i++) {
+                let isCompleted = i < gameState.currentLevel;
+                let isCurrent = i === gameState.currentLevel;
+                let isLocked = i > gameState.currentLevel;
+
+                let bgClass = isCompleted ? 'bg-emerald-600 border-emerald-300 text-white shadow-emerald-900/50' : 
+                              isCurrent ? 'bg-amber-500 border-yellow-200 text-white glow-box animate-pulse' : 
+                              'bg-slate-800 border-slate-600 text-slate-400 opacity-70';
+                
+                let iconClass = i === 7 ? 'fa-fire text-orange-300' : i === 8 ? 'fa-crown text-yellow-300' : 'fa-shield-halved';
+                let stageTitle = i === 7 ? 'Hỏa Diệm Sơn' : i === 8 ? 'Đại Boss Cuối' : `Kiếp ${i}`;
+
+                nodesHtml += `
+                    <div class="flex flex-col items-center relative group">
+                        <div onclick="${isLocked ? 'showLockedMsg()' : `startLevel(${i})`}" 
+                             class="w-14 h-14 md:w-16 md:h-16 rounded-2xl border-2 flex items-center justify-center font-bold text-lg shadow-lg cursor-pointer transition transform hover:scale-110 ${bgClass}">
+                            <i class="fa-solid ${iconClass} text-xl"></i>
+                        </div>
+                        <span class="mt-2 text-xs md:text-sm font-bold text-amber-200 text-center">${stageTitle}</span>
+                        ${isCurrent ? `
+                            <div class="absolute -top-12 flex space-x-1 bg-black/70 px-2 py-1 rounded-full border border-amber-400 animate-bounce">
+                                <span title="Đường Tăng" class="text-xs">🐴</span>
+                                <span title="Tôn Ngộ Không" class="text-xs">🐒</span>
+                                <span title="Trư Bát Giới" class="text-xs">🐷</span>
+                                <span title="Sa Tăng" class="text-xs">👹</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="max-w-4xl w-full mx-auto space-y-6">
+                    <div class="bg-black/40 backdrop-blur-md p-6 rounded-3xl border-2 border-amber-500/40 shadow-2xl text-center">
+                        <h2 class="title-font text-2xl md:text-3xl font-bold text-amber-300 mb-2 flex items-center justify-center space-x-3">
+                            <i class="fa-solid fa-map-location-dot text-yellow-400"></i>
+                            <span>BẢN ĐỒ HÀNH TRÌNH THỈNH KINH</span>
+                        </h2>
+                        <p class="text-gray-300 text-sm mb-6">Sĩ tử <b>${gameState.studentName}</b> (${gameState.studentClass}) đang ở <b>Kiếp nạn ${gameState.currentLevel} / 8</b>.</p>
+                        
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 py-4 justify-items-center">
+                            ${nodesHtml}
+                        </div>
+
+                        <div class="mt-8 flex flex-wrap justify-center gap-4">
+                            <button onclick="enterCurrentStage()" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white title-font font-bold px-8 py-3.5 rounded-2xl shadow-xl transition border-2 border-amber-300 flex items-center space-x-2">
+                                <i class="fa-solid fa-person-running text-yellow-200"></i>
+                                <span>VƯỢT KIẾP NẠN NGAY (${gameState.currentLevel})</span>
+                            </button>
+                            <button onclick="openKnowledgeModal()" class="bg-indigo-900/80 hover:bg-indigo-800 text-amber-300 font-bold px-6 py-3.5 rounded-2xl shadow-lg transition border border-amber-500/50 flex items-center space-x-2">
+                                <i class="fa-solid fa-book-open"></i>
+                                <span>Ôn Lại SGK Bài 9</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showLockedMsg() {
+            showToast("Cửa ải chưa mở", "Hãy hoàn thành các kiếp nạn trước đó để tiếp tục hành trình!", false);
+        }
+
+        function enterCurrentStage() {
+            if (gameState.currentLevel <= 6) {
+                renderPlayScreen(gameState.currentLevel);
+            } else if (gameState.currentLevel === 7) {
+                renderFireMountainScreen();
+            } else if (gameState.currentLevel === 8) {
+                renderBossScreen();
+            }
+        }
+
+        function startLevel(lvl) {
+            if (lvl > gameState.currentLevel) {
+                showLockedMsg();
+                return;
+            }
+            gameState.currentLevel = lvl;
+            enterCurrentStage();
+        }
+
+        // Screen 4: Normal Level Play Screen (Levels 1 - 6)
+        function renderPlayScreen(lvlId) {
+            gameState.currentScreen = 'play';
+            const levelData = levelsData.find(l => l.id === lvlId);
+            gameState.currentQuestion = levelData;
+
+            const container = document.getElementById('app-container');
+            
+            let optionsHtml = '';
+            levelData.options.forEach((opt, idx) => {
+                optionsHtml += `
+                    <button id="opt-${idx}" onclick="selectAnswer(${idx})" class="w-full text-left bg-slate-800/90 hover:bg-indigo-900/80 border-2 border-amber-500/30 hover:border-amber-400 p-4 rounded-2xl transition font-semibold text-gray-200 flex items-center space-x-4 shadow-md">
+                        <span class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400 flex items-center justify-center font-bold text-amber-300 shrink-0">${String.fromCharCode(65 + idx)}</span>
+                        <span class="flex-grow">${opt}</span>
+                    </button>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="max-w-3xl w-full mx-auto space-y-6">
+                    <div class="bg-black/50 backdrop-blur-md p-4 rounded-2xl border border-amber-500/30 flex flex-wrap justify-between items-center gap-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-xl shadow">Kiếp nạn ${lvlId}/8</span>
+                            <span class="text-amber-300 font-bold text-sm">${levelData.title}</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="useTreasure('scroll')" title="Bí Kíp (Gợi ý)" class="bg-indigo-900/80 hover:bg-indigo-800 border border-indigo-400 text-indigo-200 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 shadow">
+                                <i class="fa-solid fa-scroll text-yellow-400"></i><span>(${gameState.inventory.scroll})</span>
+                            </button>
+                            <button onclick="useTreasure('eye')" title="Hỏa Nhãn Kim Tinh (Loại sai)" class="bg-indigo-900/80 hover:bg-indigo-800 border border-indigo-400 text-indigo-200 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 shadow">
+                                <i class="fa-solid fa-eye text-cyan-400"></i><span>(${gameState.inventory.eye})</span>
+                            </button>
+                            <button onclick="useTreasure('cloud')" title="Cân Đẩu Vân (Vượt nhanh)" class="bg-indigo-900/80 hover:bg-indigo-800 border border-indigo-400 text-indigo-200 px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1 shadow">
+                                <i class="fa-solid fa-cloud text-white"></i><span>(${gameState.inventory.cloud})</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-950 border-2 border-amber-500/60 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                        <div id="char-animation-area" class="flex justify-center items-center space-x-6 mb-6 py-3 bg-black/30 rounded-2xl border border-amber-500/20">
+                            <div class="text-center"><div class="text-3xl animate-float">🐒</div><span class="text-xs text-amber-300 font-bold">Ngộ Không</span></div>
+                            <div class="text-center"><div class="text-3xl animate-float">🐷</div><span class="text-xs text-amber-300 font-bold">Bát Giới</span></div>
+                            <div class="text-center"><div class="text-3xl animate-float">👹</div><span class="text-xs text-amber-300 font-bold">Sa Tăng</span></div>
+                            <div class="text-center"><div class="text-3xl animate-float">🐴</div><span class="text-xs text-amber-300 font-bold">Bạch Mã</span></div>
+                        </div>
+
+                        <h3 class="title-font text-lg md:text-xl font-bold text-amber-200 mb-6 leading-relaxed">
+                            ${levelData.question}
+                        </h3>
+
+                        <div id="options-container" class="space-y-3">
+                            ${optionsHtml}
+                        </div>
+
+                        <div id="hint-box" class="hidden mt-6 p-4 bg-amber-950/60 border border-amber-500/50 rounded-2xl text-amber-200 text-sm">
+                            <span class="font-bold"><i class="fa-solid fa-lightbulb text-yellow-400 mr-2"></i>Gợi ý SGK:</span> <span id="hint-text"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Answer Selection Logic
+        function selectAnswer(selectedIdx) {
+            const q = gameState.currentQuestion;
+            const options = document.querySelectorAll('#options-container button');
+            options.forEach(btn => btn.disabled = true);
+
+            if (selectedIdx === q.correct) {
+                playCorrectSound();
+                triggerFireworks();
+
+                options[selectedIdx].classList.remove('bg-slate-800/90', 'border-amber-500/30');
+                options[selectedIdx].classList.add('bg-emerald-700', 'border-emerald-400', 'text-white', 'shadow-lg');
+                
+                gameState.score += 150 + (gameState.streak * 20);
+                gameState.correctCount++;
+                gameState.streak++;
+                if (gameState.streak > gameState.maxStreak) gameState.maxStreak = gameState.streak;
+                updateStatsDisplay();
+
+                const area = document.getElementById('char-animation-area');
+                area.innerHTML = `
+                    <div class="text-center hit-anim">
+                        <div class="text-4xl">💥🪄🐒</div>
+                        <span class="text-xs text-emerald-300 font-bold">Ngộ Không giáng gậy Như Ý tiêu diệt yêu quái!</span>
+                    </div>
+                `;
+
+                showToast("Chính xác! 🎉", "Kiếp nạn đã được hóa giải thành công!", true);
+
+                setTimeout(() => {
+                    gameState.currentLevel++;
+                    if (gameState.currentLevel > 8) {
+                        renderSummaryScreen();
+                    } else {
+                        renderMapScreen();
+                    }
+                }, 2000);
+
+            } else {
+                playWrongSound();
+
+                options[selectedIdx].classList.remove('bg-slate-800/90', 'border-amber-500/30');
+                options[selectedIdx].classList.add('bg-red-800', 'border-red-500', 'text-white');
+                options[q.correct].classList.add('bg-emerald-800', 'border-emerald-400');
+
+                gameState.wrongCount++;
+                gameState.streak = 0;
+                updateStatsDisplay();
+
+                showToast("KIẾP NẠN CHƯA ĐƯỢC HÓA GIẢI ❌", q.hint, false);
+
+                setTimeout(() => {
+                    if (gameState.inventory.peach > 0) {
+                        if (confirm("Bạn đã trả lời sai! Bạn có muốn dùng 🍑 Đào Tiên để cứu trợ và trả lời lại không?")) {
+                            gameState.inventory.peach--;
+                            renderPlayScreen(gameState.currentLevel);
+                            return;
+                        }
+                    }
+                    setTimeout(() => {
+                        renderMapScreen();
+                    }, 2500);
+                }, 1000);
+            }
+        }
+
+        // Treasure Usage
+        function useTreasure(type) {
+            if (type === 'scroll') {
+                if (gameState.inventory.scroll <= 0) {
+                    showToast("Hết Bí Kíp", "Bạn đã dùng hết Bí Kíp trong ván này!", false);
+                    return;
+                }
+                gameState.inventory.scroll--;
+                gameState.usedTreasures++;
+                const hintBox = document.getElementById('hint-box');
+                document.getElementById('hint-text').innerText = gameState.currentQuestion.hint;
+                hintBox.classList.remove('hidden');
+                showToast("📜 Đã mở Bí Kíp", "Đã hiển thị gợi ý kiến thức SGK.", true);
+            } 
+            else if (type === 'eye') {
+                if (gameState.inventory.eye <= 0) {
+                    showToast("Hết Hỏa Nhãn Kim Tinh", "Bạn đã dùng hết lượt Hỏa Nhãn Kim Tinh!", false);
+                    return;
+                }
+                gameState.inventory.eye--;
+                gameState.usedTreasures++;
+                
+                const q = gameState.currentQuestion;
+                let wrongIndices = [];
+                q.options.forEach((_, idx) => {
+                    if (idx !== q.correct) wrongIndices.push(idx);
+                });
+                const randomWrong = wrongIndices[Math.floor(Math.random() * wrongIndices.length)];
+                const btnToHide = document.getElementById(`opt-${randomWrong}`);
+                if (btnToHide) {
+                    btnToHide.style.opacity = '0.3';
+                    btnToHide.style.pointerEvents = 'none';
+                    btnToHide.innerText = "❌ (Đã bị Hỏa Nhãn Kim Tinh loại bỏ)";
+                }
+                showToast("👁️ Hỏa Nhãn Kim Tinh", "Đã loại bỏ 1 đáp án sai!", true);
+            }
+            else if (type === 'cloud') {
+                if (gameState.inventory.cloud <= 0) {
+                    showToast("Hết Cân Đẩu Vân", "Bạn đã dùng hết Cân Đẩu Vân!", false);
+                    return;
+                }
+                gameState.inventory.cloud--;
+                gameState.usedTreasures++;
+                playCorrectSound();
+                triggerFireworks();
+                showToast("☁️ Cân Đẩu Vân bay vút!", "Đã tự động vượt qua câu hỏi này!", true);
+                
+                gameState.score += 150;
+                gameState.correctCount++;
+                gameState.streak++;
+                updateStatsDisplay();
+
+                setTimeout(() => {
+                    gameState.currentLevel++;
+                    if (gameState.currentLevel > 8) {
+                        renderSummaryScreen();
+                    } else {
+                        renderMapScreen();
+                    }
+                }, 1500);
+            }
+        }
+
+        // Screen 5: Fire Mountain (Kiếp 7)
+        function renderFireMountainScreen() {
+            gameState.currentScreen = 'fire_mountain';
+            const qIdx = gameState.fireMountainProgress;
+            if (qIdx >= 3) {
+                gameState.currentLevel = 8;
+                renderBossScreen();
+                return;
+            }
+
+            const currentQ = fireMountainQuestions[qIdx];
+            const container = document.getElementById('app-container');
+
+            let optionsHtml = '';
+            currentQ.options.forEach((opt, idx) => {
+                optionsHtml += `
+                    <button id="fire-opt-${idx}" onclick="answerFireMountain(${idx})" class="w-full text-left bg-slate-800/90 hover:bg-orange-950/80 border-2 border-orange-500/40 hover:border-orange-400 p-4 rounded-2xl transition font-semibold text-gray-200 flex items-center space-x-4 shadow-md">
+                        <span class="w-8 h-8 rounded-xl bg-orange-500/20 border border-orange-400 flex items-center justify-center font-bold text-orange-300 shrink-0">${String.fromCharCode(65 + idx)}</span>
+                        <span class="flex-grow">${opt}</span>
+                    </button>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="max-w-3xl w-full mx-auto space-y-6">
+                    <div class="bg-gradient-to-r from-red-950 via-orange-950 to-amber-950 p-6 rounded-3xl border-2 border-orange-500 text-center shadow-2xl relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-20 fire-anim bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-orange-500 via-red-600 to-transparent"></div>
+                        <h2 class="title-font text-2xl font-bold text-orange-300 mb-2 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-fire text-red-500 animate-bounce"></i>
+                            <span>CỬA ẢI ĐẶC BIỆT: HỎA DIỆM SƠN</span>
+                        </h2>
+                        <p class="text-orange-200 text-sm mb-4">Trả lời đúng <b>3 câu liên tiếp</b> để Quạt Ba Tiêu dập tắt ngọn lửa!</p>
+                        
+                        <div class="flex justify-center items-center space-x-3 my-3">
+                            <span class="text-xs font-bold text-amber-300">Ngọn lửa:</span>
+                            <div class="w-48 h-4 bg-black/60 rounded-full overflow-hidden border border-orange-500/50">
+                                <div class="h-full bg-gradient-to-r from-orange-500 to-red-600 transition-all duration-500" style="width: ${100 - (gameState.fireMountainProgress * 33.3)}%"></div>
+                            </div>
+                            <span class="text-xs font-bold text-orange-300">Bước ${gameState.fireMountainProgress}/3</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                        <span class="text-sm font-bold text-amber-300"><i class="fa-solid fa-wind mr-2 text-cyan-400"></i>Pháp bảo Quạt Ba Tiêu: (${gameState.inventory.fan})</span>
+                        <button onclick="useFanTreasure()" class="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow border border-cyan-300 flex items-center space-x-1">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i><span>Dùng Quạt Ba Tiêu dập lửa ngay</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900 border-2 border-orange-500/60 rounded-3xl p-6 md:p-8 shadow-2xl">
+                        <h3 class="title-font text-lg md:text-xl font-bold text-amber-200 mb-6 leading-relaxed">
+                            ${currentQ.question}
+                        </h3>
+                        <div id="fire-options-container" class="space-y-3">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function answerFireMountain(selectedIdx) {
+            const currentQ = fireMountainQuestions[gameState.fireMountainProgress];
+            const options = document.querySelectorAll('#fire-options-container button');
+            options.forEach(btn => btn.disabled = true);
+
+            if (selectedIdx === currentQ.correct) {
+                playCorrectSound();
+                triggerFireworks();
+
+                options[selectedIdx].classList.remove('bg-slate-800/90', 'border-orange-500/40');
+                options[selectedIdx].classList.add('bg-emerald-700', 'border-emerald-400', 'text-white');
+                
+                gameState.score += 200;
+                gameState.correctCount++;
+                gameState.streak++;
+                if (gameState.streak > gameState.maxStreak) gameState.maxStreak = gameState.streak;
+                updateStatsDisplay();
+
+                gameState.fireMountainProgress++;
+                showToast("Ngọn lửa yếu dần! 🔥", `Đã vượt qua bước ${gameState.fireMountainProgress}/3 Hỏa Diệm Sơn.`, true);
+
+                setTimeout(() => {
+                    if (gameState.fireMountainProgress >= 3) {
+                        showToast("🪭 QUẠT BA TIÊU XUẤT HIỆN!", "Ngọn lửa Hỏa Diệm Sơn đã được dập tắt hoàn toàn!", true);
+                        setTimeout(() => {
+                            gameState.currentLevel = 8;
+                            renderBossScreen();
+                        }, 2500);
+                    } else {
+                        renderFireMountainScreen();
+                    }
+                }, 1500);
+
+            } else {
+                playWrongSound();
+
+                options[selectedIdx].classList.remove('bg-slate-800/90', 'border-orange-500/40');
+                options[selectedIdx].classList.add('bg-red-800', 'border-red-500', 'text-white');
+                options[currentQ.correct].classList.add('bg-emerald-800', 'border-emerald-400');
+
+                gameState.wrongCount++;
+                gameState.streak = 0;
+                updateStatsDisplay();
+                
+                showToast("Sai rồi! Chuỗi Hỏa Diệm Sơn bị gián đoạn", currentQ.hint, false);
+                setTimeout(() => {
+                    renderFireMountainScreen();
+                }, 2000);
+            }
+        }
+
+        function useFanTreasure() {
+            if (gameState.inventory.fan <= 0) {
+                showToast("Hết Quạt Ba Tiêu", "Bạn đã dùng Quạt Ba Tiêu rồi!", false);
+                return;
+            }
+            gameState.inventory.fan--;
+            gameState.usedTreasures++;
+            gameState.fireMountainProgress = 3;
+            playCorrectSound();
+            triggerFireworks();
+            showToast("🪭 QUẠT BA TIÊU UY LỰC!", "Đã lập tức dập tắt Hỏa Diệm Sơn thành công!", true);
+            setTimeout(() => {
+                gameState.currentLevel = 8;
+                renderBossScreen();
+            }, 2000);
+        }
+
+        // Screen 6: Boss Screen (Kiếp 8)
+        function renderBossScreen() {
+            gameState.currentScreen = 'boss';
+            const container = document.getElementById('app-container');
+
+            let optionsHtml = '';
+            bossQuestion.options.forEach((opt, idx) => {
+                optionsHtml += `
+                    <button id="boss-opt-${idx}" onclick="answerBoss(${idx})" class="w-full text-left bg-slate-800/90 hover:bg-purple-950/80 border-2 border-purple-500/40 hover:border-purple-400 p-4 rounded-2xl transition font-semibold text-gray-200 flex items-center space-x-4 shadow-md">
+                        <span class="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400 flex items-center justify-center font-bold text-purple-300 shrink-0">${String.fromCharCode(65 + idx)}</span>
+                        <span class="flex-grow">${opt}</span>
+                    </button>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="max-w-3xl w-full mx-auto space-y-6">
+                    <div class="bg-gradient-to-r from-purple-950 via-indigo-950 to-slate-900 p-6 rounded-3xl border-2 border-purple-500 text-center shadow-2xl relative overflow-hidden">
+                        <div class="w-20 h-20 mx-auto bg-purple-600/30 border-2 border-purple-400 rounded-full flex items-center justify-center mb-3 text-4xl shadow-lg animate-bounce">
+                            👑👹
+                        </div>
+                        <h2 class="title-font text-2xl md:text-3xl font-bold text-purple-300 mb-2">
+                            ${bossQuestion.title}
+                        </h2>
+                        <p class="text-purple-200 text-sm">Cửa ải cuối cùng! Trả lời đúng để Tôn Ngộ Không tung đòn kết thúc và thỉnh kinh thành công!</p>
+                    </div>
+
+                    <div class="bg-slate-900 border-2 border-purple-500/60 rounded-3xl p-6 md:p-8 shadow-2xl">
+                        <h3 class="title-font text-lg md:text-xl font-bold text-amber-200 mb-6 leading-relaxed">
+                            ${bossQuestion.question}
+                        </h3>
+                        <div id="boss-options-container" class="space-y-3">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function answerBoss(selectedIdx) {
+            const options = document.querySelectorAll('#boss-options-container button');
+            options.forEach(btn => btn.disabled = true);
+
+            if (selectedIdx === bossQuestion.correct) {
+                playCorrectSound();
+                triggerFireworks();
+                setTimeout(triggerFireworks, 400);
+
+                options[selectedIdx].classList.remove('bg-slate-800/90', 'border-purple-500/40');
+                options[selectedIdx].classList.add('bg-emerald-700', 'border-emerald-400', 'text-white');
+                
+                gameState.score += 500;
+                gameState.correctCount++;
+                gameState.streak++;
+                gameState.bossDefeated = true;
+                if (gameState.streak > gameState.maxStreak) gameState.maxStreak = gameState.streak;
+                updateStatsDisplay();
+
+                showToast("VƯỢT ĐẠI KIẾP NẠN THÀNH CÔNG! 🎉", "Tôn Ngộ Không tung đòn kết thúc tiêu diệt Đại Yêu Vương!", true);
+
+                setTimeout(() => {
+                    renderSummaryScreen();
+                }, 2500);
+
+            } else {
+                playWrongSound();
+
+                options[selectedIdx].classList.remove('bg-slate-800/90', 'border-purple-500/40');
+                options[selectedIdx].classList.add('bg-red-800', 'border-red-500', 'text-white');
+                options[bossQuestion.correct].classList.add('bg-emerald-800', 'border-emerald-400');
+
+                gameState.wrongCount++;
+                gameState.streak = 0;
+                updateStatsDisplay();
+
+                showToast("Đại Yêu Vương phản công! ❌", bossQuestion.hint, false);
+                setTimeout(() => {
+                    renderBossScreen();
+                }, 2500);
+            }
+        }
+
+        // Screen 7: Summary Screen
+        function renderSummaryScreen() {
+            gameState.currentScreen = 'summary';
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            triggerFireworks();
+            setTimeout(triggerFireworks, 600);
+
+            const minutes = Math.floor(gameState.elapsedTime / 60);
+            const seconds = gameState.elapsedTime % 60;
+            const timeStr = `${minutes > 0 ? minutes + ' phút ' : ''}${seconds} giây`;
+
+            const container = document.getElementById('app-container');
+            container.innerHTML = `
+                <div class="max-w-3xl w-full mx-auto space-y-6 py-4">
+                    <div class="bg-gradient-to-b from-indigo-950 via-slate-900 to-indigo-950 border-2 border-amber-500 rounded-3xl p-6 md:p-8 shadow-2xl text-center space-y-6">
+                        <div class="inline-block p-4 bg-amber-500/20 border-2 border-amber-400 rounded-full text-5xl mb-2 animate-bounce">
+                            🏯✨
+                        </div>
+                        <div>
+                            <h2 class="title-font text-2xl md:text-4xl font-extrabold bg-gradient-to-r from-amber-300 via-yellow-200 to-orange-400 bg-clip-text text-transparent mb-2">
+                                HOÀN THÀNH HÀNH TRÌNH THỈNH KINH!
+                            </h2>
+                            <p class="text-gray-300 text-sm">Sĩ tử <b>${gameState.studentName}</b> (${gameState.studentClass}) đã xuất sắc thỉnh kinh thành công!</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-left">
+                            <div class="bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                                <span class="text-xs text-gray-400 block font-bold">Số kiếp nạn</span>
+                                <span class="text-xl font-extrabold text-amber-300">8 / 8</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                                <span class="text-xs text-gray-400 block font-bold">Boss đánh bại</span>
+                                <span class="text-xl font-extrabold text-emerald-400">${gameState.bossDefeated ? '1 (Đại Vương)' : '0'}</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                                <span class="text-xs text-gray-400 block font-bold">Số câu đúng</span>
+                                <span class="text-xl font-extrabold text-emerald-400">${gameState.correctCount}</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                                <span class="text-xs text-gray-400 block font-bold">Số lần sai</span>
+                                <span class="text-xl font-extrabold text-red-400">${gameState.wrongCount}</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                                <span class="text-xs text-gray-400 block font-bold">Pháp bảo đã dùng</span>
+                                <span class="text-xl font-extrabold text-cyan-400">${gameState.usedTreasures}</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                                <span class="text-xs text-gray-400 block font-bold">Chuỗi đúng cao nhất</span>
+                                <span class="text-xl font-extrabold text-orange-400">${gameState.maxStreak}</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                                <span class="text-xs text-gray-400 block font-bold">Thời gian</span>
+                                <span class="text-base font-extrabold text-yellow-300">${timeStr}</span>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-2xl border border-amber-500/30">
+                                <span class="text-xs text-gray-400 block font-bold">Tổng điểm</span>
+                                <span class="text-xl font-extrabold text-amber-400">${gameState.score}đ</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-amber-950/40 border border-amber-500/40 p-5 rounded-2xl text-left space-y-2">
+                            <h4 class="title-font font-bold text-amber-300 text-sm flex items-center space-x-2">
+                                <i class="fa-solid fa-book-open text-yellow-400"></i>
+                                <span>KIẾN THỨC CẦN ÔN LẠI (SGK TIN HỌC 4 - BÀI 9)</span>
+                            </h4>
+                            <p class="text-xs text-gray-300 leading-relaxed">
+                                • <b>Hiệu ứng chuyển trang (Transition):</b> Cách thức trang chiếu xuất hiện khi trình chiếu.<br>
+                                • <b>Các bước thực hiện:</b> Chọn trang chiếu → Chọn dải lệnh <b>Transitions</b> → Chọn hiệu ứng trong nhóm <i>Transition to This Slide</i>.<br>
+                                • <b>Lưu ý cốt lõi:</b> Mỗi trang chiếu được đặt cho từng trang riêng biệt và mỗi trang chỉ sử dụng được <b>một kiểu hiệu ứng duy nhất</b>.
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap justify-center gap-4 pt-2">
+                            <button onclick="startGame()" class="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl transition border border-amber-300 flex items-center space-x-2">
+                                <i class="fa-solid fa-rotate-right"></i>
+                                <span>CHƠI LẠI TỪ ĐẦU</span>
+                            </button>
+                            <button onclick="confirmHome()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold px-6 py-3.5 rounded-2xl shadow-lg transition border border-amber-500/50 flex items-center space-x-2">
+                                <i class="fa-solid fa-house"></i>
+                                <span>VỀ TRANG CHỦ</span>
+                            </button>
+                            <button onclick="openKnowledgeModal()" class="bg-indigo-900/80 hover:bg-indigo-800 text-indigo-200 font-bold px-6 py-3.5 rounded-2xl shadow-lg transition border border-indigo-400 flex items-center space-x-2">
+                                <i class="fa-solid fa-book"></i>
+                                <span>XEM LẠI KIẾN THỨC</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Global Home Confirmation
+        function confirmHome() {
+            document.getElementById('home-modal').classList.remove('hidden');
+        }
+
+        function closeHomeModal() {
+            document.getElementById('home-modal').classList.add('hidden');
+        }
+
+        function executeHomeReset() {
+            closeHomeModal();
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            renderHomeScreen();
+            showToast("Đã về Trang chủ", "Toàn bộ tiến trình ván cũ đã được reset hoàn toàn.", true);
+        }
+
+        function closeKnowledgeModal() {
+            document.getElementById('knowledge-modal').classList.add('hidden');
+        }
+
+        function openKnowledgeModal() {
+            document.getElementById('knowledge-modal').classList.add('hidden');
+            const el = document.getElementById('knowledge-modal');
+            el.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

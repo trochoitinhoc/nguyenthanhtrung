@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CỔNG XUYÊN KHÔNG KIẾN THỨC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+            touch-action: none; /* Prevent scroll on mobile gaming */
+            background-color: #1a202c;
+        }
+
+        .screen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* Background themes */
+        .bg-forest { background: linear-gradient(to bottom, #4ade80, #166534); }
+        .bg-desert { background: linear-gradient(to bottom, #fde047, #a16207); }
+        .bg-ocean { background: linear-gradient(to bottom, #38bdf8, #0369a1); }
+        .bg-universe { background: linear-gradient(to bottom, #1e1b4b, #000000); }
+        .bg-castle { background: linear-gradient(to bottom, #7e22ce, #3b0764); }
+
+        /* Portal Styling */
+        .portal-container {
+            perspective: 1000px;
+        }
+        .portal {
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            animation: float 3s ease-in-out infinite;
+        }
+        .portal:hover {
+            transform: scale(1.05);
+        }
+        .portal-ring {
+            width: 120px;
+            height: 160px;
+            border-radius: 60px 60px 20px 20px;
+            border: 8px solid rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5), inset 0 0 20px rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* Vortex Effect */
+        .vortex {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255,255,255,0.8), transparent);
+            animation: spin 2s linear infinite;
+            display: none;
+        }
+        .portal.active .vortex {
+            display: block;
+        }
+        .portal.active .portal-ring {
+            border-color: #fbbf24;
+            box-shadow: 0 0 40px #fbbf24, inset 0 0 40px #fbbf24;
+        }
+
+        /* Character */
+        .character {
+            width: 80px;
+            height: 100px;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 20;
+        }
+        .char-body { animation: breathe 2s infinite; }
+
+        /* Feedback Text */
+        .feedback-text {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            font-weight: 900;
+            text-shadow: 2px 4px 0 #000;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+        .feedback-show {
+            animation: popUp 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.95); transform-origin: bottom; }
+        }
+        @keyframes popUp {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -100%) scale(0.8); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(-50%); }
+            20%, 60% { transform: translateX(calc(-50% - 10px)); }
+            40%, 80% { transform: translateX(calc(-50% + 10px)); }
+        }
+        .shake-anim { animation: shake 0.4s ease-in-out; }
+
+        /* Firework for Win */
+        .firework {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+        }
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(30); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="text-white select-none">
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="screen active flex-col items-center justify-center bg-blue-900 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')]">
+        <div class="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 shadow-2xl text-center max-w-md w-11/12">
+            <div class="mb-6">
+                <svg class="w-24 h-24 mx-auto mb-4 drop-shadow-lg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" stroke="#fbbf24" stroke-width="8" stroke-dasharray="20 10" class="animate-[spin_10s_linear_infinite]"/>
+                    <path d="M50 20 L80 80 L20 80 Z" fill="#60a5fa" class="animate-pulse"/>
+                    <circle cx="50" cy="60" r="15" fill="#fbbf24"/>
+                </svg>
+                <h1 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500 drop-shadow-sm mb-2">CỔNG XUYÊN KHÔNG</h1>
+                <h2 class="text-2xl font-bold text-blue-200 uppercase tracking-widest">Kiến Thức</h2>
+            </div>
+            
+            <div class="space-y-4 mb-8 text-left">
+                <div>
+                    <label class="block text-sm font-bold text-blue-200 mb-1">HỌ VÀ TÊN</label>
+                    <input type="text" id="playerName" placeholder="Biệt danh (không nhập tên thật)" class="w-full px-4 py-3 rounded-xl bg-black/30 border border-blue-400/50 text-white placeholder-blue-300/50 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/50 transition-all text-lg" autocomplete="off">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-blue-200 mb-1">LỚP</label>
+                    <input type="text" id="playerClass" placeholder="Ví dụ: 5A..." class="w-full px-4 py-3 rounded-xl bg-black/30 border border-blue-400/50 text-white placeholder-blue-300/50 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/50 transition-all text-lg" autocomplete="off">
+                </div>
+            </div>
+
+            <button onclick="app.startGame()" class="w-full py-4 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 rounded-xl text-2xl font-black shadow-[0_6px_0_#166534] hover:shadow-[0_2px_0_#166534] hover:translate-y-1 transition-all">
+                BẮT ĐẦU XUYÊN KHÔNG
+            </button>
+            <p id="startError" class="text-red-400 mt-4 font-bold h-6 opacity-0 transition-opacity">Vui lòng nhập đủ Tên và Lớp!</p>
+        </div>
+        <p class="mt-8 text-blue-300/60 text-sm">Tin học 5 - Chủ đề 6 - Bài 10: Cấu trúc tuần tự</p>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="screen flex-col relative transition-colors duration-1000 bg-forest">
+        <!-- HUD -->
+        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-40 bg-gradient-to-b from-black/60 to-transparent">
+            <div class="flex gap-4">
+                <div class="bg-black/40 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-sm">
+                    <p class="text-xs text-gray-300 uppercase font-bold">Điểm</p>
+                    <p id="scoreUI" class="text-2xl font-black text-yellow-400">0</p>
+                </div>
+                <div class="bg-black/40 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-sm">
+                    <p class="text-xs text-gray-300 uppercase font-bold">Combo</p>
+                    <p id="comboUI" class="text-2xl font-black text-orange-400">x0</p>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <p id="worldNameUI" class="text-xl md:text-2xl font-black text-white drop-shadow-md tracking-wider">KHU RỪNG</p>
+                <div class="w-32 h-2 bg-gray-700 rounded-full mt-2 mx-auto overflow-hidden">
+                    <div id="progressUI" class="h-full bg-blue-400 transition-all duration-300" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <div class="bg-black/40 px-4 py-2 rounded-xl border border-white/10 backdrop-blur-sm text-center min-w-[80px]">
+                    <p class="text-xs text-gray-300 uppercase font-bold">Thời gian</p>
+                    <p id="timeUI" class="text-xl font-bold text-white">00:00</p>
+                </div>
+                <button onclick="audio.toggleSound()" id="soundBtn" class="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-xl backdrop-blur-sm transition-all">🔊</button>
+                <button onclick="audio.toggleMusic()" id="musicBtn" class="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-xl backdrop-blur-sm transition-all">🎵</button>
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div class="w-full mt-24 px-4 z-30">
+            <div class="max-w-3xl mx-auto bg-white/90 backdrop-blur-md rounded-2xl p-6 shadow-[0_8px_30px_rgba(0,0,0,0.3)] border-4 border-white text-center transform transition-transform" id="questionBox">
+                <p id="taskTypeUI" class="text-sm font-bold text-blue-600 uppercase mb-2">NHIỆM VỤ: TÌM TỪ KHÓA ĐÚNG</p>
+                <h3 id="questionUI" class="text-xl md:text-2xl font-extrabold text-gray-800 leading-snug">Câu hỏi sẽ hiện ở đây?</h3>
+            </div>
+        </div>
+
+        <!-- Portals Area -->
+        <div id="portalsContainer" class="flex-1 flex flex-wrap justify-center items-center gap-4 md:gap-12 px-4 pb-32 z-10 w-full max-w-6xl mx-auto">
+            <!-- Portals injected via JS -->
+        </div>
+
+        <!-- Character -->
+        <div id="character" class="character">
+            <!-- SVG Astronaut/Student -->
+            <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-xl char-body">
+                <!-- Backpack -->
+                <rect x="20" y="30" width="60" height="50" rx="10" fill="#2563eb" />
+                <!-- Body -->
+                <rect x="30" y="40" width="40" height="40" rx="15" fill="#f8fafc" />
+                <!-- Head/Helmet -->
+                <circle cx="50" cy="35" r="25" fill="#f8fafc" />
+                <rect x="35" y="25" width="30" height="15" rx="5" fill="#0f172a" /> <!-- Visor -->
+                <circle cx="45" cy="28" r="2" fill="#fff" opacity="0.5" /> <!-- glare -->
+                <!-- Legs -->
+                <rect x="35" y="80" width="10" height="15" rx="5" fill="#94a3b8" />
+                <rect x="55" y="80" width="10" height="15" rx="5" fill="#94a3b8" />
+            </svg>
+        </div>
+
+        <!-- Feedback Text -->
+        <div id="feedbackText" class="feedback-text text-white">SAI CỔNG!</div>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="end-screen" class="screen flex-col items-center justify-center bg-gray-900 overflow-y-auto py-10">
+        <div class="bg-gradient-to-b from-blue-800 to-blue-950 p-1 border-4 border-yellow-400 rounded-3xl shadow-[0_0_50px_rgba(251,191,36,0.3)] max-w-2xl w-11/12 z-10 relative">
+            <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-400 rounded-full p-4 border-4 border-white shadow-lg">
+                <span class="text-4xl">🏆</span>
+            </div>
+            
+            <div class="bg-black/40 rounded-2xl p-6 pt-12 md:p-10 md:pt-14 text-center">
+                <h2 id="endTitle" class="text-3xl md:text-4xl font-black text-yellow-400 mb-2">CHINH PHỤC CỔNG XUYÊN KHÔNG!</h2>
+                <p class="text-xl text-blue-200 font-bold mb-6">Chiến binh: <span id="endName" class="text-white">...</span> - <span id="endClass" class="text-white">...</span></p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-white/10 p-4 rounded-xl">
+                        <p class="text-sm text-gray-400 font-bold">ĐIỂM SỐ</p>
+                        <p id="endScore" class="text-3xl font-black text-white mt-1">0</p>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-xl">
+                        <p class="text-sm text-gray-400 font-bold">COMBO MAX</p>
+                        <p id="endCombo" class="text-3xl font-black text-orange-400 mt-1">x0</p>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-xl">
+                        <p class="text-sm text-gray-400 font-bold">THỜI GIAN</p>
+                        <p id="endTime" class="text-3xl font-black text-green-400 mt-1">00:00</p>
+                    </div>
+                    <div class="bg-white/10 p-4 rounded-xl">
+                        <p class="text-sm text-gray-400 font-bold">ĐÚNG/SAI</p>
+                        <p id="endAccuracy" class="text-3xl font-black text-blue-400 mt-1">0/0</p>
+                    </div>
+                </div>
+
+                <div class="bg-blue-900/50 border border-blue-400/30 rounded-xl p-5 mb-8 text-left">
+                    <h3 class="text-lg font-bold text-yellow-300 mb-3 flex items-center gap-2">
+                        <span>📚</span> KIẾN THỨC CẦN NHỚ (BÀI 10)
+                    </h3>
+                    <ul class="text-gray-200 space-y-2 text-sm md:text-base">
+                        <li>• <b>Cấu trúc tuần tự:</b> Các việc/lệnh được thực hiện lần lượt theo đúng thứ tự.</li>
+                        <li>• Trong chương trình Scratch, các khối lệnh ghép nối tiếp nhau sẽ chạy từ trên xuống dưới.</li>
+                        <li>• Ví dụ: <i>Di chuyển 100 bước &rarr; Nói Xin chào &rarr; Phát âm thanh.</i> (Mọi thứ diễn ra tuần tự).</li>
+                        <li>• Việc thay đổi trang phục liên tiếp kết hợp lệnh <i>đợi</i> tạo ra hiệu ứng hoạt hình.</li>
+                    </ul>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="app.restartGame()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-xl font-bold shadow-[0_5px_0_#1e3a8a] hover:shadow-[0_2px_0_#1e3a8a] hover:translate-y-[3px] transition-all">
+                        CHƠI LẠI
+                    </button>
+                    <button onclick="app.goHome()" class="px-8 py-3 bg-gray-600 hover:bg-gray-500 rounded-xl text-xl font-bold shadow-[0_5px_0_#374151] hover:shadow-[0_2px_0_#374151] hover:translate-y-[3px] transition-all">
+                        TRANG CHỦ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO SYSTEM (Web Audio API) ---
+        const audio = {
+            ctx: null,
+            bgmOscillators: [],
+            bgmInterval: null,
+            isSoundOn: true,
+            isMusicOn: true,
+            bgmNoteIndex: 0,
+            
+            // Simple retro arpeggio sequence for BGM
+            bgmSequence: [
+                261.63, 329.63, 392.00, 523.25, // C E G C
+                392.00, 329.63,                 // G E
+                349.23, 440.00, 523.25, 698.46, // F A C F
+                523.25, 440.00                  // C A
+            ],
+
+            init: function() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            playTone: function(freq, type, duration, volLevel = 0.1) {
+                if (!this.isSoundOn || !this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(volLevel, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+
+            playClick: () => audio.playTone(600, 'sine', 0.1),
+            playCorrect: () => {
+                audio.playTone(400, 'square', 0.1, 0.2);
+                setTimeout(() => audio.playTone(600, 'square', 0.1, 0.2), 100);
+                setTimeout(() => audio.playTone(800, 'square', 0.2, 0.2), 200);
+            },
+            playWrong: () => {
+                audio.playTone(200, 'sawtooth', 0.3, 0.2);
+                setTimeout(() => audio.playTone(150, 'sawtooth', 0.3, 0.2), 150);
+            },
+            playPortalOpen: () => {
+                audio.playTone(300, 'sine', 0.5, 0.2);
+                audio.playTone(305, 'triangle', 0.5, 0.2);
+            },
+            playWin: () => {
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+                notes.forEach((freq, i) => {
+                    setTimeout(() => audio.playTone(freq, 'square', 0.3, 0.2), i * 150);
+                });
+            },
+
+            startBGM: function() {
+                if (!this.ctx) this.init();
+                this.stopBGM();
+                if (!this.isMusicOn) return;
+                
+                this.bgmInterval = setInterval(() => {
+                    if (!this.isMusicOn || this.ctx.state === 'suspended') return;
+                    const freq = this.bgmSequence[this.bgmNoteIndex];
+                    
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq / 2, this.ctx.currentTime); // Lower octave
+                    
+                    gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.2);
+                    
+                    this.bgmNoteIndex = (this.bgmNoteIndex + 1) % this.bgmSequence.length;
+                }, 250); // 250ms per note
+            },
+
+            stopBGM: function() {
+                if (this.bgmInterval) {
+                    clearInterval(this.bgmInterval);
+                    this.bgmInterval = null;
+                }
+            },
+
+            toggleSound: function() {
+                this.isSoundOn = !this.isSoundOn;
+                document.getElementById('soundBtn').innerText = this.isSoundOn ? '🔊' : '🔇';
+                document.getElementById('soundBtn').classList.toggle('opacity-50', !this.isSoundOn);
+                if(this.isSoundOn) this.init();
+            },
+
+            toggleMusic: function() {
+                this.isMusicOn = !this.isMusicOn;
+                const musicBtn = document.getElementById('musicBtn');
+                if(musicBtn) {
+                    musicBtn.innerText = this.isMusicOn ? '🎵' : '✖️';
+                    musicBtn.classList.toggle('opacity-50', !this.isMusicOn);
+                }
+                
+                if (this.isMusicOn) {
+                    this.init();
+                    this.startBGM();
+                } else {
+                    this.stopBGM();
+                }
+            }
+        };
+
+        // --- GAME DATA (Bám sát SGK Bài 10) ---
+        const WORLDS = [
+            {
+                id: 'forest',
+                name: "KHU RỪNG TUẦN TỰ",
+                bgClass: "bg-forest",
+                taskType: "Nhiệm vụ: TÌM TỪ KHÓA ĐÚNG",
+                question: "Trong 'Cấu trúc tuần tự', các việc/lệnh được thực hiện như thế nào?",
+                layout: "horizontal", // Cổng xếp ngang
+                portals: [
+                    { text: "Thực hiện ngẫu nhiên", isCorrect: false },
+                    { text: "Cùng một lúc", isCorrect: false },
+                    { text: "Lần lượt theo thứ tự", isCorrect: true, isGolden: true }
+                ]
+            },
+            {
+                id: 'desert',
+                name: "SA MẠC VĂN BẢN",
+                bgClass: "bg-desert",
+                taskType: "Nhiệm vụ: GHÉP CẶP KIẾN THỨC",
+                question: "Để định dạng phông chữ, cỡ chữ, bước ĐẦU TIÊN em cần làm là gì?",
+                layout: "horizontal",
+                portals: [
+                    { text: "Chọn lệnh phông chữ", isCorrect: false },
+                    { text: "Chọn phần văn bản", isCorrect: true },
+                    { text: "Chọn lệnh cỡ chữ", isCorrect: false }
+                ]
+            },
+            {
+                id: 'ocean',
+                name: "ĐẠI DƯƠNG LẬP TRÌNH",
+                bgClass: "bg-ocean",
+                taskType: "Nhiệm vụ: PHÂN LOẠI LỆNH SCRATCH",
+                question: "Trong Scratch, lệnh nào được dùng để THAY ĐỔI ĐỘNG TÁC của nhân vật, tạo hiệu ứng hoạt hình?",
+                layout: "horizontal",
+                portals: [
+                    { text: "[di chuyển 10 bước]", isCorrect: false },
+                    { text: "[đợi 1 giây]", isCorrect: false },
+                    { text: "[trang phục kế tiếp]", isCorrect: true }
+                ]
+            },
+            {
+                id: 'universe',
+                name: "VŨ TRỤ KHỐI LỆNH",
+                bgClass: "bg-universe",
+                taskType: "Nhiệm vụ: TÌM LỖI SAI",
+                question: "Đọc kĩ: Phát biểu nào sau đây là SAI khi nói về cấu trúc tuần tự?",
+                layout: "grid", // Xếp lưới 2x2
+                portals: [
+                    { text: "Các lệnh thực hiện lần lượt.", isCorrect: false }, // Câu này ĐÚNG thực tế -> SAI cho câu hỏi
+                    { text: "Các lệnh thực hiện theo thứ tự ngẫu nhiên.", isCorrect: true }, // Câu này SAI thực tế -> ĐÚNG cho câu hỏi tìm câu sai
+                    { text: "Lệnh đứng trước chạy trước.", isCorrect: false },
+                    { text: "Lệnh đứng sau chạy sau.", isCorrect: false }
+                ]
+            },
+            {
+                id: 'castle',
+                name: "LÂU ĐÀI BOSS CUỐI",
+                bgClass: "bg-castle",
+                taskType: "Nhiệm vụ: VƯỢT CHUỖI LIÊN HOÀN",
+                question: "Để mèo Vừa chạy 100 bước -> Vừa Chào -> Vừa Kêu -> Vừa Tạm biệt. Hãy đi qua các cổng theo ĐÚNG THỨ TỰ LỆNH! (Chạm sai sẽ làm lại chuỗi)",
+                layout: "boss", // Chế độ đặc biệt
+                bossSequence: [
+                    "[di chuyển 100 bước]",
+                    "[nói Xin chào! trong 3s]",
+                    "[phát âm thanh Meow]",
+                    "[nói Rất vui được gặp...]"
+                ]
+            }
+        ];
+
+        // --- GAME LOGIC ---
+        const app = {
+            player: { name: "", class: "" },
+            state: {
+                currentWorldIndex: 0,
+                score: 0,
+                combo: 0,
+                maxCombo: 0,
+                correctCount: 0,
+                wrongCount: 0,
+                timeSeconds: 0,
+                timerInterval: null,
+                isAnimating: false,
+                bossStep: 0
+            },
+            elements: {},
+
+            init() {
+                // Cache DOM elements
+                const ids = ['start-screen', 'game-screen', 'end-screen', 'playerName', 'playerClass', 'startError', 
+                             'scoreUI', 'comboUI', 'worldNameUI', 'progressUI', 'timeUI', 'taskTypeUI', 'questionUI', 
+                             'portalsContainer', 'character', 'feedbackText', 'endName', 'endClass', 'endScore', 'endCombo', 'endTime', 'endAccuracy']; // Added missing end screen ids
+                ids.forEach(id => {
+                    this.elements[id] = document.getElementById(id);
+                    if (!this.elements[id]) {
+                        console.error(`Không tìm thấy phần tử có ID: ${id}`);
+                    }
+                });
+            },
+
+            startGame() {
+                audio.init();
+                audio.playClick();
+                
+                if(!this.elements.playerName || !this.elements.playerClass) {
+                    console.error("Lỗi: Không tìm thấy ô nhập liệu");
+                    return;
+                }
+
+                const name = this.elements.playerName.value.trim();
+                const pClass = this.elements.playerClass.value.trim();
+                
+                if (!name || !pClass) {
+                    if(this.elements.startError) {
+                        this.elements.startError.style.opacity = 1;
+                        setTimeout(() => this.elements.startError.style.opacity = 0, 2000);
+                    }
+                    return;
+                }
+
+                this.player = { name, class: pClass };
+                this.resetState();
+                
+                this.switchScreen('game-screen');
+                this.startTimer();
+                audio.startBGM();
+                this.loadWorld();
+            },
+
+            resetState() {
+                this.state = {
+                    currentWorldIndex: 0,
+                    score: 0,
+                    combo: 0,
+                    maxCombo: 0,
+                    correctCount: 0,
+                    wrongCount: 0,
+                    timeSeconds: 0,
+                    timerInterval: null,
+                    isAnimating: false,
+                    bossStep: 0
+                };
+                this.updateHUD();
+            },
+
+            startTimer() {
+                if (this.state.timerInterval) clearInterval(this.state.timerInterval);
+                this.state.timeSeconds = 0; // Reset time explicitely
+                this.state.timerInterval = setInterval(() => {
+                    this.state.timeSeconds++;
+                    const m = Math.floor(this.state.timeSeconds / 60).toString().padStart(2, '0');
+                    const s = (this.state.timeSeconds % 60).toString().padStart(2, '0');
+                    if(this.elements.timeUI) {
+                        this.elements.timeUI.innerText = `${m}:${s}`;
+                    }
+                }, 1000);
+            },
+
+            loadWorld() {
+                if (this.state.currentWorldIndex >= WORLDS.length) return;
+                const world = WORLDS[this.state.currentWorldIndex];
+                
+                // Update UI
+                if(this.elements.worldNameUI) this.elements.worldNameUI.innerText = world.name;
+                if(this.elements.progressUI) this.elements.progressUI.style.width = `${((this.state.currentWorldIndex) / WORLDS.length) * 100}%`;
+                if(this.elements.taskTypeUI) this.elements.taskTypeUI.innerText = world.taskType;
+                if(this.elements.questionUI) this.elements.questionUI.innerText = world.question;
+                
+                // Update Background
+                if(this.elements['game-screen']) {
+                    this.elements['game-screen'].className = `screen active flex-col relative transition-colors duration-1000 ${world.bgClass}`;
+                }
+                
+                // Reset Character Position
+                if(this.elements.character) {
+                    this.elements.character.style.transform = `translateX(-50%) translateY(0) scale(1)`;
+                    this.elements.character.style.opacity = 1;
+                    this.elements.character.classList.remove('shake-anim');
+                }
+
+                this.state.isAnimating = false;
+                this.renderPortals(world);
+            },
+
+            renderPortals(world) {
+                const container = this.elements.portalsContainer;
+                if(!container) return;
+                
+                container.innerHTML = '';
+                
+                if (world.layout === 'boss') {
+                    this.state.bossStep = 0;
+                    // Render Boss Portals randomly but logic tracks sequence
+                    let shuffledSequence = [...world.bossSequence].map((text, idx) => ({text, originalIdx: idx}));
+                    // Simple shuffle
+                    for (let i = shuffledSequence.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffledSequence[i], shuffledSequence[j]] = [shuffledSequence[j], shuffledSequence[i]];
+                    }
+
+                    shuffledSequence.forEach((item) => {
+                        const portalObj = { text: item.text, isCorrect: false, originalIdx: item.originalIdx }; // Boss logic handled in click
+                        const portalEl = this.createPortalHTML(portalObj, true);
+                        container.appendChild(portalEl);
+                    });
+                    this.updateBossQuestionUI(world.bossSequence);
+
+                } else {
+                    world.portals.forEach((portal) => {
+                        const portalEl = this.createPortalHTML(portal, false);
+                        container.appendChild(portalEl);
+                    });
+                }
+            },
+
+            createPortalHTML(portal, isBoss) {
+                const el = document.createElement('div');
+                el.className = 'portal w-32 md:w-40 flex flex-col items-center gap-3 relative';
+                
+                const isGold = portal.isGolden ? 'border-yellow-400 box-shadow-[0_0_20px_#fbbf24]' : '';
+                
+                el.innerHTML = `
+                    <div class="portal-ring ${isGold}">
+                        <div class="vortex"></div>
+                        <span class="text-3xl relative z-10">🌌</span>
+                    </div>
+                    <div class="bg-black/60 backdrop-blur-sm border border-white/20 text-white text-xs md:text-sm font-bold py-2 px-3 rounded-xl text-center w-full min-h-[60px] flex items-center justify-center">
+                        ${portal.text}
+                    </div>
+                `;
+                
+                el.onclick = (e) => this.handlePortalClick(el, portal, isBoss, e);
+                return el;
+            },
+
+            updateBossQuestionUI(sequence) {
+                if(!this.elements.questionUI) return;
+                let html = "Để thực hiện tuần tự, hãy chọn các lệnh theo thứ tự:<br/>";
+                sequence.forEach((txt, idx) => {
+                    if (idx < this.state.bossStep) {
+                        html += `<span class="text-green-600 line-through mr-2">${txt}</span>`;
+                    } else if (idx === this.state.bossStep) {
+                        html += `<span class="text-red-600 underline font-black mr-2">${txt}</span>`;
+                    } else {
+                        html += `<span class="text-gray-400 mr-2">${txt}</span>`;
+                    }
+                });
+                this.elements.questionUI.innerHTML = html;
+            },
+
+            handlePortalClick(portalEl, portalData, isBoss, event) {
+                if (this.state.isAnimating) return;
+                this.state.isAnimating = true;
+
+                // Move character to portal X position
+                if(!this.elements.character || !this.elements['game-screen']) {
+                    console.error("Lỗi: Không tìm thấy nhân vật hoặc màn hình game");
+                    return;
+                }
+
+                const portalRect = portalEl.getBoundingClientRect();
+                const containerRect = this.elements['game-screen'].getBoundingClientRect();
+                const charTargetX = portalRect.left + (portalRect.width / 2) - (containerRect.width / 2);
+                
+                this.elements.character.style.transform = `translateX(calc(-50% + ${charTargetX}px)) translateY(-20px)`;
+                audio.playClick();
+
+                setTimeout(() => {
+                    if (isBoss) {
+                        this.processBossClick(portalEl, portalData);
+                    } else {
+                        this.processNormalClick(portalEl, portalData.isCorrect);
+                    }
+                }, 800); // Wait for character to walk
+            },
+
+            processNormalClick(portalEl, isCorrect) {
+                if (isCorrect) {
+                    this.handleCorrect(portalEl, () => {
+                        this.state.currentWorldIndex++;
+                        if (this.state.currentWorldIndex >= WORLDS.length) {
+                            this.endGame();
+                        } else {
+                            this.loadWorld();
+                        }
+                    });
+                } else {
+                    this.handleWrong();
+                }
+            },
+
+            processBossClick(portalEl, portalData) {
+                // Boss logic: must click in originalIdx sequence (0, 1, 2, 3)
+                if (portalData.originalIdx === this.state.bossStep) {
+                    // Correct step
+                    audio.playCorrect();
+                    portalEl.classList.add('active');
+                    portalEl.style.pointerEvents = 'none'; // Disable clicked one
+                    
+                    this.state.bossStep++;
+                    this.state.score += 100 + (this.state.combo * 20);
+                    this.updateHUD();
+                    
+                    const world = WORLDS[this.state.currentWorldIndex];
+                    this.updateBossQuestionUI(world.bossSequence);
+
+                    if (this.state.bossStep >= world.bossSequence.length) {
+                        // Finished boss
+                        this.state.combo++;
+                        this.state.correctCount++;
+                        this.showFeedback("VƯỢT ẢI THÀNH CÔNG!", "text-yellow-300");
+                        this.elements.character.style.transform = `translateX(calc(-50% + 0px)) translateY(-150px) scale(0)`;
+                        this.elements.character.style.opacity = 0;
+                        setTimeout(() => this.endGame(), 2000);
+                    } else {
+                        // Keep going
+                        this.state.isAnimating = false;
+                        // Reset char position for next step
+                        this.elements.character.style.transform = `translateX(-50%) translateY(0)`;
+                    }
+
+                } else {
+                    // Wrong step in boss
+                    this.handleWrong(() => {
+                        // Reset boss sequence
+                        this.state.bossStep = 0;
+                        const world = WORLDS[this.state.currentWorldIndex];
+                        this.updateBossQuestionUI(world.bossSequence);
+                        // Reset portals visuals
+                        document.querySelectorAll('.portal').forEach(p => {
+                            p.classList.remove('active');
+                            p.style.pointerEvents = 'auto';
+                        });
+                    });
+                }
+            },
+
+            handleCorrect(portalEl, nextAction) {
+                audio.playCorrect();
+                audio.playPortalOpen();
+                portalEl.classList.add('active');
+                
+                // Character goes in
+                if(this.elements.character) {
+                    this.elements.character.style.transform += ` translateY(-150px) scale(0)`;
+                    this.elements.character.style.opacity = 0;
+                }
+                
+                this.state.combo++;
+                if (this.state.combo > this.state.maxCombo) this.state.maxCombo = this.state.combo;
+                
+                let points = 100 + (this.state.combo * 50);
+                this.state.score += points;
+                this.state.correctCount++;
+                this.updateHUD();
+
+                let comboText = this.state.combo > 1 ? `COMBO x${this.state.combo}!` : "CHÍNH XÁC!";
+                this.showFeedback(comboText, "text-green-400");
+
+                setTimeout(nextAction, 2000);
+            },
+
+            handleWrong(customCallback) {
+                audio.playWrong();
+                this.state.combo = 0;
+                this.state.wrongCount++;
+                this.updateHUD();
+                
+                this.showFeedback("SAI CỔNG!", "text-red-500");
+                
+                if(this.elements.character) {
+                    this.elements.character.classList.add('shake-anim');
+                    
+                    setTimeout(() => {
+                        this.elements.character.classList.remove('shake-anim');
+                        this.elements.character.style.transform = `translateX(-50%) translateY(0)`;
+                        this.state.isAnimating = false;
+                        if(customCallback) customCallback();
+                    }, 1000);
+                } else {
+                    this.state.isAnimating = false;
+                    if(customCallback) customCallback();
+                }
+            },
+
+            showFeedback(text, colorClass) {
+                const el = this.elements.feedbackText;
+                if(!el) return;
+                el.className = `feedback-text ${colorClass} feedback-show`;
+                el.innerText = text;
+                // Force reflow to restart animation
+                void el.offsetWidth;
+                setTimeout(() => {
+                    el.className = `feedback-text`;
+                }, 1000);
+            },
+
+            updateHUD() {
+                if(this.elements.scoreUI) {
+                    this.elements.scoreUI.innerText = this.state.score;
+                    this.elements.scoreUI.parentElement.classList.add('scale-110');
+                    setTimeout(() => this.elements.scoreUI.parentElement.classList.remove('scale-110'), 200);
+                }
+                if(this.elements.comboUI) this.elements.comboUI.innerText = `x${this.state.combo}`;
+            },
+
+            endGame() {
+                clearInterval(this.state.timerInterval);
+                audio.stopBGM();
+                audio.playWin();
+                
+                if(this.elements.endName) this.elements.endName.innerText = this.player.name || "Chiến binh";
+                if(this.elements.endClass) this.elements.endClass.innerText = this.player.class || "";
+                
+                // Add final combo to max calculation just in case
+                if (this.state.combo > this.state.maxCombo) this.state.maxCombo = this.state.combo;
+
+                if(this.elements.endScore) this.elements.endScore.innerText = this.state.score;
+                if(this.elements.endCombo) this.elements.endCombo.innerText = `x${this.state.maxCombo}`;
+                if(this.elements.endTime && this.elements.timeUI) this.elements.endTime.innerText = this.elements.timeUI.innerText;
+                if(this.elements.endAccuracy) this.elements.endAccuracy.innerText = `${this.state.correctCount}/${this.state.correctCount + this.state.wrongCount}`;
+
+                this.switchScreen('end-screen');
+                this.createFireworks();
+            },
+
+            createFireworks() {
+                const container = this.elements['end-screen'];
+                if(!container) return;
+                for(let i = 0; i < 30; i++) {
+                    setTimeout(() => {
+                        const fw = document.createElement('div');
+                        fw.className = 'firework';
+                        const colors = ['#fbbf24', '#60a5fa', '#4ade80', '#f87171', '#c084fc'];
+                        fw.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                        fw.style.left = Math.random() * 100 + 'vw';
+                        fw.style.top = Math.random() * 100 + 'vh';
+                        container.appendChild(fw);
+                        setTimeout(() => fw.remove(), 1000);
+                    }, i * 100);
+                }
+            },
+
+            restartGame() {
+                this.resetState();
+                
+                // Clear any remaining fireworks
+                const fireworks = document.querySelectorAll('.firework');
+                fireworks.forEach(fw => fw.remove());
+
+                this.switchScreen('game-screen');
+                this.startTimer();
+                audio.startBGM();
+                this.loadWorld();
+            },
+
+            goHome() {
+                clearInterval(this.state.timerInterval);
+                audio.stopBGM();
+                
+                // Clear any remaining fireworks
+                const fireworks = document.querySelectorAll('.firework');
+                fireworks.forEach(fw => fw.remove());
+                
+                this.switchScreen('start-screen');
+            },
+
+            switchScreen(screenId) {
+                document.querySelectorAll('.screen').forEach(s => {
+                    s.classList.remove('active');
+                });
+                if(this.elements[screenId]) {
+                    this.elements[screenId].classList.add('active');
+                } else {
+                    console.error(`Không tìm thấy màn hình để chuyển đổi: ${screenId}`);
+                }
+            }
+        };
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+            
+            // Xử lý sự kiện Enter trên ô nhập liệu
+            const enterToStart = (e) => {
+                if (e.key === 'Enter') {
+                    app.startGame();
+                }
+            };
+            
+            const nameInput = document.getElementById('playerName');
+            const classInput = document.getElementById('playerClass');
+            
+            if(nameInput) nameInput.addEventListener('keypress', enterToStart);
+            if(classInput) classInput.addEventListener('keypress', enterToStart);
+        });
+
+    </script>
+</body>
+</html>

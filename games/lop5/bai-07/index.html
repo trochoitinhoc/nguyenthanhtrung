@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cầu Trượt Kiến Thức - Lớp 5</title>
+    <style>
+        :root {
+            --primary: #00a8ff;
+            --secondary: #fbc531;
+            --success: #4cd137;
+            --danger: #e84118;
+            --dark: #2f3640;
+            --light: #f5f6fa;
+        }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #87ceeb; touch-action: none;
+        }
+        #gameCanvas {
+            display: block; width: 100%; height: 100%;
+        }
+        
+        /* Giao diện UI (Overlay) */
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.6); z-index: 10; backdrop-filter: blur(3px);
+        }
+        .panel {
+            background: var(--light); padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; max-width: 90%; width: 400px;
+            border: 5px solid var(--primary);
+        }
+        h1 { color: var(--primary); margin-top: 0; text-transform: uppercase; font-size: 28px; text-shadow: 2px 2px 0px #fff; }
+        
+        /* Form nhập liệu */
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--dark); }
+        .input-group input { 
+            width: 100%; padding: 12px; border: 2px solid #ccc; border-radius: 10px; 
+            font-size: 16px; box-sizing: border-box; outline: none; transition: border 0.3s;
+        }
+        .input-group input:focus { border-color: var(--primary); }
+        
+        /* Nút bấm */
+        .btn {
+            background: var(--primary); color: white; border: none; padding: 15px 30px;
+            font-size: 20px; font-weight: bold; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 5px 0 #0097e6; transition: transform 0.1s, box-shadow 0.1s;
+            width: 100%; text-transform: uppercase; margin-top: 10px;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #0097e6; }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #0097e6; }
+        
+        /* HUD - Hiển thị thông số trong game */
+        #hud {
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            display: flex; justify-content: space-between; pointer-events: none; z-index: 5;
+        }
+        .hud-box {
+            background: rgba(255, 255, 255, 0.9); padding: 10px 15px; border-radius: 15px;
+            font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 2px solid var(--primary);
+        }
+        .score-text { color: var(--primary); font-size: 18px; }
+        .combo-text { color: var(--danger); font-size: 18px; display: none; }
+        
+        /* Nút âm thanh */
+        #audioToggle {
+            position: absolute; bottom: 20px; right: 20px; z-index: 5;
+            background: var(--light); border: 2px solid #ccc; border-radius: 50%;
+            width: 50px; height: 50px; font-size: 24px; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        
+        .hidden { display: none !important; }
+        
+        /* Bảng kết quả */
+        .result-item { font-size: 18px; margin: 10px 0; font-weight: bold; }
+        .knowledge-review {
+            background: #fff3cd; color: #856404; padding: 10px; border-radius: 10px;
+            font-size: 14px; text-align: left; margin-top: 15px; border: 1px solid #ffeeba;
+            max-height: 150px; overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+        <div class="hud-box score-text">Điểm: <span id="scoreDisplay">0</span></div>
+        <div class="hud-box combo-text" id="comboBox">Combo x<span id="comboDisplay">1</span></div>
+        <div class="hud-box score-text">Level: <span id="levelDisplay">1</span></div>
+    </div>
+    
+    <button id="audioToggle">🔊</button>
+
+    <!-- Canvas Game -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Màn hình Bắt đầu -->
+    <div id="startScreen" class="overlay">
+        <div class="panel">
+            <h1>Cầu Trượt Kiến Thức</h1>
+            <p>Bài 7: Thực hành soạn thảo văn bản (Lớp 5)</p>
+            <div class="input-group">
+                <label>Họ và Tên:</label>
+                <input type="text" id="playerName" placeholder="Biệt danh (không nhập tên thật)" required>
+            </div>
+            <div class="input-group">
+                <label>Lớp:</label>
+                <input type="text" id="playerClass" placeholder="Ví dụ: 5A" required>
+            </div>
+            <button class="btn" id="startBtn">Bắt Đầu Trượt!</button>
+        </div>
+    </div>
+
+    <!-- Màn hình Kết thúc -->
+    <div id="endScreen" class="overlay hidden">
+        <div class="panel">
+            <h1 id="endTitle">HOÀN THÀNH!</h1>
+            <h3 style="color: var(--primary);" id="endPlayerInfo"></h3>
+            <div class="result-item" style="color: var(--primary)">Tổng điểm: <span id="finalScore">0</span></div>
+            <div class="result-item" style="color: var(--danger)">Combo cao nhất: x<span id="maxCombo">0</span></div>
+            <div class="result-item" style="color: var(--success)">Trả lời đúng: <span id="correctCount">0</span>/<span id="totalCount">0</span></div>
+            
+            <div class="knowledge-review" id="knowledgeReview">
+                <b>Kiến thức cần nhớ:</b><br>
+                - Phím Delete/Backspace dùng để xoá kí tự.<br>
+                - Phím Shift dùng để gõ chữ hoa.<br>
+                - Nhóm lệnh Font (trong dải lệnh Home) dùng để định dạng chữ (in đậm, màu sắc...).
+            </div>
+            
+            <button class="btn" id="restartBtn">Chơi Lại</button>
+        </div>
+    </div>
+
+    <script>
+        // Lấy các element HTML
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Cấu hình Canvas
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        
+        // Xử lý Resize
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        // ================= ÁM THANH (WEB AUDIO API) =================
+        let audioCtx;
+        let soundEnabled = true;
+        let isPlayingBGM = false;
+        let bgmNoteIndex = 0;
+        let bgmNextNoteTime = 0;
+
+        // Giai điệu nhạc nền (Arpeggio vui nhộn, tèn ten tèn ten)
+        const bgmNotes = [
+            262, 330, 392, 523, 392, 330, // Hợp âm C
+            262, 330, 392, 523, 392, 330,
+            349, 440, 523, 698, 523, 440, // Hợp âm F
+            349, 440, 523, 698, 523, 440,
+            392, 494, 587, 784, 587, 494, // Hợp âm G
+            392, 494, 587, 784, 587, 494
+        ];
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+        
+        function processBGM() {
+            if (!soundEnabled || !isPlayingBGM || !audioCtx) return;
+            
+            // Lên lịch nốt nhạc trước 0.1 giây để nhạc chạy mượt, không bị vấp/giật
+            while (bgmNextNoteTime < audioCtx.currentTime + 0.1) {
+                let freq = bgmNotes[bgmNoteIndex];
+                if (freq > 0) {
+                    const osc = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    osc.type = 'triangle'; // Âm thanh mềm mại, phù hợp nhạc nền
+                    osc.frequency.value = freq;
+                    
+                    osc.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    
+                    // Âm lượng siêu nhỏ (0.04) để làm nền, không lấn át tiếng hiệu ứng đúng/sai
+                    gainNode.gain.setValueAtTime(0.04, bgmNextNoteTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, bgmNextNoteTime + 0.15);
+                    
+                    osc.start(bgmNextNoteTime);
+                    osc.stop(bgmNextNoteTime + 0.15);
+                }
+                
+                // Chuyển sang nốt tiếp theo, nhịp điệu nhanh (0.15s)
+                bgmNextNoteTime += 0.15;
+                bgmNoteIndex = (bgmNoteIndex + 1) % bgmNotes.length;
+            }
+        }
+
+        // Tạo âm thanh đơn giản
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            
+            if (type === 'correct') {
+                // Tiếng Ting (đúng)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                // Tiếng Bíp trầm (sai)
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.2);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'win') {
+                // Tiếng tèn tén ten (Thắng lợi)
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554, now + 0.2);
+                osc.frequency.setValueAtTime(659, now + 0.4);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.linearRampToValueAtTime(0, now + 0.8);
+                osc.start(now);
+                osc.stop(now + 0.8);
+            }
+        }
+
+        document.getElementById('audioToggle').addEventListener('click', (e) => {
+            soundEnabled = !soundEnabled;
+            e.target.innerText = soundEnabled ? '🔊' : '🔇';
+            initAudio();
+            
+            // Đồng bộ lại đồng hồ nhạc nền nếu đang chơi mà bật lại âm thanh
+            if (soundEnabled && STATE.mode === 'playing' && audioCtx) {
+                bgmNextNoteTime = audioCtx.currentTime + 0.1;
+            }
+        });
+
+        // Tập hợp toàn bộ câu hỏi (11 câu) bám sát bài 7 - Đảm bảo không lặp lại
+        const allQuestions = [
+            { q: "Phím nào dùng để gõ chữ hoa?", ans: [{t: "Phím Shift", c: true}, {t: "Phím Enter", c: false}] },
+            { q: "Phím nào dùng để xoá kí tự gõ nhầm?", ans: [{t: "Delete / Backspace", c: true}, {t: "Phím Ctrl", c: false}] },
+            { q: "Để không gõ lại văn bản nhiều lần, ta làm gì?", ans: [{t: "Sao chép (Copy)", c: true}, {t: "Xóa đi gõ lại", c: false}] },
+            { q: "Phím nào dùng để ngắt dòng, xuống dòng mới?", ans: [{t: "Phím Enter", c: true}, {t: "Phím cách", c: false}] },
+            { q: "Nhóm lệnh Font nằm trong dải lệnh nào?", ans: [{t: "Dải lệnh Home", c: true}, {t: "Dải lệnh Insert", c: false}] },
+            { q: "Lệnh chữ B (Bold) dùng để làm gì?", ans: [{t: "In đậm chữ", c: true}, {t: "In nghiêng chữ", c: false}, {t: "Gạch chân chữ", c: false}] },
+            { q: "Lệnh chữ I (Italic) dùng để làm gì?", ans: [{t: "In nghiêng chữ", c: true}, {t: "Đổi màu chữ", c: false}, {t: "In đậm chữ", c: false}] },
+            { q: "Lệnh chữ U (Underline) dùng để làm gì?", ans: [{t: "Gạch chân chữ", c: true}, {t: "In đậm chữ", c: false}] },
+            { q: "Lệnh Font Color dùng để làm gì?", ans: [{t: "Đổi màu chữ", c: true}, {t: "Đổi cỡ chữ", c: false}] },
+            { q: "Lệnh đổi phông chữ và cỡ chữ nằm ở nhóm lệnh nào?", ans: [{t: "Nhóm lệnh Font", c: true}, {t: "Nhóm lệnh Paragraph", c: false}] },
+            { q: "Muốn chỉnh cỡ chữ cho cả bài, em làm gì đầu tiên?", ans: [{t: "Chọn toàn bộ văn bản", c: true}, {t: "Xoá bài đi", c: false}] }
+        ];
+
+        // Boss: Yêu cầu chuỗi thao tác định dạng
+        // Boss: Yêu cầu chuỗi thao tác định dạng
+        const bossQuestions = [
+            { q: "BƯỚC 1: Chọn toàn bộ văn bản bằng phím nào?", ans: [{t: "Ctrl + A", c: true}, {t: "Ctrl + S", c: false}] },
+            { q: "BƯỚC 2: Vào dải lệnh nào để định dạng?", ans: [{t: "View", c: false}, {t: "Home", c: true}] },
+            { q: "BƯỚC 3: Để định dạng phông chữ, em chọn nhóm lệnh nào?", ans: [{t: "Paragraph", c: false}, {t: "Font", c: true}] },
+            { q: "BƯỚC 4: Làm sao để chữ nghiêng?", ans: [{t: "Chọn chữ U", c: false}, {t: "Chọn chữ I", c: true}] },
+            { q: "BƯỚC 5: Lưu tệp văn bản bằng phím nào?", ans: [{t: "Ctrl + S", c: true}, {t: "Ctrl + P", c: false}] }
+        ];
+
+        // Trạng thái Game
+        let STATE = {
+            mode: 'menu', // menu, playing, end
+            playerInfo: { name: '', class: '' },
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            correctGates: 0,
+            totalGatesSpawns: 0,
+            level: 1,
+            speed: 1.2, // Tốc độ khởi điểm chậm vừa phải
+            particles: [],
+            floatingTexts: [],
+            gates: [],
+            availableQuestions: [], // Thêm mảng chứa câu hỏi ngẫu nhiên không trùng lặp
+            waterOffset: 0
+        };
+
+        // Hàm vẽ bo góc an toàn mọi trình duyệt
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        // Đối tượng Nhân vật (Người ngồi trên phao)
+        const Player = {
+            x: width / 2,
+            y: height - 120,
+            targetX: width / 2,
+            size: 40,
+            
+            update() {
+                // Di chuyển mượt mà theo targetX (Nội suy)
+                this.x += (this.targetX - this.x) * 0.15;
+                // Giới hạn trong màn hình
+                if (this.x < 30) this.x = 30;
+                if (this.x > width - 30) this.x = width - 30;
+            },
+            
+            draw() {
+                // Vẽ phao bơi
+                ctx.fillStyle = '#ff4757';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Vẽ lỗ phao
+                ctx.fillStyle = '#87ceeb'; // Màu nước
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Vẽ người (đơn giản)
+                ctx.fillStyle = '#f1c232';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y - 10, 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        };
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 4 + 2;
+                this.vx = Math.cos(angle) * velocity;
+                this.vy = Math.sin(angle) * velocity;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.02 + 0.02;
+                this.size = Math.random() * 4 + 2;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1; // Trọng lực nhẹ rơi xuống
+                this.life -= this.decay;
+            }
+            draw() {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        class FloatingText {
+            constructor(text, x, y, color) {
+                this.text = text; this.x = x; this.y = y;
+                this.color = color; this.life = 1.5; // Tồn tại 1.5s
+            }
+            update() {
+                this.y -= 1.5; // Bay lên từ từ
+                this.life -= 0.02;
+            }
+            draw() {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.font = "bold 24px Arial";
+                ctx.textAlign = "center";
+                // Tạo viền chữ cho nổi
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 4;
+                ctx.strokeText(this.text, this.x, this.y);
+                ctx.fillStyle = this.color;
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function createFireworks(x, y) {
+            const colors = ['#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#ffffff'];
+            for(let i=0; i<30; i++){
+                let color = colors[Math.floor(Math.random() * colors.length)];
+                STATE.particles.push(new Particle(x, y, color));
+            }
+        }
+
+        class Gate {
+            constructor(qData, y, isBoss = false) {
+                this.y = y;
+                this.question = qData.q;
+                this.options = qData.ans;
+                // Đảo ngẫu nhiên vị trí đáp án
+                this.options.sort(() => Math.random() - 0.5);
+                this.isBoss = isBoss;
+                this.vanished = false; // Trạng thái đã chọn/biến mất
+                this.passed = false;
+                
+                // Tính toán chia làn (Lanes)
+                let numLanes = this.options.length;
+                let laneWidth = width / numLanes;
+                this.lanes = [];
+                for (let i = 0; i < numLanes; i++) {
+                    this.lanes.push({
+                        data: this.options[i],
+                        x1: i * laneWidth,
+                        x2: (i + 1) * laneWidth,
+                        midX: i * laneWidth + laneWidth / 2
+                    });
+                }
+            }
+
+            update(speed) {
+                this.y += speed;
+                
+                // Xử lý va chạm bằng cách trượt qua (nếu người chơi không click)
+                if (!this.passed && !this.vanished && this.y + 20 > Player.y - Player.size && this.y < Player.y + Player.size) {
+                    // Xác định đang ở làn nào
+                    for (let lane of this.lanes) {
+                        if (Player.x >= lane.x1 && Player.x <= lane.x2) {
+                            this.processAnswer(lane);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Xử lý logic đúng/sai
+            processAnswer(lane) {
+                this.passed = true;
+                this.vanished = true; // Biến mất khi chạm
+                
+                if (lane.data.c) {
+                    // Trả lời đúng
+                    playSound('correct');
+                    STATE.combo++;
+                    if (STATE.combo > STATE.maxCombo) STATE.maxCombo = STATE.combo;
+                    
+                    let points = 10 * STATE.combo;
+                    STATE.score += points;
+                    STATE.correctGates++;
+                    
+                    // Tăng tốc độ mượt, mức tối đa chỉ là 2.5 để không quá nhanh
+                    if(STATE.speed < 2.5) STATE.speed += 0.1;
+                    
+                    createFireworks(lane.midX, this.y);
+                    STATE.floatingTexts.push(new FloatingText("CHÍNH XÁC! +" + points, lane.midX, this.y - 20, "#4cd137"));
+                    
+                    // Kiểm tra chuyển cấp độ
+                    checkLevelUp();
+
+                } else {
+                    // Trả lời sai
+                    playSound('wrong');
+                    STATE.combo = 0;
+                    STATE.speed = 1.2; // Trả lời sai thì Reset lại tốc độ thật chậm
+                    STATE.floatingTexts.push(new FloatingText("SAI RỒI! MẤT COMBO", lane.midX, this.y - 20, "#e84118"));
+                }
+                
+                updateHUD();
+            }
+
+            draw() {
+                if (this.vanished) return;
+
+                // Vẽ Bảng Câu hỏi
+                let boxHeight = 50;
+                ctx.fillStyle = this.isBoss ? '#c0392b' : '#2980b9';
+                drawRoundedRect(ctx, 20, this.y - 60, width - 40, boxHeight, 15);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                // Dùng font cơ bản cho an toàn
+                ctx.font = "bold 18px Arial"; 
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(this.question, width / 2, this.y - 60 + boxHeight/2);
+
+                // Vẽ Các Làn Đáp án
+                for (let lane of this.lanes) {
+                    let ansBoxW = (lane.x2 - lane.x1) * 0.8;
+                    let ansBoxH = 45;
+                    let ansX = lane.midX - ansBoxW/2;
+                    let ansY = this.y + 10;
+                    
+                    // Nền đáp án
+                    ctx.fillStyle = this.isBoss ? '#f39c12' : '#fbc531';
+                    drawRoundedRect(ctx, ansX, ansY, ansBoxW, ansBoxH, 10);
+                    ctx.fill();
+                    ctx.strokeStyle = this.isBoss ? '#fff' : '#d35400';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    // Text đáp án
+                    ctx.fillStyle = '#2f3640';
+                    ctx.font = "bold 16px Arial";
+                    ctx.fillText(lane.data.t, lane.midX, ansY + ansBoxH/2);
+                }
+            }
+        }
+
+        function spawnGate() {
+            STATE.totalGatesSpawns++;
+            let qData;
+            
+            if (STATE.level === 4) {
+                // Boss Level
+                if (bossQuestions.length > 0) {
+                    qData = bossQuestions.shift(); // Lấy câu đầu tiên ra
+                    STATE.gates.push(new Gate(qData, 0, true));
+                } else {
+                    // Win Game
+                    STATE.mode = 'end';
+                    showEndScreen(true);
+                }
+            } else {
+                // Lấy câu hỏi ngẫu nhiên từ mảng đã xáo trộn (đảm bảo không trùng)
+                if (STATE.availableQuestions.length > 0) {
+                    qData = STATE.availableQuestions.pop();
+                } else {
+                    // Nếu lỡ chơi hết 11 câu mà chưa qua màn, xáo trộn nạp lại 
+                    STATE.availableQuestions = [...allQuestions].sort(() => Math.random() - 0.5);
+                    qData = STATE.availableQuestions.pop();
+                }
+                STATE.gates.push(new Gate(qData, 0, false));
+            }
+        }
+
+        function checkLevelUp() {
+            if (STATE.level === 1 && STATE.correctGates >= 3) {
+                STATE.level = 2;
+                STATE.floatingTexts.push(new FloatingText("LEVEL 2!", width/2, height/2, "#fbc531"));
+            } else if (STATE.level === 2 && STATE.correctGates >= 6) {
+                STATE.level = 3;
+                STATE.floatingTexts.push(new FloatingText("LEVEL 3: TĂNG TỐC!", width/2, height/2, "#fbc531"));
+            } else if (STATE.level === 3 && STATE.correctGates >= 10) {
+                STATE.level = 4; // Boss
+                STATE.speed = 1.5; // Giảm tốc độ lại cho boss thật chậm để đọc chữ
+                STATE.floatingTexts.push(new FloatingText("BOSS: CẦU TRƯỢT XOẮN ỐC!", width/2, height/2, "#c0392b"));
+            }
+        }
+
+        // --- XỬ LÝ NHẬP LIỆU TỪ CHUỘT/CẢM ỨNG ---
+        function handleMove(e) {
+            e.preventDefault();
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            Player.targetX = clientX;
+        }
+
+        function handleClick(e) {
+            if (STATE.mode !== 'playing') return;
+            initAudio(); // Bật âm thanh nếu chưa bật
+            
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            let clickedOnGate = false;
+            
+            // Duyệt ngược để xét cổng gần người chơi nhất
+            for (let i = STATE.gates.length - 1; i >= 0; i--) {
+                let gate = STATE.gates[i];
+                if (!gate.vanished && !gate.passed) {
+                    for (let lane of gate.lanes) {
+                        let ansBoxW = (lane.x2 - lane.x1) * 0.8;
+                        let ansBoxH = 45;
+                        let ansX = lane.midX - ansBoxW/2;
+                        let ansY = gate.y + 10;
+                        
+                        // Vùng chạm mở rộng thêm một chút cho dễ bấm
+                        if (clientX >= ansX - 20 && clientX <= ansX + ansBoxW + 20 &&
+                            clientY >= ansY - 20 && clientY <= ansY + ansBoxH + 20) {
+                            
+                            // Kéo nhân vật sang đó ngay lập tức
+                            Player.x = lane.midX;
+                            Player.targetX = lane.midX;
+                            
+                            gate.processAnswer(lane);
+                            clickedOnGate = true;
+                            break;
+                        }
+                    }
+                    if (clickedOnGate) break;
+                }
+            }
+            
+            if(!clickedOnGate) Player.targetX = clientX;
+        }
+
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
+        canvas.addEventListener('mousedown', handleClick);
+        canvas.addEventListener('touchstart', handleClick, {passive: false});
+
+        // --- VÒNG LẶP GAME ---
+        let lastTime = 0;
+        let spawnTimer = 0;
+
+        function gameLoop(timestamp) {
+            if (STATE.mode !== 'playing') return;
+            
+            processBGM(); // Chạy bộ xử lý nhạc nền để phát nhạc liên tục
+
+            // Khắc phục triệt để lỗi lệch đồng hồ hệ thống khiến cổng không sinh ra
+            if (!lastTime) lastTime = timestamp;
+            let dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Xoá màn hình & Vẽ nền nước cuộn
+            ctx.clearRect(0, 0, width, height);
+            STATE.waterOffset = (STATE.waterOffset + STATE.speed) % 50;
+            
+            // Vẽ các đường gạch nước tạo cảm giác di chuyển
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 4;
+            for(let i=0; i<height; i+=50){
+                let yLine = i + STATE.waterOffset;
+                ctx.beginPath();
+                ctx.moveTo(0, yLine);
+                // Tạo gợn sóng nhẹ
+                for(let x=0; x<width; x+=40) {
+                    ctx.lineTo(x, yLine + Math.sin(x*0.05)*5);
+                }
+                ctx.stroke();
+            }
+
+            // Spawn Cổng (Dựa vào tốc độ để giãn cách)
+            spawnTimer += dt;
+            let spawnInterval = 4000 / (STATE.speed / 2); // Tăng thời gian giãn cách để cổng ra chậm hơn, kịp đọc câu hỏi
+            if (spawnTimer > spawnInterval) {
+                spawnTimer = 0;
+                spawnGate();
+            }
+
+            // Update & Vẽ Cổng
+            for (let i = STATE.gates.length - 1; i >= 0; i--) {
+                let gate = STATE.gates[i];
+                gate.update(STATE.speed);
+                if (gate.y > height + 100) {
+                    STATE.gates.splice(i, 1); // Xoá cổng đã qua
+                } else {
+                    gate.draw();
+                }
+            }
+
+            // Vẽ Player
+            Player.update();
+            Player.draw();
+
+            // Update & Vẽ Pháo hoa
+            for (let i = STATE.particles.length - 1; i >= 0; i--) {
+                let p = STATE.particles[i];
+                p.update();
+                p.draw();
+                if (p.life <= 0) STATE.particles.splice(i, 1);
+            }
+
+            // Update & Vẽ Floating Text
+            for (let i = STATE.floatingTexts.length - 1; i >= 0; i--) {
+                let ft = STATE.floatingTexts[i];
+                ft.update();
+                ft.draw();
+                if (ft.life <= 0) STATE.floatingTexts.splice(i, 1);
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateHUD() {
+            document.getElementById('scoreDisplay').innerText = STATE.score;
+            document.getElementById('levelDisplay').innerText = STATE.level === 4 ? "BOSS" : STATE.level;
+            
+            const comboEl = document.getElementById('comboBox');
+            if (STATE.combo >= 2) {
+                comboEl.style.display = 'block';
+                document.getElementById('comboDisplay').innerText = STATE.combo;
+                comboEl.style.transform = 'scale(1.2)';
+                setTimeout(() => comboEl.style.transform = 'scale(1)', 100);
+            } else {
+                comboEl.style.display = 'none';
+            }
+        }
+
+        function startGame() {
+            const name = document.getElementById('playerName').value.trim();
+            const pClass = document.getElementById('playerClass').value.trim();
+            
+            if (!name || !pClass) {
+                alert("Vui lòng nhập đủ Họ tên và Lớp nhé!");
+                return;
+            }
+
+            STATE.playerInfo = { name, class: pClass };
+            
+            // Xáo trộn 11 câu hỏi ngẫu nhiên để không bao giờ trùng lặp khi chơi
+            STATE.availableQuestions = [...allQuestions].sort(() => Math.random() - 0.5);
+
+            // Khôi phục bộ nhớ boss
+            bossQuestions.length = 0;
+            bossQuestions.push(
+                { q: "BƯỚC 1: Chọn toàn bộ văn bản bằng phím nào?", ans: [{t: "Ctrl + A", c: true}, {t: "Ctrl + S", c: false}] },
+                { q: "BƯỚC 2: Vào dải lệnh nào để định dạng?", ans: [{t: "View", c: false}, {t: "Home", c: true}] },
+                { q: "BƯỚC 3: Để định dạng phông chữ, em chọn nhóm lệnh nào?", ans: [{t: "Paragraph", c: false}, {t: "Font", c: true}] },
+                { q: "BƯỚC 4: Làm sao để chữ nghiêng?", ans: [{t: "Chọn chữ U", c: false}, {t: "Chọn chữ I", c: true}] },
+                { q: "BƯỚC 5: Lưu tệp văn bản bằng phím nào?", ans: [{t: "Ctrl + S", c: true}, {t: "Ctrl + P", c: false}] }
+            );
+
+            // Reset Biến
+            STATE.score = 0; STATE.combo = 0; STATE.maxCombo = 0;
+            STATE.level = 1; STATE.speed = 1.2; // Tốc độ trượt ban đầu chậm hẳn lại
+            STATE.correctGates = 0; STATE.totalGatesSpawns = 0;
+            STATE.gates = []; STATE.particles = []; STATE.floatingTexts = [];
+            
+            Player.x = width/2; Player.targetX = width/2;
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('endScreen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            
+            initAudio();
+            STATE.mode = 'playing';
+            
+            // Khởi động nhạc nền khi bắt đầu chơi
+            isPlayingBGM = true;
+            if (audioCtx) bgmNextNoteTime = audioCtx.currentTime + 0.1;
+            
+            // Fix: Đặt lại lastTime bằng 0 để frame đầu tự căn chỉnh, đẩy spawnTimer lên cao để bung cổng ra liền
+            lastTime = 0; 
+            spawnTimer = 9999; 
+            
+            requestAnimationFrame(gameLoop);
+            updateHUD();
+        }
+
+        function showEndScreen(isWin) {
+            isPlayingBGM = false; // Tắt nhạc nền khi kết thúc
+            
+            document.getElementById('hud').classList.add('hidden');
+            const endScreen = document.getElementById('endScreen');
+            endScreen.classList.remove('hidden');
+            
+            if(isWin) playSound('win');
+            
+            document.getElementById('endTitle').innerText = isWin ? "CHINH PHỤC THÀNH CÔNG!" : "KẾT THÚC TRÒ CHƠI";
+            document.getElementById('endPlayerInfo').innerText = `${STATE.playerInfo.name} - Lớp: ${STATE.playerInfo.class}`;
+            document.getElementById('finalScore').innerText = STATE.score;
+            document.getElementById('maxCombo').innerText = STATE.maxCombo;
+            document.getElementById('correctCount').innerText = STATE.correctGates;
+            document.getElementById('totalCount').innerText = STATE.totalGatesSpawns;
+        }
+
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+
+        // Vẽ màn hình nền menu chờ lúc mở web
+        ctx.fillStyle = '#87ceeb';
+        ctx.fillRect(0, 0, width, height);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xây Thành Phố Kiến Thức - Lớp 3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            user-select: none;
+        }
+        h1, h2, h3, .font-game {
+            font-family: 'Fredoka', cursive, sans-serif;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.9); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        .animate-glow {
+            animation: pulse-glow 2s infinite;
+        }
+        .building-tile {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .building-tile:hover {
+            transform: scale(1.05);
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-sky-400 via-indigo-500 to-purple-600 min-h-screen text-slate-800 flex flex-col items-center justify-between p-3 sm:p-6">
+
+    <script>
+        class SoundManager {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playCoin() {
+                if (this.muted) return;
+                this.init();
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(880, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+            playBuild() {
+                if (this.muted) return;
+                this.init();
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+            playCorrect() {
+                if (this.muted) return;
+                this.init();
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            }
+            playWrong() {
+                if (this.muted) return;
+                this.init();
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(165, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.35);
+            }
+            playUpgrade() {
+                if (this.muted) return;
+                this.init();
+                if(!this.ctx) return;
+                const now = this.ctx.currentTime;
+                [440, 554.37, 659.25, 880, 1108.73].forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                    gain.gain.setValueAtTime(0.25, now + idx * 0.07);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + idx * 0.07);
+                    osc.stop(now + idx * 0.07 + 0.25);
+                });
+            }
+        }
+        const sounds = new SoundManager();
+        let bgMusicInterval = null;
+        let bgMusicPlaying = false;
+
+        function toggleBgMusic() {
+            sounds.init();
+            bgMusicPlaying = !bgMusicPlaying;
+            const btn = document.getElementById('musicToggleBtn');
+            if (bgMusicPlaying) {
+                btn.innerHTML = '<i class="fas fa-volume-high text-emerald-300"></i><span class="hidden sm:inline ml-1 text-white">Nhạc: Bật</span>';
+                btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl shadow transition flex items-center text-sm";
+                startBgMelody();
+            } else {
+                btn.innerHTML = '<i class="fas fa-volume-xmark text-slate-300"></i><span class="hidden sm:inline ml-1 text-slate-200">Nhạc: Tắt</span>';
+                btn.className = "bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold px-3 py-1.5 rounded-xl shadow transition flex items-center text-sm";
+                if (bgMusicInterval) clearInterval(bgMusicInterval);
+            }
+        }
+
+        function startBgMelody() {
+            if (bgMusicInterval) clearInterval(bgMusicInterval);
+            const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 293.66, 349.23, 440.00, 523.25, 440.00, 349.23];
+            let idx = 0;
+            bgMusicInterval = setInterval(() => {
+                if (!bgMusicPlaying || sounds.muted) return;
+                try {
+                    const osc = sounds.ctx.createOscillator();
+                    const gain = sounds.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(notes[idx], sounds.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.05, sounds.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, sounds.ctx.currentTime + 0.4);
+                    osc.connect(gain);
+                    gain.connect(sounds.ctx.destination);
+                    osc.start();
+                    osc.stop(sounds.ctx.currentTime + 0.4);
+                    idx = (idx + 1) % notes.length;
+                } catch(e) {}
+            }, 500);
+        }
+    </script>
+
+    <div id="app" class="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden flex flex-col border-4 border-amber-300">
+        
+        <header class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white p-3 sm:p-4 flex flex-wrap justify-between items-center gap-3 border-b-4 border-amber-300">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-400 text-purple-950 p-2 sm:p-3 rounded-2xl shadow-md text-xl sm:text-2xl font-bold animate-float">
+                    🏙️
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-wide text-amber-200 drop-shadow">THÀNH PHỐ KIẾN THỨC</h1>
+                    <p class="text-xs sm:text-sm text-sky-100 font-semibold" id="playerInfoDisplay">Chưa đăng nhập | Lớp 3</p>
+                </div>
+            </div>
+
+            <div class="flex items-center flex-wrap gap-2 sm:gap-3">
+                <div class="bg-amber-500/30 border border-amber-300 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-inner">
+                    <span class="text-amber-300 text-lg">🪙</span>
+                    <span class="font-bold text-white text-sm sm:text-base" id="coinCount">120</span>
+                </div>
+                <div class="bg-orange-500/30 border border-orange-300 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-inner">
+                    <span class="text-orange-300 text-lg">🧱</span>
+                    <span class="font-bold text-white text-sm sm:text-base" id="materialCount">5</span>
+                </div>
+                <div class="bg-purple-500/30 border border-purple-300 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-inner">
+                    <span class="text-purple-300 text-lg">🏗️</span>
+                    <span class="font-bold text-white text-sm sm:text-base" id="buildingCountDisplay">0/8</span>
+                </div>
+                <div class="bg-emerald-500/30 border border-emerald-300 px-3 py-1.5 rounded-xl flex items-center space-x-1.5 shadow-inner">
+                    <span class="text-emerald-300 text-lg">⭐</span>
+                    <span class="font-bold text-white text-sm sm:text-base" id="cityLevelDisplay">Cấp 1</span>
+                </div>
+                <button id="musicToggleBtn" onclick="toggleBgMusic()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold px-3 py-1.5 rounded-xl shadow transition flex items-center text-sm">
+                    <i class="fas fa-volume-xmark text-slate-300"></i><span class="hidden sm:inline ml-1 text-slate-200">Nhạc: Tắt</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 p-4 sm:p-6 overflow-y-auto bg-slate-50 relative" id="mainContent">
+            <!-- Dynamic content injected here -->
+        </main>
+    </div>
+
+    <footer class="mt-4 text-white text-xs sm:text-sm font-semibold tracking-wide drop-shadow text-center">
+        ✨ Trò chơi học tập Tin học Lớp 3 - Bám sát SGK Kết nối tri thức với cuộc sống ✨
+    </footer>
+
+    <script>
+        let gameState = {
+            playerName: '',
+            playerClass: '',
+            coins: 120,
+            materials: 5,
+            score: 0,
+            currentQuestionIndex: 0,
+            correctAnswersCount: 0,
+            buildings: [],
+            cityLevel: 1,
+            completedAll: false
+        };
+
+        const questionsList = [
+            {
+                id: 1,
+                type: 'multiple',
+                question: 'Trong nhóm An, Minh và Khoa ở phần Khởi động, các bạn cần tạo ra sản phẩm số nào để thuyết minh trước lớp?',
+                options: [
+                    'A. Một bức tranh vẽ bằng tay trên giấy',
+                    'B. Một bài trình chiếu về kế hoạch trồng hoa',
+                    'C. Một đoạn video quay cảnh sân trường',
+                    'D. Một bảng điểm thi đua'
+                ],
+                answer: 1,
+                coinReward: 40,
+                matReward: 2,
+                explanation: 'Đúng rồi! Các bạn cần xây dựng bài trình chiếu để trình bày với thầy cô và các bạn về kế hoạch trồng hoa.'
+            },
+            {
+                id: 2,
+                type: 'multiple',
+                question: 'Để xây dựng bài trình chiếu thuyết minh kế hoạch trồng hoa, nhóm An cần dựa vào những gì đã cho trước?',
+                options: [
+                    'A. Thông báo của nhà trường và kế hoạch của lớp',
+                    'B. Truyện cổ tích dân gian Việt Nam',
+                    'C. Bảng nhân chia số học',
+                    'D. Thời khóa biểu môn Toán'
+                ],
+                answer: 0,
+                coinReward: 40,
+                matReward: 2,
+                explanation: 'Chính xác! Thông báo của nhà trường và kế hoạch của lớp là những điều đã cho để bắt đầu công việc.'
+            },
+            {
+                id: 3,
+                type: 'multiple',
+                question: 'Công việc xây dựng bài trình chiếu được chia thành mấy việc nhỏ theo SGK?',
+                options: [
+                    'A. 2 việc nhỏ',
+                    'B. 3 việc nhỏ',
+                    'C. 4 việc nhỏ',
+                    'D. 5 việc nhỏ'
+                ],
+                answer: 2,
+                coinReward: 50,
+                matReward: 3,
+                explanation: 'Rất giỏi! 4 việc nhỏ gồm: 1. Lên ý tưởng, 2. Chuẩn bị nội dung, 3. Tạo bài trình chiếu, 4. Hoàn thiện sản phẩm.'
+            },
+            {
+                id: 4,
+                type: 'truefalse',
+                question: 'Việc "Lên ý tưởng" (xác định tên bài trình chiếu, tên nhóm) là việc KHÔNG cần thiết phải làm trước khi mở máy tính?',
+                options: [
+                    'A. Đúng',
+                    'B. Sai'
+                ],
+                answer: 1,
+                coinReward: 40,
+                matReward: 2,
+                explanation: 'Chính xác là Sai! Trước khi làm việc với máy tính, chúng ta luôn cần lên ý tưởng và chuẩn bị nội dung rõ ràng.'
+            },
+            {
+                id: 5,
+                type: 'multiple',
+                question: 'Theo dự kiến ở Trang 3 của SGK (mục Chuẩn bị), nhóm cần chuẩn bị những nội dung chi tiết nào?',
+                options: [
+                    'A. Dụng cụ, Cây hoa (số lượng, loại), Đất trồng và chậu',
+                    'B. Danh sách điểm số môn Tin học của các bạn',
+                    'C. Kế hoạch đi tham quan bảo tàng lịch sử',
+                    'D. Lịch phân công trực nhật trong tuần'
+                ],
+                answer: 0,
+                coinReward: 50,
+                matReward: 3,
+                explanation: 'Chính xác! Ở trang 3, phần chuẩn bị bao gồm: Dụng cụ, Cây hoa (số lượng, loại), Đất trồng, chậu.'
+            },
+            {
+                id: 6,
+                type: 'matching',
+                question: 'Ghép nối đúng nội dung công việc nhỏ với ý nghĩa của nó:',
+                pairs: [
+                    { left: '1. Lên ý tưởng', right: 'Xác định tên bài trình chiếu, đề tài' },
+                    { left: '2. Chuẩn bị nội dung', right: 'Xác định số trang và hình ảnh sưu tầm' },
+                    { left: '3. Tạo bài trình chiếu', right: 'Sử dụng phần mềm tạo các trang chiếu' }
+                ],
+                coinReward: 60,
+                matReward: 4,
+                explanation: 'Xuất sắc! Bạn đã nắm vững các bước phân chia công việc nhỏ trong bài học.'
+            },
+            {
+                id: 7,
+                type: 'multiple',
+                question: 'Trong các việc nhỏ để xây dựng bài trình chiếu, việc nào sau đây được thực hiện với SỰ TRỢ GIÚP CỦA MÁY TÍNH?',
+                options: [
+                    'A. Bàn bạc thảo luận nhóm ở sân trường',
+                    'B. Tạo các trang chiếu và chèn hình ảnh trên phần mềm',
+                    'C. Cùng nhau đi mua cây hoa ngoài tiệm',
+                    'D. Nhặt cỏ và tưới nước hoa ngoài vườn'
+                ],
+                answer: 1,
+                coinReward: 50,
+                matReward: 3,
+                explanation: 'Chính xác! Tạo trang chiếu trên phần mềm máy tính là lúc máy tính phát huy sự trợ giúp đắc lực.'
+            },
+            {
+                id: 8,
+                type: 'multiple',
+                question: 'Ở bước 4 trong phần Hướng dẫn thực hành (mục 2), sau khi làm xong bài trình chiếu chúng ta nên làm gì?',
+                options: [
+                    'A. Tắt ngay máy tính không cần lưu',
+                    'B. Trình chiếu toàn màn hình và lưu tệp trình chiếu',
+                    'C. Xóa hết các trang chiếu vừa tạo',
+                    'D. In ra giấy tất cả các trang'
+                ],
+                answer: 1,
+                coinReward: 50,
+                matReward: 3,
+                explanation: 'Rất chính xác! Trình chiếu toàn màn hình để kiểm tra và lưu tệp là thao tác hoàn thiện sản phẩm.'
+            },
+            {
+                id: 9,
+                type: 'multiple',
+                question: 'Trong phần Luyện tập (Sách trang 74), đề bài yêu cầu xây dựng bài trình chiếu để giới thiệu về điều gì?',
+                options: [
+                    'A. Cảnh đẹp quê hương em',
+                    'B. Cách giải bài toán lớp 3',
+                    'C. Luật giao thông đường bộ',
+                    'D. Các loài động vật hoang dã'
+                ],
+                answer: 0,
+                coinReward: 40,
+                matReward: 2,
+                explanation: 'Đúng rồi! Bài tập thực hành luyện tập yêu cầu giới thiệu cảnh đẹp quê hương em.'
+            },
+            {
+                id: 10,
+                type: 'multiple',
+                question: 'Trò chơi "Em làm rô-bốt" ở phần Vận dụng (trang 74) sử dụng lưới hình vuông mỗi chiều bao nhiêu ô trên sàn?',
+                options: [
+                    'A. 3 ô mỗi chiều',
+                    'B. 4 ô mỗi chiều',
+                    'C. 5 ô mỗi chiều',
+                    'D. 6 ô mỗi chiều'
+                ],
+                answer: 2,
+                coinReward: 60,
+                matReward: 4,
+                explanation: 'Chính xác tuyệt đối! Lưới hình vuông mỗi chiều 5 ô và đánh dấu ô vuông chính giữa.'
+            }
+        ];
+
+        const catalogBuildings = [
+            {
+                id: 'nha_o',
+                name: 'Nhà Ở Xinh Xắn',
+                costCoins: 60,
+                costMats: 2,
+                desc: 'Nơi sinh sống ấm cúng của người dân thành phố.',
+                icon: '🏠',
+                bg: 'bg-amber-100 border-amber-300'
+            },
+            {
+                id: 'truong_hoc',
+                name: 'Trường Tiểu Học',
+                costCoins: 90,
+                costMats: 3,
+                desc: 'Nơi các bạn nhỏ học tập kiến thức và thực hành máy tính.',
+                icon: '🏫',
+                bg: 'bg-sky-100 border-sky-300'
+            },
+            {
+                id: 'cong_vien',
+                name: 'Công Viên Cây Xanh',
+                costCoins: 80,
+                costMats: 2,
+                desc: 'Khu vườn hoa và cây xanh tươi mát bảo vệ môi trường.',
+                icon: '🌳',
+                bg: 'bg-emerald-100 border-emerald-300'
+            },
+            {
+                id: 'thu_vien',
+                name: 'Thư Viện Sách Khoa Học',
+                costCoins: 110,
+                costMats: 4,
+                desc: 'Nơi lưu giữ sách vở, tài liệu và các bài trình chiếu hay.',
+                icon: '📚',
+                bg: 'bg-indigo-100 border-indigo-300'
+            },
+            {
+                id: 'benh_vien',
+                name: 'Bệnh Viện Thành Phố',
+                costCoins: 130,
+                costMats: 5,
+                desc: 'Chăm sóc sức khỏe cho toàn thể người dân trong thành phố.',
+                icon: '🏥',
+                bg: 'bg-rose-100 border-rose-300'
+            },
+            {
+                id: 'san_van_dong',
+                name: 'Sân Vận Động Thể Thao',
+                costCoins: 150,
+                costMats: 6,
+                desc: 'Nơi diễn ra các hoạt động rèn luyện thể chất và trò chơi vận động.',
+                icon: '🏟️',
+                bg: 'bg-purple-100 border-purple-300'
+            },
+            {
+                id: 'phong_may_tinh',
+                name: 'Phòng Máy Tính Thông Minh',
+                costCoins: 180,
+                costMats: 7,
+                desc: 'Công trình đặc biệt giúp học sinh thực hành Tin học và làm bài trình chiếu!',
+                icon: '💻',
+                bg: 'bg-teal-100 border-teal-300'
+            },
+            {
+                id: 'thap_tri_thuc',
+                name: 'Tháp Kiến Thức Vàng',
+                costCoins: 250,
+                costMats: 10,
+                desc: 'Biểu tượng tối cao của thành phố tri thức, hoàn thành mục tiêu xây dựng!',
+                icon: '🏰',
+                bg: 'bg-amber-200 border-amber-400'
+            }
+        ];
+
+        window.onload = function() {
+            renderLoginScreen();
+        };
+
+        function renderLoginScreen() {
+            const main = document.getElementById('mainContent');
+            main.innerHTML = `
+                <div class="max-w-md mx-auto bg-white rounded-3xl shadow-xl p-6 sm:p-8 border-4 border-indigo-200 text-center animate-glow">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-lg animate-float">
+                        🏰
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-indigo-900 mb-2">XÂY THÀNH PHỐ KIẾN THỨC</h2>
+                    <p class="text-slate-600 text-sm mb-6">Trò chơi học tập Tin học Lớp 3 - Vừa học vừa xây dựng thành phố mơ ước!</p>
+                    
+                    <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1"><i class="fas fa-user text-indigo-500 mr-2"></i>Họ và tên học sinh:</label>
+                            <input type="text" id="inputName" required placeholder="Biệt danh (không nhập tên thật)" 
+                                class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-semibold text-slate-800 bg-slate-50 transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1"><i class="fas fa-school text-indigo-500 mr-2"></i>Lớp:</label>
+                            <input type="text" id="inputClass" required placeholder="Ví dụ: Lớp 3A" 
+                                class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:outline-none font-semibold text-slate-800 bg-slate-50 transition">
+                        </div>
+                        <button type="submit" class="w-full mt-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black py-3.5 px-6 rounded-2xl shadow-lg transform transition active:scale-95 text-lg flex items-center justify-center space-x-2">
+                            <span>VÀO XÂY DỰNG NGAY</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const name = document.getElementById('inputName').value.trim();
+            const cls = document.getElementById('inputClass').value.trim();
+            if (!name || !cls) return;
+
+            gameState.playerName = name;
+            gameState.playerClass = cls;
+            sounds.playCorrect();
+            
+            const playerInfoDisplay = document.getElementById('playerInfoDisplay');
+            if (playerInfoDisplay) {
+                playerInfoDisplay.innerText = `${name} (${cls})`;
+            }
+
+            renderDashboard();
+        }
+
+        function updateStatusBar() {
+            document.getElementById('coinCount').innerText = gameState.coins;
+            document.getElementById('materialCount').innerText = gameState.materials;
+            document.getElementById('buildingCountDisplay').innerText = `${gameState.buildings.length}/${catalogBuildings.length}`;
+            
+            if (gameState.buildings.length >= 7) gameState.cityLevel = 3;
+            else if (gameState.buildings.length >= 4) gameState.cityLevel = 2;
+            else gameState.cityLevel = 1;
+
+            document.getElementById('cityLevelDisplay').innerText = `Cấp ${gameState.cityLevel}`;
+        }
+
+        function renderDashboard() {
+            updateStatusBar();
+            const main = document.getElementById('mainContent');
+            
+            let mapSlotsHTML = '';
+            catalogBuildings.forEach((bldg, idx) => {
+                const isBuilt = gameState.buildings.includes(bldg.id);
+                if (isBuilt) {
+                    mapSlotsHTML += `
+                        <div class="bg-gradient-to-b ${bldg.bg} border-2 rounded-2xl p-3 flex flex-col items-center justify-center text-center shadow-md relative overflow-hidden building-tile animate-glow">
+                            <span class="absolute top-2 right-2 text-xs bg-emerald-600 text-white px-2 py-0.5 rounded-full font-bold">Đã xây</span>
+                            <div class="text-4xl sm:text-5xl my-2">${bldg.icon}</div>
+                            <h4 class="font-bold text-xs sm:text-sm text-slate-800">${bldg.name}</h4>
+                        </div>
+                    `;
+                } else {
+                    mapSlotsHTML += `
+                        <div class="bg-white/80 border-2 border-dashed border-slate-300 rounded-2xl p-3 flex flex-col items-center justify-center text-center shadow-sm relative building-tile">
+                            <span class="absolute top-2 right-2 text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">Ô đất trống</span>
+                            <div class="text-3xl sm:text-4xl my-2 text-slate-300">🏗️</div>
+                            <p class="text-xs text-slate-500 font-semibold">Chưa có công trình</p>
+                        </div>
+                    `;
+                }
+            });
+
+            main.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 flex flex-col space-y-4">
+                        <div class="bg-white rounded-3xl p-5 shadow-lg border-2 border-indigo-100 flex flex-col justify-between">
+                            <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+                                <div>
+                                    <h2 class="text-xl sm:text-2xl font-black text-indigo-900"><i class="fas fa-city text-indigo-600 mr-2"></i>Bản Đồ Thành Phố Kiến Thức</h2>
+                                    <p class="text-xs text-slate-500 font-semibold">Hoàn thành thử thách để kiếm xu & vật liệu, xây dựng các công trình!</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="openQuizModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold px-4 py-2.5 rounded-2xl shadow transition flex items-center space-x-2 text-sm">
+                                        <i class="fas fa-brain"></i>
+                                        <span>Làm Thử Thách ❓</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 py-2">
+                                ${mapSlotsHTML}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col space-y-4">
+                        <div class="bg-white rounded-3xl p-5 shadow-lg border-2 border-indigo-100 flex-1 flex flex-col">
+                            <h2 class="text-lg sm:text-xl font-black text-indigo-900 mb-3 flex items-center">
+                                <i class="fas fa-store text-indigo-600 mr-2"></i>Cửa Hàng Công Trình
+                            </h2>
+                            <p class="text-xs text-slate-500 font-semibold mb-4">Dùng xu và vật liệu để mua và xây dựng trực tiếp vào thành phố!</p>
+
+                            <div class="space-y-3 overflow-y-auto max-h-[420px] pr-1">
+                                ${catalogBuildings.map(b => {
+                                    const isBuilt = gameState.buildings.includes(b.id);
+                                    const canAfford = gameState.coins >= b.costCoins && gameState.materials >= b.costMats;
+                                    return `
+                                        <div class="p-3 rounded-2xl border-2 ${isBuilt ? 'bg-emerald-50 border-emerald-300' : (canAfford ? 'bg-sky-50 border-sky-300' : 'bg-slate-50 border-slate-200')} flex items-center justify-between gap-2 shadow-sm">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="text-3xl">${b.icon}</div>
+                                                <div>
+                                                    <h4 class="font-bold text-sm text-slate-800">${b.name}</h4>
+                                                    <div class="flex items-center space-x-2 text-xs font-semibold mt-0.5">
+                                                        <span class="text-amber-600">🪙 ${b.costCoins}</span>
+                                                        <span class="text-orange-600">🧱 ${b.costMats}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                ${isBuilt ? 
+                                                    '<span class="text-xs bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl shadow-inner">Đã Xây</span>' : 
+                                                    `<button onclick="buyBuilding('${b.id}')" ${!canAfford ? 'opacity-60 cursor-not-allowed' : ''} class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black px-4 py-2 rounded-xl shadow transition">Xây Dựng</button>`
+                                                }
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        ${gameState.buildings.length === catalogBuildings.length ? `
+                            <button onclick="renderVictoryScreen()" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl animate-bounce text-sm flex items-center justify-center space-x-2">
+                                <i class="fas fa-trophy text-amber-300 text-lg"></i>
+                                <span>HOÀN THÀNH MỤC TIÊU - XEM HUY HIỆU</span>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function buyBuilding(bldgId) {
+            const bldg = catalogBuildings.find(b => b.id === bldgId);
+            if (!bldg || gameState.buildings.includes(bldgId)) return;
+
+            if (gameState.coins >= bldg.costCoins && gameState.materials >= bldg.costMats) {
+                gameState.coins -= bldg.costCoins;
+                gameState.materials -= bldg.costMats;
+                gameState.buildings.push(bldgId);
+                sounds.playBuild();
+
+                if (gameState.buildings.length === catalogBuildings.length) {
+                    sounds.playUpgrade();
+                    renderVictoryScreen();
+                } else {
+                    renderDashboard();
+                }
+            } else {
+                sounds.playWrong();
+                showModalMessage('Chưa đủ tài nguyên!', 'Bạn cần tích lũy thêm Xu (🪙) và Vật liệu (🧱) bằng cách trả lời các Thử Thách Kiến Thức nhé!');
+            }
+        }
+
+        function openQuizModal() {
+            if (gameState.currentQuestionIndex >= questionsList.length) {
+                gameState.currentQuestionIndex = 0;
+            }
+            const q = questionsList[gameState.currentQuestionIndex];
+            
+            let optionsHTML = '';
+            if (q.type === 'multiple' || q.type === 'truefalse') {
+                q.options.forEach((opt, idx) => {
+                    optionsHTML += `
+                        <button onclick="answerMultiple(${idx})" class="w-full text-left bg-indigo-50 hover:bg-indigo-100 border-2 border-indigo-200 font-semibold p-3.5 rounded-2xl text-slate-800 transition flex items-center space-x-3 shadow-sm">
+                            <span class="w-8 h-8 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black">${String.fromCharCode(65 + idx)}</span>
+                            <span class="text-sm sm:text-base">${opt.substring(3)}</span>
+                        </button>
+                    `;
+                });
+            } else if (q.type === 'matching') {
+                optionsHTML = `
+                    <p class="text-xs text-indigo-700 font-bold mb-2">Gợi ý ghép nối kiến thức đúng SGK:</p>
+                    <div class="space-y-2 mb-4">
+                        ${q.pairs.map((p, i) => `<div class="bg-indigo-50 p-2.5 rounded-xl border border-indigo-200 text-xs sm:text-sm font-semibold text-slate-700"><i class="fas fa-check text-emerald-600 mr-2"></i>${p.left} ➔ ${p.right}</div>`).join('')}
+                    </div>
+                    <button onclick="answerMatchingCorrect()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-2xl shadow transition">
+                        Đã hiểu và ghi nhớ nội dung này! Nhận thưởng ✅
+                    </button>
+                `;
+            }
+
+            const modalBg = document.createElement('div');
+            modalBg.id = 'quizModal';
+            modalBg.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+            modalBg.innerHTML = `
+                <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border-4 border-indigo-300 relative animate-glow">
+                    <div class="flex justify-between items-center mb-4 border-b pb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-indigo-100 text-indigo-800 font-black px-3 py-1 rounded-xl text-xs">Thử thách #${gameState.currentQuestionIndex + 1}/${questionsList.length}</span>
+                        </div>
+                        <button onclick="closeQuizModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl"><i class="fas fa-times"></i></button>
+                    </div>
+                    
+                    <h3 class="text-base sm:text-lg font-black text-indigo-950 mb-4">${q.question}</h3>
+                    
+                    <div class="space-y-2.5">
+                        ${optionsHTML}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalBg);
+        }
+
+        function closeQuizModal() {
+            const modal = document.getElementById('quizModal');
+            if (modal) modal.remove();
+        }
+
+        function answerMultiple(selectedIndex) {
+            const q = questionsList[gameState.currentQuestionIndex];
+            if (selectedIndex === q.answer) {
+                sounds.playCoin();
+                gameState.coins += q.coinReward;
+                gameState.materials += q.matReward;
+                gameState.correctAnswersCount++;
+                gameState.currentQuestionIndex++;
+                
+                closeQuizModal();
+                showModalMessage('Chính xác! 🎉', `${q.explanation}<br><br><span class="text-emerald-600 font-bold">+${q.coinReward} Xu 🪙 | +${q.matReward} Vật liệu 🧱</span>`, true);
+            } else {
+                sounds.playWrong();
+                showModalMessage('Chưa chính xác lắm!', 'Đừng nản chí! Hãy đọc lại gợi ý SGK và thử suy nghĩ lại nhé.', false, true);
+            }
+        }
+
+        function answerMatchingCorrect() {
+            const q = questionsList[gameState.currentQuestionIndex];
+            sounds.playCoin();
+            gameState.coins += q.coinReward;
+            gameState.materials += q.matReward;
+            gameState.correctAnswersCount++;
+            gameState.currentQuestionIndex++;
+            
+            closeQuizModal();
+            showModalMessage('Hoàn thành xuất sắc! 🌟', `${q.explanation}<br><br><span class="text-emerald-600 font-bold">+${q.coinReward} Xu 🪙 | +${q.matReward} Vật liệu 🧱</span>`, true);
+        }
+
+        function showModalMessage(title, message, isSuccess = true, allowRetry = false) {
+            const existing = document.getElementById('msgModal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'msgModal';
+            modal.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border-4 ${isSuccess ? 'border-emerald-300' : 'border-amber-300'} text-center">
+                    <div class="text-4xl mb-3">${isSuccess ? '🏆' : '💡'}</div>
+                    <h3 class="text-xl font-black ${isSuccess ? 'text-emerald-700' : 'text-amber-700'} mb-2">${title}</h3>
+                    <p class="text-slate-600 text-sm mb-6">${message}</p>
+                    <div class="flex space-x-2">
+                        ${allowRetry ? `
+                            <button onclick="closeMsgModal(); openQuizModal();" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-2xl shadow transition">Thử lại</button>
+                        ` : ''}
+                        <button onclick="closeMsgModal(); renderDashboard();" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-2xl shadow transition">Tiếp tục xây dựng</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function closeMsgModal() {
+            const modal = document.getElementById('msgModal');
+            if (modal) modal.remove();
+        }
+
+        function renderVictoryScreen() {
+            sounds.playUpgrade();
+            const main = document.getElementById('mainContent');
+            main.innerHTML = `
+                <div class="max-w-xl mx-auto bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border-4 border-amber-400 text-center animate-glow">
+                    <div class="w-24 h-24 bg-gradient-to-tr from-amber-400 via-orange-500 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4 text-5xl shadow-xl animate-float">
+                        🏆
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-black text-purple-950 mb-1">CHÚC MỪNG ${gameState.playerName.toUpperCase()}!</h2>
+                    <p class="text-indigo-600 font-bold mb-4">Lớp: ${gameState.playerClass} | Đã xuất sắc xây dựng hoàn thành toàn cảnh Thành Phố Tri Thức!</p>
+                    
+                    <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 mb-6 grid grid-cols-2 gap-4 text-left">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-3xl">🏗️</span>
+                            <div>
+                                <p class="text-xs text-slate-500 font-semibold">Công trình đã xây</p>
+                                <p class="font-black text-slate-800 text-lg">${gameState.buildings.length} / ${catalogBuildings.length}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-3xl">⭐</span>
+                            <div>
+                                <p class="text-xs text-slate-500 font-semibold">Cấp độ thành phố</p>
+                                <p class="font-black text-emerald-600 text-lg">Cấp ${gameState.cityLevel} (Tối đa)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-3xl">❓</span>
+                            <div>
+                                <p class="text-xs text-slate-500 font-semibold">Thử thách đúng</p>
+                                <p class="font-black text-indigo-600 text-lg">${gameState.correctAnswersCount} câu</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="text-3xl">🪙</span>
+                            <div>
+                                <p class="text-xs text-slate-500 font-semibold">Xu còn lại</p>
+                                <p class="font-black text-amber-600 text-lg">${gameState.coins} Xu</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-5 mb-6 shadow-lg border-2 border-amber-300">
+                        <div class="text-4xl mb-2">🏅</div>
+                        <h3 class="text-lg font-black text-amber-200">HUY HIỆU DANH GIÁ</h3>
+                        <p class="text-xl font-black tracking-wider uppercase mt-1">"KIẾN TRÚC SƯ TRI THỨC"</p>
+                        <p class="text-xs text-purple-200 mt-1">Chứng nhận học sinh giỏi Tin học Lớp 3 xuất sắc nhất!</p>
+                    </div>
+
+                    <button onclick="resetGame()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black py-3.5 px-8 rounded-2xl shadow-xl transition transform active:scale-95 text-base flex items-center justify-center space-x-2 mx-auto">
+                        <i class="fas fa-redo"></i>
+                        <span>CHƠI LẠI TỪ ĐẦU</span>
+                    </button>
+                </div>
+            `;
+        }
+
+        function resetGame() {
+            gameState = {
+                playerName: '',
+                playerClass: '',
+                coins: 120,
+                materials: 5,
+                score: 0,
+                currentQuestionIndex: 0,
+                correctAnswersCount: 0,
+                buildings: [],
+                cityLevel: 1,
+                completedAll: false
+            };
+            const playerInfoDisplay = document.getElementById('playerInfoDisplay');
+            if (playerInfoDisplay) {
+                playerInfoDisplay.innerText = "Chưa đăng nhập | Lớp 3";
+            }
+            renderLoginScreen();
+        }
+    </script>
+</body>
+</html>

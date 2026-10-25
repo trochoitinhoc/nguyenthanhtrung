@@ -1,0 +1,1068 @@
+<!-- STREAMING_CHUNK: Khởi tạo trang HTML và các thư viện CSS Tailwind -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DJ KIẾN THỨC - Bản Quyền Phần Mềm</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-color: #0b0f19;
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ea;
+            --neon-green: #39ff14;
+            --neon-yellow: #fffb00;
+            --surface: #1a1f35;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            overflow-x: hidden;
+            touch-action: pan-y;
+        }
+
+        .font-dj { font-family: 'Orbitron', sans-serif; }
+
+        /* STREAMING_CHUNK: Cấu hình CSS Custom cho Bàn DJ và Hiệu ứng Neon */
+        .text-glow-blue { text-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue); }
+        .text-glow-pink { text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink); }
+        .text-glow-yellow { text-shadow: 0 0 10px var(--neon-yellow), 0 0 20px var(--neon-yellow); }
+        .text-glow-green { text-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green); }
+
+        .dj-panel {
+            background: linear-gradient(145deg, #1e2540, #101424);
+            border: 2px solid #2a3454;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9), inset 0 2px 5px rgba(255,255,255,0.05);
+        }
+
+        /* Fader (Thanh gạt âm lượng) xoay dọc */
+        .fader-container {
+            width: 40px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        input[type=range].fader {
+            -webkit-appearance: none;
+            background: transparent;
+            width: 100px; /* Bằng chiều cao mong muốn do đã xoay 90 độ */
+            height: 8px;
+            border-radius: 4px;
+            transform: rotate(-90deg);
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+        }
+        
+        .channel-locked input[type=range].fader { pointer-events: none; opacity: 0.3; }
+
+        input[type=range].fader::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            background: #0f121d;
+            border-radius: 4px;
+            border: 1px solid #333;
+        }
+
+        input[type=range].fader::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 28px;
+            width: 36px;
+            border-radius: 4px;
+            background: linear-gradient(to bottom, #d1d5db, #6b7280);
+            cursor: pointer;
+            margin-top: -11px;
+            border: 2px solid #111;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.9);
+        }
+
+        /* Equalizer Animation */
+        .eq-bar {
+            width: 15%;
+            background-color: var(--neon-blue);
+            border-radius: 3px 3px 0 0;
+            transition: height 0.1s ease, background-color 0.3s;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+        
+        .drop-active .eq-bar { animation: eqPulse 0.25s infinite alternate; background-color: var(--neon-pink); box-shadow: 0 0 15px var(--neon-pink); }
+        .boss-active .eq-bar { animation: eqPulseBoss 0.15s infinite alternate; background-color: var(--neon-yellow); box-shadow: 0 0 20px var(--neon-yellow); }
+
+        @keyframes eqPulse { 0% { height: 10%; } 100% { height: 95%; filter: hue-rotate(60deg); } }
+        @keyframes eqPulseBoss { 0% { height: 20%; } 100% { height: 100%; filter: hue-rotate(180deg); } }
+        
+        @keyframes strobe { 
+            0%, 100% { box-shadow: inset 0 0 0px transparent; } 
+            50% { box-shadow: inset 0 0 60px var(--neon-pink); } 
+        }
+        .strobe-effect { animation: strobe 0.4s infinite; }
+
+        .btn-game {
+            background: linear-gradient(45deg, #2563eb, #4f46e5);
+            border: 2px solid #60a5fa;
+            transition: all 0.2s;
+        }
+        .btn-game:hover { transform: translateY(-2px); box-shadow: 0 0 20px #60a5fa; }
+        .btn-game:active { transform: translateY(1px); }
+
+        .btn-answer {
+            background: #1e293b;
+            border: 2px solid #334155;
+            transition: all 0.2s;
+        }
+        .btn-answer:hover:not(:disabled) { border-color: var(--neon-blue); background: #23344d; box-shadow: 0 0 15px rgba(0,243,255,0.2); }
+        .btn-answer:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .hidden-screen { display: none !important; }
+        
+        .lock-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            backdrop-filter: blur(3px);
+        }
+
+        .channel-wrap { border: 1px solid transparent; transition: all 0.3s; }
+        .channel-wrap:not(.channel-locked) { border-color: #374151; background: rgba(255,255,255,0.02); }
+    </style>
+</head>
+<!-- STREAMING_CHUNK: Bố cục HTML của Game (Trang chủ, Giao diện chơi, Kết quả) -->
+<body class="h-screen w-screen overflow-hidden flex flex-col relative select-none">
+
+    <!-- MÀN HÌNH 1: TRANG CHỦ & HƯỚNG DẪN -->
+    <div id="screen-intro" class="flex-1 flex flex-col items-center justify-center p-4 z-10 w-full h-full relative">
+        <div class="absolute inset-0 bg-[url('https://placehold.co/1920x1080/0b0f19/0b0f19')] bg-cover opacity-50 z-0"></div>
+        <div class="z-10 text-center max-w-lg w-full dj-panel p-6 md:p-8">
+            <h1 class="text-4xl md:text-6xl font-dj font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500 text-glow-pink mb-2">DJ KIẾN THỨC</h1>
+            <p class="text-lg md:text-xl font-bold text-cyan-300 mb-6">Chủ đề: Sử dụng phần mềm khi được phép</p>
+            
+            <div class="space-y-4 mb-5 text-left bg-black/50 p-4 rounded-xl border border-gray-700">
+                <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" class="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-400 shadow-inner" autocomplete="off">
+                <input type="text" id="player-class" placeholder="Nhập Tên Lớp..." class="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-400 shadow-inner" autocomplete="off">
+            </div>
+
+            <div class="text-sm md:text-base text-gray-300 text-left mb-6 space-y-2 bg-black/50 p-4 rounded-xl border border-gray-700 shadow-inner">
+                <p class="font-black text-yellow-400 text-center mb-3">🎮 HƯỚNG DẪN CHƠI</p>
+                <p class="flex gap-2"><span>✅</span> Trả lời đúng các câu hỏi kiến thức SGK Tin học 4 - Bài 6.</p>
+                <p class="flex gap-2"><span>🎵</span> Mỗi câu đúng mở khóa 1 kênh âm thanh trên bàn DJ.</p>
+                <p class="flex gap-2"><span>🎚️</span> Em tự bật/tắt (PLAY/MUTE) và chỉnh âm lượng kênh đã mở.</p>
+                <p class="flex gap-2"><span>🔥</span> Đúng liên tiếp tạo <b>Combo</b> kích hoạt <b>SỰ KIỆN DROP</b>.</p>
+            </div>
+
+            <button id="btn-start" class="w-full py-4 text-xl font-bold font-dj rounded-xl btn-game text-white uppercase tracking-wider text-glow-blue shadow-lg shadow-blue-500/30">
+                BẮT ĐẦU CHƠI
+            </button>
+            <p id="error-msg" class="text-red-400 text-sm mt-3 font-semibold hidden animate-bounce">⚠️ Vui lòng nhập đầy đủ Tên và Lớp!</p>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH 2: GIAO DIỆN GAME -->
+    <div id="screen-game" class="hidden-screen flex-1 flex flex-col w-full h-full p-2 md:p-4 z-10 transition-all duration-500 bg-black">
+        
+        <!-- Header: Thông tin người chơi & Điểm số -->
+        <div class="flex justify-between items-center bg-gray-900/90 p-2 md:p-3 rounded-xl border border-gray-700 mb-2 md:mb-4 shadow-md">
+            <div class="flex items-center gap-2 md:gap-3">
+                <div class="bg-gray-800 px-3 py-1 md:py-2 rounded-lg border border-gray-600">
+                    <span class="text-[10px] md:text-xs text-gray-400 block font-bold">DJ / PLAYER</span>
+                    <span id="ui-player" class="font-bold text-cyan-400 text-sm md:text-base truncate max-w-[100px] md:max-w-[200px]">Player</span>
+                </div>
+                <div class="bg-gray-800 px-3 py-1 md:py-2 rounded-lg border border-gray-600 text-center">
+                    <span class="text-[10px] md:text-xs text-gray-400 block font-bold">VÒNG CHƠI</span>
+                    <span id="ui-round" class="font-bold text-pink-400 text-sm md:text-base">1. BẮT NHỊP</span>
+                </div>
+            </div>
+            <div class="flex gap-2 md:gap-4 items-center">
+                <div class="text-center bg-gray-800 px-3 py-1 md:py-2 rounded-lg border border-gray-600 hidden md:block">
+                    <span class="text-xs text-gray-400 block font-bold">THỜI GIAN</span>
+                    <span id="ui-timer" class="font-dj font-bold text-lg text-white">00:00</span>
+                </div>
+                <div class="text-center bg-gray-800 px-4 py-1 md:py-2 rounded-lg border border-gray-600">
+                    <span class="text-[10px] md:text-xs text-gray-400 block font-bold">ĐIỂM SỐ</span>
+                    <span id="ui-score" class="font-dj font-bold text-xl md:text-2xl text-glow-yellow text-yellow-400">0</span>
+                </div>
+                <div class="text-center bg-pink-900/40 px-3 py-1 md:py-2 rounded-lg border border-pink-700 hidden" id="ui-combo-box">
+                    <span class="text-[10px] md:text-xs text-pink-200 block font-bold">COMBO</span>
+                    <span id="ui-combo" class="font-dj font-bold text-xl md:text-2xl text-glow-pink text-pink-400">x0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Workspace: Equalizer + Bảng Câu Hỏi -->
+        <div class="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 mb-2 md:mb-4 min-h-[40vh]">
+            
+            <!-- Spectrum Visualizer -->
+            <div id="visualizer-container" class="h-24 md:h-auto md:w-1/3 dj-panel p-2 md:p-4 flex flex-col relative overflow-hidden">
+                <h3 class="text-center font-dj text-[10px] md:text-sm text-gray-400 md:mb-2 z-10 hidden md:block">SPECTRUM ANALYZER</h3>
+                <div id="drop-warning" class="absolute inset-0 flex flex-col items-center justify-center z-20 hidden bg-black/60 backdrop-blur-sm">
+                    <p class="font-dj text-xl md:text-3xl text-red-500 animate-bounce text-glow-pink font-bold drop-shadow-lg text-center">DROP SẮP TỚI!</p>
+                    <p class="text-xs md:text-sm text-white font-bold mt-1">Trả lời đúng 3 câu liên tiếp!</p>
+                </div>
+                <div class="flex-1 flex items-end justify-center gap-1 md:gap-2 z-10 h-full border-b-2 border-gray-700 pb-1 w-full px-2">
+                    <div class="eq-bar h-[10%]"></div><div class="eq-bar h-[30%]"></div>
+                    <div class="eq-bar h-[50%]"></div><div class="eq-bar h-[20%]"></div>
+                    <div class="eq-bar h-[70%]"></div><div class="eq-bar h-[40%]"></div>
+                    <div class="eq-bar h-[60%]"></div><div class="eq-bar h-[15%]"></div>
+                </div>
+            </div>
+
+            <!-- Box Câu Hỏi -->
+            <div class="md:w-2/3 dj-panel p-3 md:p-6 flex flex-col relative bg-gray-900/60">
+                <div class="flex justify-between items-center mb-3 md:mb-4 border-b border-gray-700 pb-2 md:pb-3">
+                    <span id="q-tag" class="bg-blue-600 text-xs md:text-sm px-3 py-1 rounded-md font-bold uppercase tracking-widest shadow-md">CÂU 1</span>
+                    <button id="btn-hint" class="bg-purple-700 hover:bg-purple-600 px-3 py-1 rounded-md text-xs md:text-sm font-bold flex items-center gap-1 transition shadow-md shadow-purple-900/50 disabled:opacity-40 disabled:cursor-not-allowed border border-purple-500">
+                        💡 Headphone Gợi ý (1)
+                    </button>
+                </div>
+                
+                <h2 id="q-text" class="text-base md:text-xl font-semibold mb-4 md:mb-6 flex-1 text-blue-50 leading-relaxed">Đang tải dữ liệu bộ trộn...</h2>
+                
+                <div id="answers-container" class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 pb-1">
+                    <!-- Nút đáp án sinh tự động bằng JS -->
+                </div>
+
+                <!-- Lớp phủ kết quả đúng/sai -->
+                <div id="feedback-overlay" class="absolute inset-0 bg-black/85 flex items-center justify-center z-30 hidden rounded-xl backdrop-blur-md">
+                    <div class="text-center transform scale-110">
+                        <p id="feedback-text" class="text-4xl md:text-5xl font-dj font-bold mb-3">-</p>
+                        <p id="feedback-sub" class="text-lg md:text-xl font-bold text-gray-200 bg-gray-800/80 px-4 py-2 rounded-lg inline-block border border-gray-600">-</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DJ MIXER - Bàn Điều Khiển Chính -->
+        <div class="dj-panel p-2 md:p-4 flex flex-col border-t-4 border-t-blue-600/50">
+            <div class="flex justify-between items-center mb-2 px-2 border-b border-gray-700 pb-2">
+                <h3 class="font-dj text-cyan-400 font-bold tracking-widest text-xs md:text-sm text-glow-blue flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> MIXER CONSOLE
+                </h3>
+                <button id="btn-final-mix" class="bg-gray-800 text-gray-500 px-4 py-1.5 rounded-lg font-dj font-bold uppercase pointer-events-none transition-all duration-300 border border-gray-600 text-xs md:text-sm flex items-center gap-2">
+                    🔒 FINAL MIX
+                </button>
+            </div>
+            
+            <div class="flex-1 flex justify-between items-stretch gap-1 md:gap-2 pt-2">
+                
+                <!-- CH 1: DRUM -->
+                <div class="flex flex-col items-center justify-between flex-1 relative channel-wrap rounded-lg p-1 channel-locked" id="ch-drum">
+                    <div class="lock-overlay"><span class="text-xl md:text-3xl filter drop-shadow-lg">🔒</span></div>
+                    <span class="text-[10px] md:text-xs font-bold text-gray-300 mt-1 uppercase tracking-wider text-center">🥁<br class="md:hidden"> Drum</span>
+                    <div class="fader-container"><input type="range" class="fader" min="0" max="1" step="0.01" value="0.7" data-ch="drum"></div>
+                    <button class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900 border-2 border-red-500 text-[9px] md:text-xs font-black mb-1 btn-mute shadow-lg transition-colors" data-ch="drum">MUTE</button>
+                </div>
+                
+                <!-- CH 2: CLAP -->
+                <div class="flex flex-col items-center justify-between flex-1 relative channel-wrap rounded-lg p-1 channel-locked" id="ch-clap">
+                    <div class="lock-overlay"><span class="text-xl md:text-3xl filter drop-shadow-lg">🔒</span></div>
+                    <span class="text-[10px] md:text-xs font-bold text-gray-300 mt-1 uppercase tracking-wider text-center">👏<br class="md:hidden"> Clap</span>
+                    <div class="fader-container"><input type="range" class="fader" min="0" max="1" step="0.01" value="0.7" data-ch="clap"></div>
+                    <button class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900 border-2 border-red-500 text-[9px] md:text-xs font-black mb-1 btn-mute shadow-lg transition-colors" data-ch="clap">MUTE</button>
+                </div>
+                
+                <!-- CH 3: BASS -->
+                <div class="flex flex-col items-center justify-between flex-1 relative channel-wrap rounded-lg p-1 channel-locked" id="ch-bass">
+                    <div class="lock-overlay"><span class="text-xl md:text-3xl filter drop-shadow-lg">🔒</span></div>
+                    <span class="text-[10px] md:text-xs font-bold text-gray-300 mt-1 uppercase tracking-wider text-center">🎸<br class="md:hidden"> Bass</span>
+                    <div class="fader-container"><input type="range" class="fader" min="0" max="1" step="0.01" value="0.8" data-ch="bass"></div>
+                    <button class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900 border-2 border-red-500 text-[9px] md:text-xs font-black mb-1 btn-mute shadow-lg transition-colors" data-ch="bass">MUTE</button>
+                </div>
+                
+                <!-- CH 4: MELODY -->
+                <div class="flex flex-col items-center justify-between flex-1 relative channel-wrap rounded-lg p-1 channel-locked" id="ch-melody">
+                    <div class="lock-overlay"><span class="text-xl md:text-3xl filter drop-shadow-lg">🔒</span></div>
+                    <span class="text-[10px] md:text-xs font-bold text-gray-300 mt-1 uppercase tracking-wider text-center">🎹<br class="md:hidden"> Melody</span>
+                    <div class="fader-container"><input type="range" class="fader" min="0" max="1" step="0.01" value="0.7" data-ch="melody"></div>
+                    <button class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900 border-2 border-red-500 text-[9px] md:text-xs font-black mb-1 btn-mute shadow-lg transition-colors" data-ch="melody">MUTE</button>
+                </div>
+                
+                <!-- CH 5: EFFECT -->
+                <div class="flex flex-col items-center justify-between flex-1 relative channel-wrap rounded-lg p-1 channel-locked" id="ch-effect">
+                    <div class="lock-overlay"><span class="text-xl md:text-3xl filter drop-shadow-lg">🔒</span></div>
+                    <span class="text-[10px] md:text-xs font-bold text-gray-300 mt-1 uppercase tracking-wider text-center">✨<br class="md:hidden"> Effect</span>
+                    <div class="fader-container"><input type="range" class="fader" min="0" max="1" step="0.01" value="0.6" data-ch="effect"></div>
+                    <button class="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-900 border-2 border-red-500 text-[9px] md:text-xs font-black mb-1 btn-mute shadow-lg transition-colors" data-ch="effect">MUTE</button>
+                </div>
+                
+                <!-- Master Out Level Meter -->
+                <div class="flex flex-col items-center justify-between w-12 md:w-16 bg-gray-900/80 rounded-lg p-1 border-2 border-gray-700 ml-1">
+                    <span class="text-[8px] md:text-[10px] font-black text-yellow-500 mt-1 text-center tracking-widest">MASTER<br>OUT</span>
+                    <div class="w-4 md:w-6 h-24 md:h-28 bg-black rounded relative overflow-hidden my-2 border border-gray-600 shadow-inner">
+                        <div id="master-meter" class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-green-500 via-yellow-400 to-red-600 h-[5%] transition-all duration-75"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH 3: BẢNG KẾT QUẢ TỔNG KẾT -->
+    <div id="screen-result" class="hidden-screen flex-1 flex flex-col items-center justify-center p-4 z-10 w-full h-full relative">
+        <div class="absolute inset-0 bg-[url('https://placehold.co/1920x1080/0b0f19/0b0f19')] bg-cover opacity-40 z-0"></div>
+        <div class="z-10 text-center max-w-2xl w-full dj-panel p-6 md:p-10 border-yellow-500/30">
+            <h1 class="text-4xl md:text-6xl font-dj font-black text-glow-yellow text-yellow-400 mb-2 animate-pulse">DJ KIẾN THỨC</h1>
+            <h2 class="text-xl md:text-2xl font-bold text-cyan-300 mb-6 uppercase tracking-widest">FULL MIX HOÀN THÀNH! 🎉</h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6">
+                <div class="bg-gray-800/80 p-3 md:p-4 rounded-xl border border-gray-600 shadow-lg">
+                    <p class="text-[10px] md:text-xs text-gray-400 font-bold mb-1">TỔNG ĐIỂM</p>
+                    <p id="res-score" class="text-3xl font-dj text-yellow-400 font-black text-glow-yellow">0</p>
+                </div>
+                <div class="bg-gray-800/80 p-3 md:p-4 rounded-xl border border-gray-600 shadow-lg">
+                    <p class="text-[10px] md:text-xs text-gray-400 font-bold mb-1">TRẢ LỜI ĐÚNG</p>
+                    <p id="res-correct" class="text-2xl font-bold text-green-400">0/8</p>
+                </div>
+                <div class="bg-gray-800/80 p-3 md:p-4 rounded-xl border border-gray-600 shadow-lg">
+                    <p class="text-[10px] md:text-xs text-gray-400 font-bold mb-1">COMBO CAO NHẤT</p>
+                    <p id="res-combo" class="text-2xl font-bold text-pink-400">x0</p>
+                </div>
+                <div class="bg-gray-800/80 p-3 md:p-4 rounded-xl border border-gray-600 shadow-lg">
+                    <p class="text-[10px] md:text-xs text-gray-400 font-bold mb-1">KÊNH ĐÃ MỞ</p>
+                    <p id="res-channels" class="text-2xl font-bold text-cyan-400">0/5</p>
+                </div>
+                <div class="bg-gray-800/80 p-3 md:p-4 rounded-xl border border-gray-600 shadow-lg">
+                    <p class="text-[10px] md:text-xs text-gray-400 font-bold mb-1">THỜI GIAN CHƠI</p>
+                    <p id="res-time" class="text-2xl font-bold text-white font-dj">00:00</p>
+                </div>
+                <div class="bg-gray-800/80 p-3 md:p-4 rounded-xl border border-gray-600 shadow-lg flex flex-col justify-center">
+                    <p class="text-[10px] md:text-xs text-gray-400 font-bold mb-1">HIỆU ỨNG</p>
+                    <p id="res-effects" class="text-xs md:text-sm font-bold text-purple-400 leading-tight">Đã dùng Headphone</p>
+                </div>
+            </div>
+
+            <div class="bg-blue-900/30 p-4 md:p-5 rounded-xl text-left mb-6 border border-blue-800/50 shadow-inner">
+                <p class="font-bold text-blue-300 mb-2 flex items-center gap-2"><span class="text-xl">📚</span> KIẾN THỨC CẦN NHỚ (SGK Tin 4 - Bài 6):</p>
+                <ul class="text-xs md:text-sm text-gray-200 list-disc pl-5 space-y-2 font-medium">
+                    <li>Có phần mềm miễn phí (Unikey, Kiran's...) và không miễn phí (Word, PowerPoint...).</li>
+                    <li>Phần mềm là sản phẩm trí tuệ. Chỉ sử dụng khi được tác giả cho phép (Có bản quyền).</li>
+                    <li>Lí do dùng bản quyền: Giữ an toàn máy tính, Tránh vi phạm pháp luật, Được hỗ trợ, Bảo vệ quyền lợi người làm ra phần mềm.</li>
+                </ul>
+            </div>
+
+            <div class="flex flex-col md:flex-row gap-3 md:gap-4">
+                <button id="btn-replay" class="flex-1 py-4 text-base md:text-lg font-black rounded-xl bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 transition shadow-lg shadow-pink-500/40 transform hover:-translate-y-1">
+                    🔄 CHƠI LẠI TỪ ĐẦU
+                </button>
+                <button id="btn-home" class="flex-1 py-4 text-base md:text-lg font-bold rounded-xl bg-gray-700 hover:bg-gray-600 transition shadow-lg">
+                    🏠 VỀ TRANG CHỦ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT JAVASCRIPT: Logic Game & Âm thanh Web Audio API -->
+    <script>
+        /* STREAMING_CHUNK: Khởi tạo dữ liệu câu hỏi sát SGK Tin 4 Bài 6 */
+        const QUESTIONS = [
+            // VÒNG 1: Bắt nhịp
+            {
+                round: "1. BẮT NHỊP", tag: "CÂU 1", type: "TF",
+                text: "Theo sách giáo khoa, <b>Unikey</b> và <b>Kiran's Typing Tutor</b> là những phần mềm miễn phí. Đúng hay sai?",
+                options: ["Đúng", "Sai"], correct: 0,
+                unlocks: "drum", unlockName: "🥁 DRUM", points: 10
+            },
+            {
+                round: "1. BẮT NHỊP", tag: "CÂU 2", type: "MCQ",
+                text: "Quan sát Hình 23 (SGK trang 27), phần mềm nào sau đây là phần mềm KHÔNG MIỄN PHÍ?",
+                options: ["Scratch 3", "TUX PAINT (53.900đ)", "Microsoft Edge", "Kids Games Learning Science"], correct: 1,
+                unlocks: "clap", unlockName: "👏 CLAP", points: 10
+            },
+            // VÒNG 2: Thêm âm
+            {
+                round: "2. THÊM ÂM", tag: "CÂU 3", type: "MCQ",
+                text: "Thế nào là phần mềm có bản quyền?",
+                options: ["Phần mềm tải miễn phí trên mạng.", "Phần mềm được sao chép tự do mà không cần hỏi.", "Phần mềm đã được tác giả cho phép sử dụng.", "Phần mềm không bao giờ bị lỗi."], correct: 2,
+                unlocks: "bass", unlockName: "🎸 BASS", points: 10, hasSpecial: "golden" // Beat vàng
+            },
+            {
+                round: "2. THÊM ÂM", tag: "CÂU 4", type: "MCQ",
+                text: "Theo sơ đồ SGK (trang 29), dùng phần mềm có bản quyền giúp tránh được rủi ro nào sau đây?",
+                options: ["Máy tính bị mất điện đột ngột.", "Máy tính bị nhiễm virus, mất an toàn thông tin.", "Hỏng chuột và bàn phím.", "Màn hình bị mờ đi."], correct: 1,
+                unlocks: "melody", unlockName: "🎹 MELODY", points: 10
+            },
+            // VÒNG 3: Phối nhạc (Chuẩn bị Drop)
+            {
+                round: "3. PHỐI NHẠC (THỬ THÁCH)", tag: "CÂU 5 - TỐC ĐỘ ⚡", type: "TF",
+                text: "Phần mềm PowerPoint tạo bài trình chiếu của Microsoft là phần mềm MIỄN PHÍ. Khẳng định này đúng hay sai?",
+                options: ["Đúng", "Sai"], correct: 1,
+                unlocks: "effect", unlockName: "✨ EFFECT", points: 20, isSpeed: true, timeLimit: 12
+            },
+            {
+                round: "3. PHỐI NHẠC (THỬ THÁCH)", tag: "CÂU 6", type: "MCQ",
+                text: "Điền từ: Một trong 4 lí do nên sử dụng phần mềm bản quyền là: 'Bảo vệ quyền lợi của ... có ích cho xã hội'.",
+                options: ["người mua máy tính", "người làm ra sản phẩm", "người bán máy tính", "người sử dụng Internet"], correct: 1,
+                unlocks: "none", points: 10
+            },
+            {
+                round: "3. PHỐI NHẠC (THỬ THÁCH)", tag: "CÂU 7", type: "MCQ",
+                text: "Bạn Minh biết cách dùng phần mềm bẻ khóa (để dùng không trả tiền). Theo bạn An, việc làm đó dẫn đến hậu quả gì?",
+                options: ["Giúp tiết kiệm tiền mà không bị sao.", "Vi phạm pháp luật và ảnh hưởng quyền lợi tác giả.", "Chỉ làm máy tính chạy nhanh hơn.", "Được nhà sản xuất khen ngợi."], correct: 1,
+                unlocks: "none", points: 10, isDropTrigger: true // Đúng đủ combo sẽ nổ Drop
+            },
+            // BOSS
+            {
+                round: "BOSS TỔNG HỢP", tag: "CÂU 8 - TRÙM CUỐI", type: "MCQ",
+                text: "Tóm lại, tại sao KHÔNG NÊN sử dụng trái phép phần mềm có bản quyền?",
+                options: ["Vì vi phạm pháp luật, mất an toàn, không được hỗ trợ, ảnh hưởng tác giả.", "Vì màn hình máy tính sẽ tự động bị đổi thành màu đen trắng.", "Vì sẽ không bao giờ thể kết nối Internet được nữa.", "Vì bàn phím sẽ bị kẹt nút không gõ được."], correct: 0,
+                unlocks: "boss", unlockName: "👑 FINAL MIX", points: 50
+            }
+        ];
+
+        /* STREAMING_CHUNK: Quản lý Trạng thái Game (Game State) */
+        let state = {
+            name: "", class: "", score: 0, combo: 0, maxCombo: 0, currentQ: 0,
+            corrects: 0, wrongs: 0, timeSeconds: 0, timerInterval: null, dropTimer: null,
+            hintUsed: false, hintsLeft: 1,
+            channelsUnlocked: { drum: false, clap: false, bass: false, melody: false, effect: false },
+            isPlaying: false, isDropActive: false, isFinalMixReady: false
+        };
+
+        // Cache DOM Elements để truy xuất nhanh
+        const DOM = {
+            screens: { intro: document.getElementById('screen-intro'), game: document.getElementById('screen-game'), result: document.getElementById('screen-result') },
+            inputs: { name: document.getElementById('player-name'), class: document.getElementById('player-class') },
+            btns: { start: document.getElementById('btn-start'), replay: document.getElementById('btn-replay'), home: document.getElementById('btn-home'), hint: document.getElementById('btn-hint'), finalMix: document.getElementById('btn-final-mix') },
+            ui: { player: document.getElementById('ui-player'), round: document.getElementById('ui-round'), time: document.getElementById('ui-timer'), score: document.getElementById('ui-score'), combo: document.getElementById('ui-combo'), comboBox: document.getElementById('ui-combo-box') },
+            q: { tag: document.getElementById('q-tag'), text: document.getElementById('q-text'), container: document.getElementById('answers-container'), feedback: document.getElementById('feedback-overlay'), fdText: document.getElementById('feedback-text'), fdSub: document.getElementById('feedback-sub') },
+            visualizer: { dropWarning: document.getElementById('drop-warning'), meter: document.getElementById('master-meter'), bars: document.querySelectorAll('.eq-bar') }
+        };
+
+        /* STREAMING_CHUNK: Hệ thống Tổng hợp Âm thanh bằng Web Audio API */
+        let audioCtx = null;
+        let masterGain = null;
+        let channels = {
+            drum: { gain: null, fader: null, btn: null, vol: 0.7, muted: true },
+            clap: { gain: null, fader: null, btn: null, vol: 0.7, muted: true },
+            bass: { gain: null, fader: null, btn: null, vol: 0.8, muted: true },
+            melody: { gain: null, fader: null, btn: null, vol: 0.7, muted: true },
+            effect: { gain: null, fader: null, btn: null, vol: 0.6, muted: true }
+        };
+        
+        let isAudioPlaying = false;
+        let current16thNote = 0;
+        let nextNoteTime = 0.0;
+        let schedulerInterval = null;
+        const tempo = 125; // Nhịp điệu sôi động (BPM)
+
+        function initAudio() {
+            if (audioCtx) { audioCtx.close(); } // Xóa audio cũ nếu chơi lại
+            
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.8; // Master Volume
+            masterGain.connect(audioCtx.destination);
+
+            // Setup các kênh riêng biệt
+            Object.keys(channels).forEach(ch => {
+                channels[ch].gain = audioCtx.createGain();
+                channels[ch].gain.gain.value = 0; // Mặc định Mute = 0
+                channels[ch].gain.connect(masterGain);
+                
+                // Kết nối UI (Fader và Nút Mute)
+                if(!channels[ch].fader) {
+                    channels[ch].fader = document.querySelector(`input[data-ch="${ch}"]`);
+                    channels[ch].btn = document.querySelector(`button[data-ch="${ch}"]`);
+                    
+                    channels[ch].fader.addEventListener('input', (e) => {
+                        channels[ch].vol = parseFloat(e.target.value);
+                        if (!channels[ch].muted && state.channelsUnlocked[ch]) {
+                            // Cập nhật âm lượng ngay lập tức
+                            channels[ch].gain.gain.setValueAtTime(channels[ch].vol, audioCtx.currentTime);
+                        }
+                    });
+
+                    channels[ch].btn.addEventListener('click', () => {
+                        if(!state.channelsUnlocked[ch]) return;
+                        toggleMute(ch);
+                    });
+                } else {
+                    channels[ch].fader.value = channels[ch].vol;
+                    updateMuteBtnUI(ch);
+                }
+            });
+
+            isAudioPlaying = true;
+            current16thNote = 0;
+            nextNoteTime = audioCtx.currentTime + 0.1;
+            if(schedulerInterval) clearInterval(schedulerInterval);
+            // Chạy scheduler liên tục để lập lịch phát nốt nhạc
+            schedulerInterval = setInterval(scheduler, 25);
+        }
+
+        // Bật/tắt âm thanh mượt mà không bị "bụp"
+        function toggleMute(ch, forceState = null) {
+            let targetMute = forceState !== null ? forceState : !channels[ch].muted;
+            channels[ch].muted = targetMute;
+            let targetGain = targetMute ? 0 : channels[ch].vol;
+            
+            // setTargetAtTime tạo độ mượt (fade in/out) khi bấm nút
+            channels[ch].gain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.015);
+            updateMuteBtnUI(ch);
+        }
+
+        function updateMuteBtnUI(ch) {
+            const btn = channels[ch].btn;
+            if (channels[ch].muted) {
+                btn.classList.replace('bg-green-500', 'bg-red-900');
+                btn.classList.replace('border-green-300', 'border-red-500');
+                btn.innerText = "MUTE";
+                btn.classList.remove('text-glow-green', 'shadow-[0_0_15px_#4ade80]');
+            } else {
+                btn.classList.replace('bg-red-900', 'bg-green-500');
+                btn.classList.replace('border-red-500', 'border-green-300');
+                btn.innerText = "PLAY";
+                btn.classList.add('text-glow-green', 'shadow-[0_0_15px_#4ade80]');
+            }
+        }
+
+        function stopAudio() {
+            isAudioPlaying = false;
+            if(schedulerInterval) clearInterval(schedulerInterval);
+            if(audioCtx) {
+                audioCtx.close();
+                audioCtx = null;
+            }
+        }
+
+        /* STREAMING_CHUNK: Tạo các nhạc cụ Synthesizer cơ bản */
+        // Tạo tiếng trống Kick bằng sóng Sine giảm dần
+        function playKick(time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(channels.drum.gain);
+            osc.frequency.setValueAtTime(150, time);
+            osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
+            gain.gain.setValueAtTime(1, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+            osc.start(time); osc.stop(time + 0.5);
+        }
+
+        // Tạo tiếng Snare/Hihat bằng White Noise (Tiếng ồn trắng)
+        function playSnare(time) {
+            const bufferSize = audioCtx.sampleRate * 0.1;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+            
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass'; filter.frequency.value = 1000;
+            const gain = audioCtx.createGain();
+            
+            gain.gain.setValueAtTime(0.8, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+            
+            noise.connect(filter); filter.connect(gain); gain.connect(channels.drum.gain);
+            noise.start(time);
+        }
+
+        // Tạo tiếng vỗ tay (Clap)
+        function playClap(time) {
+            const bufferSize = audioCtx.sampleRate * 0.1; 
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+            
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass'; filter.frequency.value = 1200;
+            const gain = audioCtx.createGain();
+            
+            gain.gain.setValueAtTime(1, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+            
+            noise.connect(filter); filter.connect(gain); gain.connect(channels.clap.gain);
+            noise.start(time);
+        }
+
+        // Tạo tiếng Bass điện tử sóng Vuông (Square)
+        function playBass(time, noteFreq) {
+            const osc = audioCtx.createOscillator();
+            const filter = audioCtx.createBiquadFilter();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'square'; osc.frequency.value = noteFreq;
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(300, time);
+            filter.frequency.exponentialRampToValueAtTime(800, time + 0.05);
+            filter.frequency.exponentialRampToValueAtTime(200, time + 0.2);
+            
+            gain.gain.setValueAtTime(0.8, time);
+            gain.gain.setTargetAtTime(0.0, time + 0.1, 0.05);
+            
+            osc.connect(filter); filter.connect(gain); gain.connect(channels.bass.gain);
+            osc.start(time); osc.stop(time + 0.3);
+        }
+
+        // Tạo tiếng Giai điệu sóng Tam giác (Triangle)
+        function playMelody(time, noteFreq) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle'; osc.frequency.value = noteFreq;
+            gain.gain.setValueAtTime(0.6, time);
+            gain.gain.setTargetAtTime(0, time + 0.05, 0.1);
+            
+            osc.connect(gain); gain.connect(channels.melody.gain);
+            osc.start(time); osc.stop(time + 0.2);
+        }
+
+        // Tạo hiệu ứng âm thanh tít tít sóng Sine
+        function playEffect(time) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, time);
+            osc.frequency.exponentialRampToValueAtTime(400, time + 0.2);
+            gain.gain.setValueAtTime(0.6, time);
+            gain.gain.linearRampToValueAtTime(0, time + 0.2);
+            
+            osc.connect(gain); gain.connect(channels.effect.gain);
+            osc.start(time); osc.stop(time + 0.2);
+        }
+
+        /* STREAMING_CHUNK: Trình biên soạn Sequencer (Lập lịch nốt nhạc) */
+        // Vòng hợp âm cơ bản: Am -> F -> C -> G
+        const bassNotes = [55.00, 43.65, 65.41, 49.00]; 
+        const melodyNotes = [440, 523.25, 659.25, 587.33, 440, 659.25, 783.99, 587.33];
+
+        function nextNote() {
+            const secondsPerBeat = 60.0 / tempo;
+            nextNoteTime += 0.25 * secondsPerBeat; // Nốt móc kép (16th note)
+            current16thNote++;
+            if (current16thNote === 16) { current16thNote = 0; }
+        }
+
+        function scheduleNote(beatNumber, time) {
+            // Cập nhật giao diện thanh Master Volume mô phỏng
+            setTimeout(() => {
+                if(!isAudioPlaying) return;
+                let activeLevels = 0;
+                Object.keys(channels).forEach(c => { if(!channels[c].muted) activeLevels += channels[c].vol; });
+                DOM.visualizer.meter.style.height = `${Math.min(100, 10 + activeLevels * 25 + Math.random()*15)}%`;
+                
+                // Equalizer nhún nhảy khi có nhạc
+                if(activeLevels > 0) {
+                    DOM.visualizer.bars.forEach(bar => {
+                        let h = parseInt(bar.style.height || "10");
+                        bar.style.height = `${Math.max(10, Math.min(100, h + (Math.random()*50 - 25)))}%`;
+                    });
+                } else {
+                    DOM.visualizer.bars.forEach(bar => bar.style.height = '10%');
+                }
+            }, (time - audioCtx.currentTime) * 1000);
+
+            // Pattern TRỐNG (Drum): 4/4 Dance
+            if (beatNumber % 4 === 0) { playKick(time); }
+            if (beatNumber === 4 || beatNumber === 12) { playSnare(time); }
+            
+            // Pattern VỖ TAY (Clap): Syncopation ở phách 2, 6, 10, 14
+            if (beatNumber % 4 === 2) { playClap(time); }
+
+            // Pattern BASS: Chạy nốt móc đơn (8th notes)
+            if (beatNumber % 2 === 0) {
+                // Đổi nốt sau mỗi 4 phách (1 khuôn)
+                let noteIdx = Math.floor(beatNumber / 4) % bassNotes.length;
+                playBass(time, bassNotes[noteIdx]);
+            }
+            
+            // Pattern MELODY: Arpeggio rải nốt
+            if (beatNumber % 2 !== 0 || beatNumber % 4 === 0) {
+                 playMelody(time, melodyNotes[beatNumber % melodyNotes.length]);
+            }
+
+            // Pattern EFFECT: Điểm xuyết ở cuối chu kỳ
+            if (beatNumber === 14 || beatNumber === 15) { playEffect(time); }
+        }
+
+        function scheduler() {
+            if(!isAudioPlaying) return;
+            // Lập lịch trước 0.1 giây để nhạc không bị vấp
+            while (nextNoteTime < audioCtx.currentTime + 0.1) {
+                scheduleNote(current16thNote, nextNoteTime);
+                nextNote();
+            }
+        }
+
+        /* STREAMING_CHUNK: Logic điều khiển luồng Game (Game Flow) */
+        
+        DOM.btns.start.addEventListener('click', () => {
+            const n = DOM.inputs.name.value.trim();
+            const c = DOM.inputs.class.value.trim();
+            if(!n || !c) {
+                document.getElementById('error-msg').classList.remove('hidden');
+                return;
+            }
+            state.name = n; state.class = c;
+            DOM.ui.player.innerText = `${n} (${c})`;
+            
+            DOM.screens.intro.classList.add('hidden-screen');
+            DOM.screens.game.classList.remove('hidden-screen');
+            
+            initGame(); // Bắt đầu màn chơi
+        });
+
+        function initGame() {
+            // Đặt lại các chỉ số
+            state.score = 0; state.combo = 0; state.maxCombo = 0; state.currentQ = 0;
+            state.corrects = 0; state.wrongs = 0; state.timeSeconds = 0; state.hintsLeft = 1;
+            state.channelsUnlocked = { drum: false, clap: false, bass: false, melody: false, effect: false };
+            state.isDropActive = false; state.isFinalMixReady = false;
+            
+            updateScoreUI();
+            
+            // Khóa lại toàn bộ bàn Mixer
+            Object.keys(channels).forEach(ch => {
+                const wrap = document.getElementById(`ch-${ch}`);
+                wrap.classList.add('channel-locked');
+                wrap.querySelector('.lock-overlay').style.display = 'flex';
+                channels[ch].muted = true;
+            });
+            DOM.btns.finalMix.className = "bg-gray-800 text-gray-500 px-4 py-1.5 rounded-lg font-dj font-bold uppercase pointer-events-none transition-all duration-300 border border-gray-600 text-xs md:text-sm flex items-center gap-2";
+            DOM.btns.finalMix.innerHTML = "🔒 FINAL MIX";
+            
+            document.body.classList.remove('drop-active', 'boss-active');
+            
+            // Phục hồi nút Gợi ý
+            DOM.btns.hint.disabled = false;
+            DOM.btns.hint.innerText = `💡 Headphone Gợi ý (${state.hintsLeft})`;
+            DOM.btns.hint.classList.remove('opacity-40');
+
+            // Bộ đếm thời gian
+            if(state.timerInterval) clearInterval(state.timerInterval);
+            state.timerInterval = setInterval(() => {
+                state.timeSeconds++;
+                let m = String(Math.floor(state.timeSeconds / 60)).padStart(2, '0');
+                let s = String(state.timeSeconds % 60).padStart(2, '0');
+                DOM.ui.time.innerText = `${m}:${s}`;
+            }, 1000);
+
+            // Bật Audio Engine (Yêu cầu click chuột từ bước trước nên an toàn)
+            initAudio();
+
+            // Tải câu đầu tiên
+            loadQuestion();
+        }
+
+        /* STREAMING_CHUNK: Tải câu hỏi và xử lý sự kiện giao diện */
+        let currentQData = null;
+        let speedTimerInterval = null;
+
+        function loadQuestion() {
+            if (state.currentQ >= QUESTIONS.length) { endGame(); return; }
+
+            currentQData = QUESTIONS[state.currentQ];
+            DOM.ui.round.innerText = currentQData.round;
+            
+            // Xử lý huy hiệu (Tag) cho các loại câu đặc biệt
+            let tagHTML = currentQData.tag;
+            if(currentQData.hasSpecial === 'golden') {
+                DOM.q.tag.className = "bg-yellow-500 text-black text-xs md:text-sm px-3 py-1 rounded-md font-bold uppercase tracking-widest shadow-md flex items-center gap-1";
+                tagHTML += " ⭐ VÀNG";
+            } else if (currentQData.isSpeed) {
+                DOM.q.tag.className = "bg-red-600 text-white text-xs md:text-sm px-3 py-1 rounded-md font-bold uppercase tracking-widest shadow-md animate-pulse";
+            } else {
+                DOM.q.tag.className = "bg-blue-600 text-white text-xs md:text-sm px-3 py-1 rounded-md font-bold uppercase tracking-widest shadow-md";
+            }
+            DOM.q.tag.innerHTML = tagHTML;
+
+            DOM.q.text.innerHTML = currentQData.text;
+            DOM.q.container.innerHTML = ''; 
+
+            // Đổ các đáp án ra
+            currentQData.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-answer text-left p-3 md:p-4 rounded-xl font-medium shadow w-full text-sm md:text-base text-gray-200";
+                btn.innerHTML = `<span class="inline-block w-6 h-6 md:w-8 md:h-8 text-center bg-gray-800 rounded-full mr-2 text-xs md:text-sm leading-6 md:leading-8 font-bold text-cyan-300 border border-gray-600">${String.fromCharCode(65 + index)}</span> ${opt}`;
+                btn.onclick = () => checkAnswer(index);
+                btn.id = `ans-${index}`; // Để dùng cho gợi ý
+                DOM.q.container.appendChild(btn);
+            });
+
+            // Logic Headphone Gợi ý (Loại 1-2 đáp án sai)
+            DOM.btns.hint.onclick = () => {
+                if(state.hintsLeft > 0) {
+                    state.hintsLeft--;
+                    DOM.btns.hint.innerText = `💡 Headphone (${state.hintsLeft})`;
+                    DOM.btns.hint.disabled = true;
+                    
+                    let wrongIndices = [];
+                    currentQData.options.forEach((_, i) => { if(i !== currentQData.correct) wrongIndices.push(i); });
+                    
+                    let hideCount = currentQData.options.length > 2 ? 2 : 1;
+                    for(let k=0; k<hideCount; k++) {
+                        if(wrongIndices.length > 0) {
+                            let r = Math.floor(Math.random() * wrongIndices.length);
+                            let targetId = wrongIndices.splice(r, 1)[0];
+                            let targetBtn = document.getElementById(`ans-${targetId}`);
+                            if(targetBtn) {
+                                targetBtn.disabled = true;
+                                targetBtn.classList.add('opacity-30', 'line-through');
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Logic Beat Siêu Tốc đếm ngược
+            if(currentQData.isSpeed) {
+                let timeLeft = currentQData.timeLimit;
+                DOM.q.tag.innerHTML = `${currentQData.tag} ⏱️ ${timeLeft}s`;
+                if(speedTimerInterval) clearInterval(speedTimerInterval);
+                speedTimerInterval = setInterval(() => {
+                    timeLeft--;
+                    if(timeLeft >= 0) {
+                        DOM.q.tag.innerHTML = `${currentQData.tag} ⏱️ ${timeLeft}s`;
+                    } else {
+                        clearInterval(speedTimerInterval);
+                        checkAnswer(-1); // Quá giờ tự động tính là sai
+                    }
+                }, 1000);
+            } else {
+                if(speedTimerInterval) clearInterval(speedTimerInterval);
+            }
+
+            // Hiệu ứng cảnh báo DROP
+            if (currentQData.isDropTrigger && state.combo >= 2) {
+                DOM.visualizer.dropWarning.classList.remove('hidden');
+                DOM.visualizer.dropWarning.classList.add('flex');
+            } else {
+                DOM.visualizer.dropWarning.classList.remove('flex');
+                DOM.visualizer.dropWarning.classList.add('hidden');
+            }
+        }
+
+        /* STREAMING_CHUNK: Kiểm tra Đáp án và mở khóa Kênh âm thanh */
+        function checkAnswer(selectedIndex) {
+            if(speedTimerInterval) clearInterval(speedTimerInterval);
+            
+            // Khóa tất cả nút để tránh bấm 2 lần
+            document.querySelectorAll('.btn-answer').forEach(b => b.disabled = true);
+
+            const isCorrect = (selectedIndex === currentQData.correct);
+            
+            if (isCorrect) {
+                state.corrects++;
+                let pts = currentQData.points;
+                if(currentQData.hasSpecial === 'golden') pts += 20; 
+                
+                state.score += pts;
+                state.combo++;
+                if(state.combo > state.maxCombo) state.maxCombo = state.combo;
+
+                showFeedback("TUYỆT VỜI! 🎵", `+${pts} điểm`, "text-neon-green text-glow-green");
+                
+                if (currentQData.unlocks !== "none" && currentQData.unlocks !== "boss") {
+                    unlockChannel(currentQData.unlocks, currentQData.unlockName);
+                } else if (currentQData.unlocks === "boss") {
+                    unlockFinalMix();
+                }
+
+                // Nếu đúng câu Trigger Drop và đủ Combo
+                if (currentQData.isDropTrigger && state.combo >= 3) {
+                    triggerDropEvent();
+                }
+
+            } else {
+                state.wrongs++;
+                state.combo = 0; 
+                showFeedback("SAI RỒI! 🔇", "Lỗi nhịp! Hãy thử lại câu sau", "text-red-500 text-glow-pink");
+                if (currentQData.isDropTrigger) {
+                    DOM.visualizer.dropWarning.classList.remove('flex');
+                    DOM.visualizer.dropWarning.classList.add('hidden'); 
+                }
+            }
+
+            updateScoreUI();
+
+            // Chuyển câu hỏi sau 2 giây
+            setTimeout(() => {
+                DOM.q.feedback.classList.add('hidden');
+                if (!state.isDropActive && currentQData.unlocks !== "boss") {
+                     state.currentQ++;
+                     loadQuestion();
+                } else if (currentQData.unlocks === "boss" && !isCorrect) {
+                     // Boss sai thì làm lại Boss luôn để mở Final Mix
+                     loadQuestion();
+                }
+            }, 2000);
+        }
+
+        function unlockChannel(chId, chName) {
+            state.channelsUnlocked[chId] = true;
+            const wrap = document.getElementById(`ch-${chId}`);
+            wrap.classList.remove('channel-locked');
+            
+            const overlay = wrap.querySelector('.lock-overlay');
+            overlay.innerHTML = `<span class="text-3xl animate-bounce filter drop-shadow-[0_0_10px_#fff]">🔓</span>`;
+            
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                // Tự động bật Mute cho học sinh tận hưởng thành quả
+                toggleMute(chId, false); 
+            }, 800);
+            
+            DOM.q.fdSub.innerText += ` | Đã mở kênh ${chName}`;
+        }
+
+        /* STREAMING_CHUNK: Xử lý sự kiện DROP và trùm cuối Boss */
+        function triggerDropEvent() {
+            state.isDropActive = true;
+            
+            DOM.visualizer.dropWarning.innerHTML = `<p class="font-dj text-5xl text-neon-pink font-bold drop-shadow-md strobe-effect">DROP!!!</p>`;
+            DOM.visualizer.dropWarning.classList.remove('hidden');
+            DOM.visualizer.dropWarning.classList.add('flex');
+            
+            // Đẩy âm lượng và bật tất cả kênh đang có
+            Object.keys(state.channelsUnlocked).forEach(ch => {
+                if(state.channelsUnlocked[ch]) {
+                    channels[ch].vol = 0.9; 
+                    channels[ch].fader.value = 0.9;
+                    toggleMute(ch, false);
+                }
+            });
+
+            document.body.classList.add('drop-active');
+
+            // Drop quẩy 5 giây rồi đi tiếp
+            setTimeout(() => {
+                state.isDropActive = false;
+                document.body.classList.remove('drop-active');
+                DOM.visualizer.dropWarning.classList.remove('flex');
+                DOM.visualizer.dropWarning.classList.add('hidden');
+                state.currentQ++;
+                loadQuestion();
+            }, 5000);
+        }
+
+        function unlockFinalMix() {
+            state.isFinalMixReady = true;
+            DOM.btns.finalMix.classList.remove('pointer-events-none', 'text-gray-500', 'bg-gray-800');
+            DOM.btns.finalMix.classList.add('bg-gradient-to-r', 'from-yellow-600', 'to-yellow-400', 'text-black', 'animate-pulse', 'shadow-[0_0_20px_#facc15]');
+            DOM.btns.finalMix.innerHTML = "▶ PLAY FULL MIX";
+            
+            // Xóa nội dung câu hỏi, hiện nút to
+            // Sử dụng nháy đơn ' thay vì nháy kép " bên trong chuỗi để tránh lỗi hiển thị HTML
+            DOM.q.text.innerHTML = '<div class="text-center"><span class="text-glow-yellow text-yellow-400 font-dj text-2xl md:text-3xl block mb-2">BẠN ĐÃ ĐẠT CẤP ĐỘ DJ KIẾN THỨC!</span>Hãy nhấn nút PLAY FULL MIX trên bàn DJ để hoàn thành bài hát!</div>';
+            DOM.q.container.innerHTML = "";
+            DOM.q.tag.innerText = "HOÀN THÀNH!";
+            DOM.q.tag.className = "bg-green-600 text-white text-xs md:text-sm px-3 py-1 rounded-md font-bold uppercase tracking-widest shadow-md";
+            
+            DOM.btns.finalMix.onclick = () => { playFinalMix(); };
+        }
+
+        function playFinalMix() {
+            document.body.classList.add('boss-active');
+            DOM.btns.finalMix.innerHTML = "🎵 ĐANG PHÁT...";
+            DOM.btns.finalMix.classList.remove('animate-pulse');
+            
+            // Bật toàn bộ kênh với âm lượng tối đa
+            Object.keys(channels).forEach(ch => {
+                state.channelsUnlocked[ch] = true;
+                const wrap = document.getElementById(`ch-${ch}`);
+                wrap.classList.remove('channel-locked');
+                wrap.querySelector('.lock-overlay').style.display = 'none';
+                
+                channels[ch].vol = 1.0;
+                channels[ch].fader.value = 1.0;
+                toggleMute(ch, false);
+            });
+
+            // Nghe Full Mix 6 giây rồi hiện màn hình kết quả
+            setTimeout(() => {
+                endGame();
+            }, 6000);
+        }
+
+        /* STREAMING_CHUNK: Kết thúc trò chơi và Xử lý UI hiển thị */
+        function showFeedback(title, sub, colorClass) {
+            DOM.q.feedback.classList.remove('hidden');
+            DOM.q.fdText.innerText = title;
+            DOM.q.fdText.className = `text-4xl md:text-5xl font-dj font-bold mb-3 ${colorClass}`;
+            DOM.q.fdSub.innerText = sub;
+        }
+
+        function updateScoreUI() {
+            DOM.ui.score.innerText = state.score;
+            DOM.ui.combo.innerText = `x${state.combo}`;
+            if(state.combo >= 2) {
+                DOM.ui.comboBox.classList.remove('hidden');
+                DOM.ui.comboBox.classList.add('animate-pulse');
+            } else {
+                DOM.ui.comboBox.classList.add('hidden');
+                DOM.ui.comboBox.classList.remove('animate-pulse');
+            }
+        }
+
+        function endGame() {
+            clearInterval(state.timerInterval);
+            
+            // Fade out âm thanh nhẹ nhàng trước khi ngắt hẳn
+            if(masterGain && audioCtx) {
+                masterGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+                setTimeout(stopAudio, 1000);
+            } else {
+                stopAudio();
+            }
+
+            DOM.screens.game.classList.add('hidden-screen');
+            DOM.screens.result.classList.remove('hidden-screen');
+
+            // Điền dữ liệu vào bảng kết quả
+            document.getElementById('res-score').innerText = state.score;
+            document.getElementById('res-correct').innerText = `${state.corrects}/${QUESTIONS.length}`;
+            document.getElementById('res-combo').innerText = `x${state.maxCombo}`;
+            
+            let chCount = Object.values(state.channelsUnlocked).filter(v => v).length;
+            document.getElementById('res-channels').innerText = `${chCount}/5`;
+            
+            let m = String(Math.floor(state.timeSeconds / 60)).padStart(2, '0');
+            let s = String(state.timeSeconds % 60).padStart(2, '0');
+            document.getElementById('res-time').innerText = `${m}:${s}`;
+            
+            let effectsStr = [];
+            if(state.hintsLeft === 0) effectsStr.push("Headphone Gợi ý");
+            if(state.score > 70) effectsStr.push("Beat Vàng");
+            if(state.maxCombo >= 3) effectsStr.push("Sự Kiện Drop");
+            document.getElementById('res-effects').innerText = effectsStr.length > 0 ? effectsStr.join(", ") : "Không có";
+        }
+
+        /* STREAMING_CHUNK: Chức năng Chơi lại và Quay về Trang chủ */
+        DOM.btns.replay.addEventListener('click', () => {
+            DOM.screens.result.classList.add('hidden-screen');
+            DOM.screens.game.classList.remove('hidden-screen');
+            
+            // Dọn dẹp lại nút Final Mix
+            DOM.btns.finalMix.className = "bg-gray-800 text-gray-500 px-4 py-1.5 rounded-lg font-dj font-bold uppercase pointer-events-none transition-all duration-300 border border-gray-600 text-xs md:text-sm flex items-center gap-2";
+            DOM.btns.finalMix.innerHTML = "🔒 FINAL MIX";
+            DOM.btns.finalMix.onclick = null;
+            
+            initGame(); // Khởi động lại
+        });
+
+        DOM.btns.home.addEventListener('click', () => {
+            stopAudio();
+            clearInterval(state.timerInterval);
+            DOM.screens.result.classList.add('hidden-screen');
+            DOM.screens.intro.classList.remove('hidden-screen');
+            DOM.inputs.name.value = "";
+            DOM.inputs.class.value = "";
+        });
+
+    </script>
+</body>
+</html>
+```eof

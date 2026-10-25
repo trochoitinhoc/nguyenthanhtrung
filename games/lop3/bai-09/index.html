@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Săn Ảnh Kiến Thức - Game Học Tập</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        :root {
+            --primary: #4F46E5;
+            --secondary: #F59E0B;
+            --danger: #EF4444;
+            --success: #10B981;
+            --boss: #8B5CF6;
+            --bg-light: #F3F4F6;
+            --text-dark: #1F2937;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            margin: 0; padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Màn hình Game */
+        #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
+            z-index: 50; transition: opacity 0.5s;
+        }
+        .hidden { opacity: 0; pointer-events: none; z-index: -1; display: none !important; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 2px solid rgba(255,255,255,1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 2rem; text-align: center; max-width: 90%; width: 500px;
+        }
+
+        .btn {
+            background: var(--primary); color: white; border: none;
+            padding: 12px 24px; border-radius: 99px; font-size: 1.2rem; font-weight: bold;
+            cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 4px 0 #3730A3; margin: 10px;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #3730A3; }
+        .btn-green { background: var(--success); box-shadow: 0 4px 0 #047857; }
+        .btn-green:active { box-shadow: 0 0 0 #047857; }
+        
+        input {
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 12px;
+            border: 2px solid #D1D5DB; font-size: 1.1rem; text-align: center;
+            outline: none; transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--primary); }
+
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 15px;
+            display: flex; justify-content: space-between; z-index: 20; pointer-events: none;
+        }
+        .hud-item {
+            background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 12px;
+            font-weight: 900; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            pointer-events: auto;
+        }
+
+        #mission-board {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95); padding: 15px 25px; border-radius: 20px;
+            border: 4px solid var(--secondary); text-align: center; max-width: 90%;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15); pointer-events: auto; z-index: 20;
+        }
+
+        #viewfinder {
+            position: absolute; width: 80px; height: 80px;
+            border: 4px dashed rgba(255,0,0,0.8); border-radius: 20%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 25;
+            transition: width 0.3s, height 0.3s;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #viewfinder::after { content: '+'; color: rgba(255,0,0,0.8); font-size: 24px; font-weight: bold; }
+        #viewfinder.zoomed { width: 150px; height: 150px; border-color: var(--success); }
+        #viewfinder.zoomed::after { color: var(--success); }
+
+        /* Môi trường chơi */
+        #arena {
+            width: 100%; height: 100%; position: absolute; top:0; left:0;
+            background: url('https://placehold.co/1000x1000/e0e7ff/c7d2fe?text=Màn+Hình+Máy+Tính') center/cover;
+        }
+        
+        /* Chế độ ban đêm */
+        #night-overlay {
+            position: absolute; top:0; left:0; width: 100%; height: 100%; z-index: 15;
+            pointer-events: none; opacity: 0; transition: opacity 0.5s;
+            background: radial-gradient(circle 120px at var(--mx, 50%) var(--my, 50%), transparent 0%, rgba(0,0,0,0.95) 100%);
+        }
+        .night-mode #night-overlay { opacity: 1; }
+
+        .game-item {
+            position: absolute; display: flex; flex-direction: column; align-items: center;
+            transform: translate(-50%, -50%); cursor: pointer; user-select: none; z-index: 5;
+            transition: transform 0.2s;
+        }
+        .game-item:hover { transform: translate(-50%, -50%) scale(1.1); z-index: 10; }
+        .game-item .icon { font-size: 3rem; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3)); }
+        .game-item .label {
+            background: rgba(255,255,255,0.9); padding: 2px 8px; border-radius: 8px;
+            font-size: 0.85rem; font-weight: bold; margin-top: 5px; text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap;
+        }
+        
+        .rare-item .icon { font-size: 4rem; animation: pulseGold 1s infinite alternate; }
+        @keyframes pulseGold { from { filter: drop-shadow(0 0 5px gold); transform: scale(1); } to { filter: drop-shadow(0 0 20px gold); transform: scale(1.1); } }
+
+        /* Controls */
+        #mobile-controls {
+            position: absolute; bottom: 30px; left: 0; width: 100%;
+            display: flex; justify-content: center; z-index: 30; gap: 20px; pointer-events: none;
+        }
+        .action-btn {
+            width: 70px; height: 70px; border-radius: 50%; font-size: 2rem;
+            border: none; cursor: pointer; pointer-events: auto;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        .action-btn:active { transform: scale(0.9); }
+        #btn-shoot { background: radial-gradient(circle, #ff4d4d, #cc0000); color: white; border: 4px solid white; }
+        #btn-zoom { background: #3B82F6; color: white; border: 4px solid white; }
+
+        /* Floating Text */
+        .floating-text {
+            position: absolute; font-size: 2rem; font-weight: bold; z-index: 100;
+            pointer-events: none; animation: floatUp 1s forwards ease-out;
+            text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
+        }
+        @keyframes floatUp {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -150%) scale(1.5); opacity: 0; }
+        }
+        
+        /* Album */
+        #album-panel {
+            position: absolute; right: -320px; top: 0; width: 300px; height: 100%;
+            background: rgba(255,255,255,0.95); box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            transition: right 0.3s; z-index: 40; display: flex; flex-direction: column;
+        }
+        #album-panel.open { right: 0; }
+        .album-header { background: var(--primary); color: white; padding: 15px; font-weight: bold; text-align: center; }
+        .album-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; overflow-y: auto; flex: 1; }
+        .album-slot { border: 2px dashed #ccc; border-radius: 10px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa;}
+        .album-slot img, .album-slot .icon { font-size: 2rem; }
+        .album-slot.filled { border-style: solid; border-color: var(--success); background: #ecfdf5;}
+        
+        /* Popup Info */
+        #alert-popup {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            background: white; padding: 20px 30px; border-radius: 20px; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 100; opacity: 0; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #alert-popup.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        
+        .toggle-btn { background: #E5E7EB; color: #374151; padding: 5px 10px; border-radius: 8px; font-size: 1rem; border: none; cursor:pointer;}
+        .toggle-btn.active { background: var(--primary); color: white; }
+    </style>
+</head>
+<body>
+
+    <!-- Màn hình Khởi động -->
+    <div id="start-screen" class="screen">
+        <div class="glass-panel">
+            <h1 class="text-4xl font-black text-indigo-700 mb-2">📸 SĂN ẢNH KIẾN THỨC</h1>
+            <p class="text-gray-600 mb-4 font-bold">Bài 9: Thực hành với Tệp và Thư mục</p>
+            
+            <div class="text-left bg-blue-50 p-4 rounded-xl mb-4 border border-blue-200">
+                <h3 class="font-bold text-blue-800 mb-2">🎮 HƯỚNG DẪN CÁCH CHƠI:</h3>
+                <ul class="text-sm text-blue-900 space-y-1 list-disc pl-5">
+                    <li>Rê chuột hoặc vuốt màn hình để di chuyển tâm ngắm.</li>
+                    <li>Đưa mục tiêu vào chính giữa khung ngắm màu đỏ.</li>
+                    <li>Nhấn <b>Chuột trái</b>, phím <b>Space (Cách)</b> hoặc nút 🔴 để chụp.</li>
+                    <li>Chụp đúng theo yêu cầu để thu thập ảnh vào Album.</li>
+                </ul>
+            </div>
+
+            <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off">
+            <input type="text" id="player-class" placeholder="Nhập Lớp (Ví dụ: 3A)..." autocomplete="off">
+            <div class="text-red-500 text-sm font-bold h-5 mb-2" id="start-error"></div>
+            
+            <button class="btn btn-green w-full" onclick="startGame()">▶ BẮT ĐẦU CHƠI</button>
+        </div>
+    </div>
+
+    <!-- Màn hình Game -->
+    <div id="game-screen" class="screen hidden" style="background: transparent;">
+        <div id="arena"></div>
+        <div id="night-overlay"></div>
+        
+        <!-- HUD Overlay -->
+        <div id="hud">
+            <div class="flex flex-col gap-2">
+                <div class="hud-item text-indigo-700">🏆 Điểm: <span id="ui-score">0</span></div>
+                <div class="hud-item text-orange-500">🔥 Combo: <span id="ui-combo">0</span></div>
+            </div>
+            <div class="flex flex-col gap-2 items-end">
+                <div class="flex gap-2">
+                    <button class="toggle-btn active" id="btn-music" onclick="toggleMusic()">🎵 Nhạc</button>
+                    <button class="toggle-btn active" id="btn-sfx" onclick="toggleSFX()">🔊 Âm</button>
+                </div>
+                <div class="hud-item text-red-600" id="ui-time">⏳ 00:00</div>
+            </div>
+        </div>
+
+        <div id="mission-board">
+            <div class="text-xs text-gray-500 font-bold uppercase" id="m-title">Nhiệm vụ 1</div>
+            <div class="text-lg" id="m-desc">Tìm và chụp thư mục [Truyen tranh]</div>
+            <div class="mt-2 text-sm text-indigo-600 font-bold" id="m-progress">Đã chụp: 0/1</div>
+        </div>
+
+        <div id="viewfinder"></div>
+
+        <div id="mobile-controls">
+            <button id="btn-zoom" class="action-btn shadow-lg" onclick="activateZoom()">🔍</button>
+            <button id="btn-shoot" class="action-btn shadow-lg">🔴</button>
+            <button class="action-btn bg-gray-800 text-white border-4 border-gray-600 text-sm font-bold" onclick="toggleAlbum()">📖</button>
+        </div>
+
+        <!-- Album Panel -->
+        <div id="album-panel">
+            <div class="album-header">
+                Album Kiến Thức <span id="album-count">(0/0)</span>
+            </div>
+            <div class="album-grid" id="album-grid"></div>
+        </div>
+        
+        <!-- Alert Popup -->
+        <div id="alert-popup">
+            <h2 id="alert-title" class="text-2xl font-black mb-2">Thông báo</h2>
+            <p id="alert-msg" class="text-gray-700 text-lg">Nội dung</p>
+        </div>
+    </div>
+
+    <!-- Màn hình Kết quả -->
+    <div id="end-screen" class="screen hidden">
+        <div class="glass-panel" style="width: 600px;">
+            <h1 class="text-4xl font-black text-green-600 mb-2">🎉 HOÀN THÀNH TỐT! 🎉</h1>
+            <p class="text-xl font-bold text-gray-700 mb-4">Học sinh: <span id="res-name" class="text-indigo-600"></span> - Lớp: <span id="res-class" class="text-indigo-600"></span></p>
+            
+            <div class="grid grid-cols-2 gap-4 text-left bg-white p-4 rounded-xl border border-gray-200 mb-4">
+                <div>🎯 <b>Chụp đúng:</b> <span id="res-correct" class="text-green-600 font-bold">0</span></div>
+                <div>❌ <b>Chụp sai:</b> <span id="res-wrong" class="text-red-500 font-bold">0</span></div>
+                <div>⭐ <b>Mục tiêu hiếm:</b> <span id="res-rare" class="text-yellow-500 font-bold">0</span></div>
+                <div>🔥 <b>Max Combo:</b> <span id="res-combo" class="text-orange-500 font-bold">0</span></div>
+                <div>⏱️ <b>Thời gian:</b> <span id="res-time" class="text-blue-500 font-bold">0s</span></div>
+                <div>🏆 <b>TỔNG ĐIỂM:</b> <span id="res-score" class="text-indigo-700 font-black text-xl">0</span></div>
+            </div>
+
+            <div id="knowledge-review" class="text-left bg-yellow-50 p-4 rounded-xl border border-yellow-200 mb-4 hidden">
+                <h3 class="font-bold text-yellow-800">📖 CẦN ÔN LẠI:</h3>
+                <ul id="review-list" class="text-sm text-yellow-900 list-disc pl-5"></ul>
+            </div>
+
+            <div class="flex gap-4 justify-center mt-6">
+                <button class="btn bg-gray-500" onclick="goHome()">🏠 TRANG CHỦ</button>
+                <button class="btn btn-green" onclick="resetAndPlay()">🔄 CHƠI LẠI</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO SYSTEM (Web Audio API) ---
+        let audioCtx = null;
+        let isMusicOn = true;
+        let isSfxOn = true;
+        let bgmInterval = null;
+        
+        // 8-bit Style Melody for BGM
+        const melody = [261.6, 329.6, 392.0, 523.3, 392.0, 329.6]; 
+        let noteIdx = 0;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playTone(freq, type, duration, vol = 0.1) {
+            if (!audioCtx || !isSfxOn) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const Sounds = {
+            shoot: () => playTone(800, 'square', 0.1, 0.05),
+            correct: () => { playTone(523.25, 'sine', 0.1, 0.2); setTimeout(() => playTone(659.25, 'sine', 0.2, 0.2), 100); },
+            wrong: () => { playTone(150, 'sawtooth', 0.3, 0.3); },
+            boss: () => { playTone(100, 'square', 1.0, 0.3); },
+            rare: () => { playTone(880, 'sine', 0.1, 0.2); setTimeout(() => playTone(1046, 'sine', 0.3, 0.2), 100); },
+            win: () => { [523, 659, 783, 1046].forEach((f, i) => setTimeout(() => playTone(f, 'square', 0.2, 0.1), i * 150)); }
+        };
+
+        function playBGM() {
+            if (!isMusicOn || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(melody[noteIdx], audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            noteIdx = (noteIdx + 1) % melody.length;
+        }
+
+        function toggleMusic() {
+            isMusicOn = !isMusicOn;
+            document.getElementById('btn-music').classList.toggle('active', isMusicOn);
+            if (!isMusicOn && bgmInterval) clearInterval(bgmInterval);
+            if (isMusicOn && state.isPlaying) bgmInterval = setInterval(playBGM, 400);
+        }
+        function toggleSFX() {
+            isSfxOn = !isSfxOn;
+            document.getElementById('btn-sfx').classList.toggle('active', isSfxOn);
+        }
+
+        const ICONS = {
+            folder: '📁', fileImg: '🖼️', fileExcel: '📊', fileDoc: '📄', drive: '💽',
+            cmdNew: '✨', cmdRename: '✏️', cmdDelete: '🗑️', rare: '🌟'
+        };
+
+        const DECOYS = [
+            { id: "d_c", type: "drive", label: "System (C:)" }, { id: "d_d", type: "drive", label: "Du lieu (D:)" },
+            { id: "f_cotich", type: "folder", label: "Truyen co tich" }, { id: "f_doremon", type: "folder", label: "Do-re-mon" },
+            { id: "f_trangquynh", type: "folder", label: "Trang Quynh" }, { id: "f_sachvo", type: "folder", label: "Sach vo" },
+            { id: "f_thohoc", type: "folder", label: "Tho hoc tro" }, { id: "f_sgk", type: "folder", label: "Sach giao khoa" },
+            { id: "file_anh", type: "fileImg", label: "Anh.jpg" }, { id: "file_danhmu", type: "fileExcel", label: "Danh muc sach.xlsx" },
+            { id: "file_doc", type: "fileDoc", label: "Bai tap.docx" }, { id: "cmd_del", type: "cmdDelete", label: "Delete" }
+        ];
+
+        const LEVELS = [
+            { title: "📸 Săn ảnh", text: "Tìm và chụp thư mục [Truyen tranh] nằm trong ổ đĩa D:", targets: ["f_truyentranh"], data: [{ id: "f_truyentranh", type: "folder", label: "Truyen tranh" }] },
+            { title: "📸 Săn ảnh", text: "Tìm và chụp tệp hình ảnh [Anh.jpg] nằm trong thư mục Do-re-mon", targets: ["file_anh"], data: [{ id: "file_anh", type: "fileImg", label: "Anh.jpg" }] },
+            { title: "🌙 Tinh mắt", text: "Chế độ Ban đêm! Dùng đèn soi tìm 2 Tệp (File) bất kỳ (Word, Excel hoặc Ảnh).", isNight: true, count: 2, isFileAny: true },
+            { title: "🔍 Tìm lệnh", text: "Tìm Lệnh dùng để [Đổi tên] thư mục", targets: ["cmd_rename"], data: [{ id: "cmd_rename", type: "cmdRename", label: "Rename" }] },
+            { title: "⚡ Chụp nhanh", text: "Thư mục [Co-nan] đang di chuyển! Chụp ngay!", targets: ["f_conan"], data: [{ id: "f_conan", type: "folder", label: "Co-nan" }], movingTarget: true },
+            { title: "👑 BOSS PHOTO", text: "Tìm và chụp CẢ 2 mục tiêu: Thư mục [Hoang tu Ech] VÀ Lệnh [New folder]", isBoss: true, count: 2, targets: ["f_hoangtuech", "cmd_new"], data: [{ id: "f_hoangtuech", type: "folder", label: "Hoang tu Ech" }, { id: "cmd_new", type: "cmdNew", label: "New folder" }] }
+        ];
+
+        let state = {
+            isPlaying: false, name: '', class: '',
+            levelIdx: 0, score: 0, combo: 0, maxCombo: 0,
+            timeTotal: 0, totalTimer: null,
+            correctShots: 0, wrongShots: 0, rareShots: 0,
+            currentTargets: [], capturedInLevel: 0,
+            mistakes: new Set(),
+            zoomed: false, zoomTimeout: null,
+            activeObjects: [] // {id, el, dx, dy, isMoving}
+        };
+
+        const DOM = {
+            arena: document.getElementById('arena'),
+            vf: document.getElementById('viewfinder'),
+            night: document.getElementById('night-overlay'),
+            album: document.getElementById('album-grid'),
+            albumCount: document.getElementById('album-count'),
+            albumPanel: document.getElementById('album-panel'),
+            score: document.getElementById('ui-score'),
+            combo: document.getElementById('ui-combo'),
+            time: document.getElementById('ui-time')
+        };
+
+        function spawnItem(data, isTarget, moving = false, isRare = false) {
+            const el = document.createElement('div');
+            el.className = `game-item ${isRare ? 'rare-item' : ''}`;
+            el.dataset.id = data.id;
+            el.dataset.isTarget = isTarget;
+            el.dataset.type = data.type;
+            
+            el.innerHTML = `
+                <div class="icon">${ICONS[data.type] || '📁'}</div>
+                <div class="label">${data.label}</div>
+            `;
+
+            let x, y;
+            let attempts = 0;
+            let safe = false;
+            
+            // Lùi vào lề để không bị che khuất bởi UI (bảng nhiệm vụ, nút bấm)
+            const padX = 80; 
+            const padYTop = 170; 
+            const padYBot = 130; 
+            const areaW = Math.max(100, window.innerWidth - padX * 2);
+            const areaH = Math.max(100, window.innerHeight - padYTop - padYBot);
+
+            // Tìm vị trí an toàn, không bị đè lên các đối tượng đã sinh ra trước đó
+            while (!safe && attempts < 50) {
+                x = padX + Math.random() * areaW;
+                y = padYTop + Math.random() * areaH;
+                safe = true;
+                for (let obj of state.activeObjects) {
+                    if (Math.hypot(x - obj.x, y - obj.y) < 110) { // Khoảng cách tối thiểu 110px
+                        safe = false; break;
+                    }
+                }
+                attempts++;
+            }
+
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+
+            DOM.arena.appendChild(el);
+
+            let obj = { id: data.id, el, isTarget, x, y, w: window.innerWidth, h: window.innerHeight, moving };
+            if (moving) {
+                obj.dx = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 2);
+                obj.dy = (Math.random() > 0.5 ? 1 : -1) * (2 + Math.random() * 2);
+                if (isRare) { obj.dx *= 1.5; obj.dy *= 1.5; }
+            }
+            state.activeObjects.push(obj);
+            return el;
+        }
+
+        function clearArena() {
+            DOM.arena.innerHTML = '';
+            state.activeObjects = [];
+        }
+
+        function loadLevel() {
+            clearArena();
+            if (state.levelIdx >= LEVELS.length) { endGame(); return; }
+            
+            const lvl = LEVELS[state.levelIdx];
+            document.getElementById('m-title').innerText = lvl.title;
+            document.getElementById('m-desc').innerText = lvl.text;
+            
+            state.capturedInLevel = 0;
+            const reqCount = lvl.count || 1;
+            document.getElementById('m-progress').innerText = `Đã chụp: 0/${reqCount}`;
+            
+            // Setup Environment
+            DOM.night.parentElement.classList.toggle('night-mode', lvl.isNight === true);
+            if(lvl.isBoss) Sounds.boss();
+
+            // Spawn Targets
+            state.currentTargets = lvl.targets || [];
+            if (lvl.isFileAny) {
+                // Pick 2 random files
+                const files = DECOYS.filter(d => ['fileImg', 'fileExcel', 'fileDoc'].includes(d.type));
+                const shuffled = files.sort(() => 0.5 - Math.random());
+                state.currentTargets = [shuffled[0].id, shuffled[1].id];
+                spawnItem(shuffled[0], true);
+                spawnItem(shuffled[1], true);
+            } else if (lvl.data) {
+                lvl.data.forEach(d => spawnItem(d, true, lvl.movingTarget || lvl.isBoss));
+            }
+
+            // Spawn Decoys
+            let decoyPool = [...DECOYS].sort(() => 0.5 - Math.random());
+            let spawnCount = 5 + Math.floor(Math.random() * 5);
+            if (lvl.isBoss) spawnCount = 10;
+            
+            let spawned = 0;
+            for(let decoy of decoyPool) {
+                if (state.currentTargets.includes(decoy.id)) continue;
+                if (lvl.isFileAny && state.currentTargets.includes(decoy.id)) continue;
+                spawnItem(decoy, false, lvl.isBoss); // boss makes all move slightly
+                spawned++;
+                if(spawned >= spawnCount) break;
+            }
+
+            // Spawn Rare Target Chance (20%)
+            if (Math.random() < 0.2 && !lvl.isBoss) {
+                spawnItem({id: "rare_star", type: "rare", label: "Mục tiêu vàng!"}, true, true, true);
+                state.currentTargets.push("rare_star");
+            }
+
+            updateAlbumSlots(reqCount);
+        }
+
+        function updateAlbumSlots(count) {
+            DOM.album.innerHTML = '';
+            for(let i=0; i<count; i++) {
+                DOM.album.innerHTML += `<div class="album-slot" id="slot-${i}"><span>⏳</span></div>`;
+            }
+        }
+
+        function updateMouseTracker(e) {
+            if(!state.isPlaying) return;
+            let cx = e.clientX || (e.touches && e.touches[0].clientX);
+            let cy = e.clientY || (e.touches && e.touches[0].clientY);
+            if (cx===undefined || cy===undefined) return;
+            
+            DOM.vf.style.left = `${cx}px`;
+            DOM.vf.style.top = `${cy}px`;
+            
+            // Update light for night mode
+            DOM.night.style.setProperty('--mx', `${cx}px`);
+            DOM.night.style.setProperty('--my', `${cy}px`);
+        }
+
+        document.addEventListener('mousemove', updateMouseTracker);
+        document.addEventListener('touchmove', updateMouseTracker, {passive: true});
+
+        // Hỗ trợ chụp
+        document.addEventListener('keydown', (e) => { if (e.code === 'Space' && state.isPlaying) capturePhoto(); });
+        document.addEventListener('mousedown', (e) => {
+            // Ngăn việc nhấp vào UI làm chụp
+            if(e.target.closest('#hud') || e.target.closest('#mission-board') || e.target.closest('#mobile-controls') || e.target.closest('.glass-panel')) return;
+            if(state.isPlaying) capturePhoto();
+        });
+        document.getElementById('btn-shoot').addEventListener('click', capturePhoto);
+        // Ngăn double tap zoom trên đt
+        document.getElementById('btn-shoot').addEventListener('touchstart', (e)=>{e.preventDefault(); capturePhoto();}); 
+
+        function capturePhoto() {
+            if (!state.isPlaying) return;
+            Sounds.shoot();
+            
+            const vfRect = DOM.vf.getBoundingClientRect();
+            const cx = vfRect.left + vfRect.width / 2;
+            const cy = vfRect.top + vfRect.height / 2;
+            const radius = vfRect.width / 2; // Hitbox radius
+
+            let hitObj = null;
+            let minObjDist = Infinity;
+
+            // Find closest object inside viewfinder
+            state.activeObjects.forEach(obj => {
+                if (!obj.el.parentElement) return; // already removed
+                const oRect = obj.el.getBoundingClientRect();
+                const ox = oRect.left + oRect.width / 2;
+                const oy = oRect.top + oRect.height / 2;
+                const dist = Math.hypot(cx - ox, cy - oy);
+                
+                if (dist < radius + 20) { // +20px forgiveness padding
+                    if (dist < minObjDist) {
+                        minObjDist = dist;
+                        hitObj = obj;
+                    }
+                }
+            });
+
+            if (hitObj) {
+                processHit(hitObj);
+            } else {
+                // Chụp trượt vào không khí (không bị tính là chụp sai mục tiêu, chỉ không làm gì)
+            }
+        }
+
+        function processHit(obj) {
+            const isTarget = state.currentTargets.includes(obj.id);
+            const type = obj.el.dataset.type;
+
+            if (isTarget) {
+                // CORRECT
+                obj.el.remove();
+                state.correctShots++;
+                state.combo++;
+                if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+                
+                let pts = 10;
+                if (obj.id === 'rare_star') {
+                    pts = 30; state.rareShots++; Sounds.rare(); showFloatingText("+30", obj.el);
+                } else {
+                    pts += (state.combo > 1 ? state.combo * 2 : 0);
+                    Sounds.correct(); showFloatingText(`+${pts}`, obj.el);
+                }
+                state.score += pts;
+                
+                addPhotoToAlbum(obj.el.cloneNode(true));
+                
+                // Remove from targets
+                state.currentTargets = state.currentTargets.filter(t => t !== obj.id);
+                state.capturedInLevel++;
+                
+                const lvl = LEVELS[state.levelIdx];
+                const reqCount = lvl.count || 1;
+                document.getElementById('m-progress').innerText = `Đã chụp: ${state.capturedInLevel}/${reqCount}`;
+                
+                if (state.capturedInLevel >= reqCount) {
+                    setTimeout(() => {
+                        state.levelIdx++;
+                        loadLevel();
+                    }, 1000);
+                }
+
+            } else {
+                // WRONG
+                Sounds.wrong();
+                state.wrongShots++;
+                state.combo = 0;
+                DOM.arena.style.boxShadow = "inset 0 0 50px red";
+                setTimeout(() => DOM.arena.style.boxShadow = "none", 300);
+                
+                // Ghi nhận lỗi để báo cáo cuối game
+                if (type.includes('file')) state.mistakes.add("Phân biệt Tệp (File) và Thư mục (Folder)");
+                if (type.includes('cmd')) state.mistakes.add("Phân biệt các Lệnh (Rename, Delete, New folder)");
+                if (type === 'drive') state.mistakes.add("Nhận biết Ổ đĩa máy tính");
+
+                showAlert("Sai mục tiêu!", `Em đã chụp nhầm [${obj.el.querySelector('.label').innerText}]. Hãy quan sát kĩ yêu cầu nhiệm vụ!`);
+            }
+            updateHUD();
+        }
+
+        function showFloatingText(text, el) {
+            const rect = el.getBoundingClientRect();
+            const float = document.createElement('div');
+            float.className = 'floating-text text-green-500';
+            float.innerText = text;
+            float.style.left = `${rect.left + rect.width/2}px`;
+            float.style.top = `${rect.top}px`;
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 1000);
+        }
+
+        function addPhotoToAlbum(nodeClone) {
+            nodeClone.className = ''; nodeClone.style = ''; // reset styles
+            const slot = document.getElementById(`slot-${state.capturedInLevel}`);
+            if(slot) {
+                slot.innerHTML = '';
+                slot.appendChild(nodeClone);
+                slot.classList.add('filled');
+            }
+        }
+
+        function updateHUD() {
+            DOM.score.innerText = state.score;
+            DOM.combo.innerText = state.combo;
+            DOM.albumCount.innerText = `(${state.correctShots})`;
+            if (state.combo > 2) DOM.combo.classList.add('animate-pulse');
+            else DOM.combo.classList.remove('animate-pulse');
+        }
+
+        function showAlert(title, msg) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText = msg;
+            const popup = document.getElementById('alert-popup');
+            popup.classList.add('show');
+            setTimeout(() => popup.classList.remove('show'), 2500);
+        }
+
+        function activateZoom() {
+            if (state.zoomed) return;
+            state.zoomed = true;
+            DOM.vf.classList.add('zoomed');
+            clearTimeout(state.zoomTimeout);
+            state.zoomTimeout = setTimeout(() => {
+                DOM.vf.classList.remove('zoomed');
+                state.zoomed = false;
+            }, 5000); // 5s zoom
+        }
+
+        function toggleAlbum() { DOM.albumPanel.classList.toggle('open'); }
+
+        // Mover loop for animation
+        function animateLoop() {
+            if (!state.isPlaying) return;
+            state.activeObjects.forEach(obj => {
+                if (obj.moving) {
+                    obj.x += obj.dx;
+                    obj.y += obj.dy;
+                    if (obj.x < 50 || obj.x > obj.w - 50) obj.dx *= -1;
+                    if (obj.y < 100 || obj.y > obj.h - 150) obj.dy *= -1;
+                    obj.el.style.left = `${obj.x}px`;
+                    obj.el.style.top = `${obj.y}px`;
+                }
+            });
+            requestAnimationFrame(animateLoop);
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60).toString().padStart(2, '0');
+            const sec = (s % 60).toString().padStart(2, '0');
+            return `⏳ ${m}:${sec}`;
+        }
+
+        function startGame() {
+            const name = document.getElementById('player-name').value.trim();
+            const cls = document.getElementById('player-class').value.trim();
+            const err = document.getElementById('start-error');
+            
+            if (!name || !cls) {
+                err.innerText = "❌ Vui lòng nhập Họ Tên và Lớp!";
+                return;
+            }
+            err.innerText = "";
+            state.name = name; state.class = cls;
+
+            initAudio();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            // Xóa state cũ
+            state.isPlaying = true; state.levelIdx = 0; state.score = 0; state.combo = 0; state.maxCombo = 0;
+            state.correctShots = 0; state.wrongShots = 0; state.rareShots = 0; state.timeTotal = 0;
+            state.mistakes.clear();
+            
+            updateHUD();
+            if (bgmInterval) clearInterval(bgmInterval);
+            if (isMusicOn) bgmInterval = setInterval(playBGM, 400);
+            
+            state.totalTimer = setInterval(() => {
+                state.timeTotal++;
+                DOM.time.innerText = formatTime(state.timeTotal);
+            }, 1000);
+
+            // Căn giữa viewfinder lúc đầu
+            DOM.vf.style.left = '50%'; DOM.vf.style.top = '50%';
+            DOM.night.style.setProperty('--mx', `50%`);
+            DOM.night.style.setProperty('--my', `50%`);
+
+            loadLevel();
+            requestAnimationFrame(animateLoop);
+        }
+
+        function endGame() {
+            state.isPlaying = false;
+            clearInterval(state.totalTimer);
+            if (bgmInterval) clearInterval(bgmInterval);
+            Sounds.win();
+            
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            
+            document.getElementById('res-name').innerText = state.name;
+            document.getElementById('res-class').innerText = state.class;
+            document.getElementById('res-correct').innerText = state.correctShots;
+            document.getElementById('res-wrong').innerText = state.wrongShots;
+            document.getElementById('res-rare').innerText = state.rareShots;
+            document.getElementById('res-combo').innerText = state.maxCombo;
+            document.getElementById('res-time').innerText = state.timeTotal + " giây";
+            document.getElementById('res-score').innerText = state.score;
+
+            const reviewPanel = document.getElementById('knowledge-review');
+            const reviewList = document.getElementById('review-list');
+            if (state.mistakes.size > 0) {
+                reviewPanel.classList.remove('hidden');
+                reviewList.innerHTML = Array.from(state.mistakes).map(m => `<li>${m}</li>`).join('');
+            } else {
+                reviewPanel.classList.add('hidden');
+            }
+        }
+
+        function resetAndPlay() {
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            // Giao diện sẽ được xoá và cài đặt lại khi nhấn Start Game
+        }
+
+        function goHome() {
+            location.reload(); // Refresh toàn bộ sạch sẽ nhất
+        }
+    </script>
+</body>
+</html>

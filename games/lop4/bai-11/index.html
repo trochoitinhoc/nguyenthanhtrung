@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 Trò Chơi Thám Hiểm: Chỉnh Sửa Văn Bản - Tin Học 4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', cursive, sans-serif;
+            background: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #7c3aed 100%);
+            min-height: 100vh;
+            color: #1f2937;
+        }
+        .bouncing {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .pulse-glow {
+            animation: pulseGlow 1.5s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .firework {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+        }
+        @keyframes explode {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+
+    <header class="w-full max-w-4xl flex justify-between items-center mb-4 bg-white/10 backdrop-blur-md p-3 rounded-2xl text-white shadow-lg border border-white/20">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">📝</span>
+            <h1 class="text-lg md:text-xl font-bold tracking-wide">CHỈNH SỬA VĂN BẢN - BÀI 11 SGK</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="toggleMusic" onclick="toggleMusicState()" class="bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-xl font-bold text-sm shadow flex items-center gap-1 transition transform active:scale-95">
+                🎵 Nhạc: <span id="musicStatus">TẮT</span>
+            </button>
+            <button id="toggleSound" onclick="toggleSoundState()" class="bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-xl font-bold text-sm shadow flex items-center gap-1 transition transform active:scale-95">
+                🔊 Âm thanh: <span id="soundStatus">BẬT</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border-4 border-amber-300 relative overflow-hidden">
+        
+        <!-- SCREEN 1: LOGIN -->
+        <div id="screen-login" class="flex flex-col items-center text-center py-8">
+            <div class="text-6xl md:text-7xl mb-4 bouncing">💻✨</div>
+            <h2 class="text-3xl md:text-4xl font-extrabold text-blue-900 mb-2">HÀNH TRÌNH CHINH PHỤC SOẠN THẢO VĂN BẢN</h2>
+            <p class="text-gray-600 mb-6 max-w-md text-sm md:text-base">Bài 11: Sao chép, di chuyển và chèn hình ảnh vào văn bản (Tin học Lớp 4 - Kết nối tri thức). Khám phá 4 trạm thử thách ngay!</p>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)" class="w-full max-w-md space-y-4 bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 shadow-inner">
+                <div class="text-left">
+                    <label class="block text-blue-900 font-bold mb-1 text-sm">Họ và tên học sinh:</label>
+                    <input type="text" id="playerName" required placeholder="Biệt danh (không nhập tên thật)" class="w-full px-4 py-3 rounded-xl border-2 border-blue-300 focus:outline-none focus:border-blue-600 text-lg font-semibold">
+                </div>
+                <div class="text-left">
+                    <label class="block text-blue-900 font-bold mb-1 text-sm">Lớp:</label>
+                    <input type="text" id="playerClass" required placeholder="Ví dụ: 4A" class="w-full px-4 py-3 rounded-xl border-2 border-blue-300 focus:outline-none focus:border-blue-600 text-lg font-semibold">
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-extrabold text-xl py-3.5 rounded-xl shadow-lg pulse-glow transition transform active:scale-95">
+                    🚀 BẮT ĐẦU KHÁM PHÁ!
+                </button>
+            </form>
+        </div>
+
+        <!-- SCREEN 2: ISLAND MAP -->
+        <div id="screen-map" class="hidden flex flex-col items-center">
+            <div class="flex justify-between w-full items-center mb-6 bg-amber-100 p-4 rounded-2xl border-2 border-amber-300">
+                <div>
+                    <h3 class="font-bold text-amber-900 text-lg" id="displayPlayerInfo">Học sinh: ...</h3>
+                    <p class="text-xs text-amber-700">Vượt qua 4 trạm để hoàn thành toàn bộ nội dung Bài 11!</p>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <span class="bg-amber-500 text-white px-3 py-1.5 rounded-full font-bold text-sm shadow" id="scoreDisplay">💎 0 Vàng</span>
+                    <span class="bg-purple-600 text-white px-3 py-1.5 rounded-full font-bold text-sm shadow" id="piecesDisplay">🧩 0/4 Trạm</span>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-extrabold text-blue-900 mb-6">🗺️ BẢN ĐỒ THỬ THÁCH BÀI 11</h2>
+
+            <!-- Islands Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full mb-6">
+                <!-- Island 1 -->
+                <button onclick="startMission(1)" id="island-1" class="island-btn bg-emerald-50 hover:bg-emerald-100 border-3 border-emerald-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md">
+                    <span class="text-4xl mb-2">📑</span>
+                    <h4 class="font-bold text-emerald-900 text-lg">Trạm 1: Sao Chép & Di Chuyển</h4>
+                    <p class="text-xs text-emerald-700 mt-1" id="status-1">Khái niệm và thao tác lặp lại văn bản</p>
+                    <span id="badge-1" class="mt-2 text-xs font-extrabold bg-emerald-200 text-emerald-800 px-2.5 py-1 rounded-full">CHƯA KHÁM PHÁ</span>
+                </button>
+
+                <!-- Island 2 -->
+                <button onclick="startMission(2)" id="island-2" class="island-btn bg-cyan-50 hover:bg-cyan-100 border-3 border-cyan-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md">
+                    <span class="text-4xl mb-2">🖼️</span>
+                    <h4 class="font-bold text-cyan-900 text-lg">Trạm 2: Chèn Hình Ảnh</h4>
+                    <p class="text-xs text-cyan-700 mt-1" id="status-2">Minh họa văn bản thêm sinh động</p>
+                    <span id="badge-2" class="mt-2 text-xs font-extrabold bg-cyan-200 text-cyan-800 px-2.5 py-1 rounded-full">CHƯA KHÁM PHÁ</span>
+                </button>
+
+                <!-- Island 3 -->
+                <button onclick="startMission(3)" id="island-3" class="island-btn bg-purple-50 hover:bg-purple-100 border-3 border-purple-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md">
+                    <span class="text-4xl mb-2">🔍</span>
+                    <h4 class="font-bold text-purple-900 text-lg">Trạm 3: Nhận Biết Biểu Tượng</h4>
+                    <p class="text-xs text-purple-700 mt-1" id="status-3">Copy, Cut, Paste và Open</p>
+                    <span id="badge-3" class="mt-2 text-xs font-extrabold bg-purple-200 text-purple-800 px-2.5 py-1 rounded-full">CHƯA KHÁM PHÁ</span>
+                </button>
+
+                <!-- Island 4 -->
+                <button onclick="startMission(4)" id="island-4" class="island-btn bg-amber-50 hover:bg-amber-100 border-3 border-amber-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md">
+                    <span class="text-4xl mb-2">🌳</span>
+                    <h4 class="font-bold text-amber-900 text-lg">Trạm 4: Bài Tập Thực Hành</h4>
+                    <p class="text-xs text-amber-700 mt-1" id="status-4">Bài thơ "Ai trồng cây" & các thao tác</p>
+                    <span id="badge-4" class="mt-2 text-xs font-extrabold bg-amber-200 text-amber-800 px-2.5 py-1 rounded-full">CHƯA KHÁM PHÁ</span>
+                </button>
+
+                <!-- Island 5 (Boss / Treasure Cave) -->
+                <button onclick="startMission(5)" id="island-5" class="island-btn bg-rose-50 hover:bg-rose-100 border-3 border-rose-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md sm:col-span-2 md:col-span-2 relative overflow-hidden" disabled style="opacity: 0.6;">
+                    <span class="text-4xl mb-2">🏆</span>
+                    <h4 class="font-bold text-rose-900 text-lg">Vinh Quang Bài 11 (BOSS CUỐI)</h4>
+                    <p class="text-xs text-rose-700 mt-1" id="status-5">Hoàn thành 4 trạm để mở khóa thử thách tổng hợp!</p>
+                    <span id="badge-5" class="mt-2 text-xs font-extrabold bg-rose-200 text-rose-800 px-2.5 py-1 rounded-full">🔒 KHÓA</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: CHALLENGE QUESTION -->
+        <div id="screen-challenge" class="hidden flex flex-col items-center">
+            <div class="w-full flex justify-between items-center mb-4">
+                <button onclick="backToMap()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-xl font-bold text-sm text-gray-700 flex items-center gap-1 transition">
+                    ⬅️ Quay lại Bản Đồ
+                </button>
+                <div class="flex gap-2">
+                    <span id="missionTitleBadge" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold text-sm">Trạm ...</span>
+                    <span id="questionProgressBadge" class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold text-sm">Câu 1/3</span>
+                </div>
+            </div>
+
+            <div id="questionContainer" class="w-full bg-blue-50/80 p-6 rounded-2xl border-2 border-blue-200 shadow-inner mb-6">
+                <!-- Dynamic Question Rendered via JS -->
+            </div>
+
+            <!-- Feedback Box -->
+            <div id="feedbackBox" class="hidden w-full p-4 rounded-xl text-center font-bold text-lg mb-4"></div>
+        </div>
+
+        <!-- SCREEN 4: VICTORY & CERTIFICATE -->
+        <div id="screen-victory" class="hidden flex flex-col items-center text-center py-6 relative">
+            <div class="text-7xl md:text-8xl mb-4 bouncing">👑🏆🎉</div>
+            <h2 class="text-3xl md:text-4xl font-extrabold text-amber-600 mb-2">HOÀN THÀNH XUẤT SẮC BÀI 11!</h2>
+            <p class="text-gray-700 mb-6 text-base md:text-lg" id="victoryMessage">Chúc mừng em đã nắm vững kiến thức chỉnh sửa văn bản và chèn hình ảnh!</p>
+
+            <div class="bg-amber-50 border-3 border-amber-300 p-6 rounded-2xl w-full max-w-md mb-6 shadow-md text-left">
+                <h4 class="font-bold text-amber-900 text-lg mb-2 text-center">📜 GIẤY CHỨNG NHẬN HOÀN THÀNH BÀI 11</h4>
+                <p class="text-sm text-gray-700 mb-1"><strong>Họ tên:</strong> <span id="resName">...</span></p>
+                <p class="text-sm text-gray-700 mb-1"><strong>Lớp:</strong> <span id="resClass">...</span></p>
+                <p class="text-sm text-gray-700 mb-1"><strong>Điểm vàng:</strong> <span id="resGold">0</span> 💎</p>
+                <p class="text-sm text-gray-700"><strong>Danh hiệu:</strong> 🌟 Chuyên Gia Soạn Thảo Nhí</p>
+            </div>
+
+            <button onclick="resetGame()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-lg px-8 py-3.5 rounded-xl shadow-lg transition transform active:scale-95">
+                🔄 CHƠI LẠI TỪ ĐẦU
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Custom Modal for Alerts -->
+    <div id="customModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center border-4 border-amber-400 shadow-2xl">
+            <div id="modalIcon" class="text-5xl mb-3">🔔</div>
+            <h3 id="modalTitle" class="font-extrabold text-xl text-blue-900 mb-2">Thông báo</h3>
+            <p id="modalMessage" class="text-gray-600 text-sm mb-6">Nội dung thông báo...</p>
+            <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl shadow transition">
+                ĐỒNG Ý
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        let gameState = {
+            playerName: "",
+            playerClass: "",
+            score: 0,
+            pieces: 0,
+            completedMissions: [false, false, false, false, false],
+            currentMission: 1,
+            currentQuestionIdx: 0
+        };
+
+        // --- WEB AUDIO API SOUND SYSTEM ---
+        let audioCtx = null;
+        let soundEnabled = true;
+        let musicEnabled = false;
+        let musicInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+            initAudio();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.setValueAtTime(100, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    g.gain.setValueAtTime(0.15, now + idx * 0.12);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.3);
+                    o.start(now + idx * 0.12);
+                    o.stop(now + idx * 0.12 + 0.3);
+                });
+            }
+        }
+
+        function startBgMusic() {
+            if (!musicEnabled) return;
+            initAudio();
+            if (musicInterval) clearInterval(musicInterval);
+
+            const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
+            let noteIdx = 0;
+
+            musicInterval = setInterval(() => {
+                if (!musicEnabled || !audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(melody[noteIdx], audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+
+                noteIdx = (noteIdx + 1) % melody.length;
+            }, 400);
+        }
+
+        function stopBgMusic() {
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
+        }
+
+        function toggleMusicState() {
+            initAudio();
+            musicEnabled = !musicEnabled;
+            document.getElementById('musicStatus').innerText = musicEnabled ? 'BẬT' : 'TẮT';
+            if (musicEnabled) {
+                startBgMusic();
+            } else {
+                stopBgMusic();
+            }
+            playSound('click');
+        }
+
+        function toggleSoundState() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundStatus').innerText = soundEnabled ? 'BẬT' : 'TẮT';
+            playSound('click');
+        }
+
+        // --- UI & NAVIGATION FUNCTIONS ---
+        function showModal(title, message, icon = '🔔') {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('modalIcon').innerText = icon;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+            playSound('click');
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            initAudio();
+            const nameInput = document.getElementById('playerName').value.trim();
+            const classInput = document.getElementById('playerClass').value.trim();
+
+            if (!nameInput || !classInput) {
+                showModal('Thiếu thông tin', 'Vui lòng nhập đầy đủ Họ tên và Lớp để bắt đầu!', '⚠️');
+                return;
+            }
+
+            gameState.playerName = nameInput;
+            gameState.playerClass = classInput;
+
+            document.getElementById('displayPlayerInfo').innerText = `Học sinh: ${nameInput} (${classInput})`;
+            
+            document.getElementById('screen-login').classList.add('hidden');
+            document.getElementById('screen-map').classList.remove('hidden');
+            playSound('win');
+        }
+
+        function backToMap() {
+            document.getElementById('screen-challenge').classList.add('hidden');
+            document.getElementById('screen-map').classList.remove('hidden');
+            playSound('click');
+            updateMapUI();
+        }
+
+        function updateMapUI() {
+            document.getElementById('scoreDisplay').innerText = `💎 ${gameState.score} Vàng`;
+            document.getElementById('piecesDisplay').innerText = `🧩 ${gameState.pieces}/4 Trạm`;
+
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`island-${i}`);
+                const badge = document.getElementById(`badge-${i}`);
+                if (gameState.completedMissions[i]) {
+                    btn.classList.remove('bg-emerald-50', 'bg-cyan-50', 'bg-purple-50', 'bg-amber-50');
+                    btn.classList.add('bg-green-100', 'border-green-500');
+                    badge.className = "mt-2 text-xs font-extrabold bg-green-200 text-green-800 px-2.5 py-1 rounded-full";
+                    badge.innerText = "✅ HOÀN THÀNH";
+                }
+            }
+
+            // Check Boss Unlock
+            if (gameState.pieces >= 4) {
+                const bossBtn = document.getElementById('island-5');
+                const bossBadge = document.getElementById('badge-5');
+                bossBtn.removeAttribute('disabled');
+                bossBtn.style.opacity = '1';
+                bossBtn.classList.remove('bg-rose-50');
+                bossBtn.classList.add('bg-rose-100', 'pulse-glow');
+                bossBadge.className = "mt-2 text-xs font-extrabold bg-rose-500 text-white px-2.5 py-1 rounded-full animate-bounce";
+                bossBadge.innerText = "🔓 MỞ KHÓA NGAY!";
+            }
+        }
+
+        // --- QUESTION BANK STRICTLY FROM BÀI 11 SGK KẾT NỐI TRI THỨC ---
+        const missions = {
+            1: {
+                title: "📑 Trạm 1: Sao Chép & Di Chuyển Văn Bản (3 Câu)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Khi soạn thảo văn bản trên máy tính có những phần văn bản lặp lại nhiều lần (như câu thơ 'Trăng ơi... từ đâu đến?'), em nên làm gì để nhanh nhất?",
+                        options: [
+                            { text: "A. Gõ lại đầy đủ tất cả các lần xuất hiện bằng bàn phím từ đầu đến cuối", correct: false },
+                            { text: "B. Gõ một lần rồi sử dụng thao tác sao chép", correct: true },
+                            { text: "C. Xóa bỏ các phần lặp lại và không đưa vào văn bản", correct: false }
+                        ]
+                    },
+                    {
+                        type: "truefalse",
+                        desc: "Trong trường hợp phần văn bản đặt ở vị trí chưa hợp lí, em có thể sử dụng thao tác di chuyển phần văn bản đó đến vị trí mới mà không cần phải gõ lại.",
+                        options: [
+                            { text: "ĐÚNG", correct: true },
+                            { text: "SAI", correct: false }
+                        ]
+                    },
+                    {
+                        type: "matching",
+                        desc: "Hãy chọn mô tả đúng cho thao tác 'Sao chép' trong phần mềm soạn thảo văn bản:",
+                        options: [
+                            { text: "A. Tạo thêm phần văn bản ở vị trí khác giống hệt phần đã chọn", correct: true },
+                            { text: "B. Xóa bỏ hoàn toàn văn bản khỏi vị trí cũ", correct: false },
+                            { text: "C. Chèn thêm hình ảnh minh họa vào văn bản", correct: false }
+                        ]
+                    }
+                ]
+            },
+            2: {
+                title: "🖼️ Trạm 2: Chèn Hình Ảnh Vào Văn Bản (3 Câu)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Mục đích chính của việc chèn hình ảnh phù hợp vào văn bản (như bài thơ 'Trăng ơi... từ đâu đến?') là gì?",
+                        options: [
+                            { text: "A. Giúp tệp văn bản nặng hơn và khó mở hơn", correct: false },
+                            { text: "B. Làm cho nội dung văn bản thêm sinh động và hấp dẫn", correct: true },
+                            { text: "C. Thay thế hoàn toàn các khổ thơ chữ viết", correct: false }
+                        ]
+                    },
+                    {
+                        type: "truefalse",
+                        desc: "Để chèn hình ảnh vào văn bản, em chọn nút lệnh Picture trong dải lệnh Insert.",
+                        options: [
+                            { text: "ĐÚNG", correct: true },
+                            { text: "SAI", correct: false }
+                        ]
+                    },
+                    {
+                        type: "multiple",
+                        desc: "Sau khi thực hiện xong các thay đổi và chèn hình ảnh, để lưu tệp với tên mới là Bai2, em sử dụng lệnh nào trong bảng chọn File?",
+                        options: [
+                            { text: "A. Save As", correct: true },
+                            { text: "B. Open", correct: false },
+                            { text: "C. Close", correct: false }
+                        ]
+                    }
+                ]
+            },
+            3: {
+                title: "🔍 Trạm 3: Nhận Biết Biểu Tượng & Thao Tác (3 Câu)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Trong các bước mở tệp văn bản đã có trên máy tính (Hình 46), bước cuối cùng để mở tệp là gì?",
+                        options: [
+                            { text: "A. Nháy chuột vào nút lệnh Open", correct: true },
+                            { text: "B. Tắt phần mềm Word", correct: false },
+                            { text: "C. Nhấn phím Delete", correct: false }
+                        ]
+                    },
+                    {
+                        type: "truefalse",
+                        desc: "Nút lệnh Copy dùng để sao chép phần văn bản được chọn, còn nút lệnh Cut dùng để cắt phần văn bản được chọn.",
+                        options: [
+                            { text: "ĐÚNG", correct: true },
+                            { text: "SAI", correct: false }
+                        ]
+                    },
+                    {
+                        type: "matching",
+                        desc: "Nút lệnh Paste (Dán) có ý nghĩa gì trong phần mềm soạn thảo văn bản?",
+                        options: [
+                            { text: "A. Lệnh dán phần văn bản đã cắt hoặc sao chép", correct: true },
+                            { text: "B. Lệnh tô màu nền cho đoạn văn bản", correct: false },
+                            { text: "C. Lệnh phóng to cỡ chữ", correct: false }
+                        ]
+                    }
+                ]
+            },
+            4: {
+                title: "🌳 Trạm 4: Bài Tập Luyện Tập & Vận Dụng (3 Câu)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Trong phần luyện tập bài thơ 'Ai trồng cây' của nhà thơ Bế Kiến Quốc, các từ ngữ nào được lặp lại nhiều lần?",
+                        options: [
+                            { text: "A. Ai trồng cây / Người đó có / Em trồng cây", correct: true },
+                            { text: "B. Mặt trời / Biển xanh / Ngọn núi", correct: false },
+                            { text: "C. Trăng ơi / Quả chín / Mắt cá", correct: false }
+                        ]
+                    },
+                    {
+                        type: "truefalse",
+                        desc: "Sự khác nhau giữa sao chép và di chuyển là: Sao chép tạo thêm bản sao giống hệt ở vị trí mới và giữ nguyên vị trí cũ, còn di chuyển sẽ đưa phần văn bản từ vị trí cũ sang vị trí mới.",
+                        options: [
+                            { text: "ĐÚNG", correct: true },
+                            { text: "SAI", correct: false }
+                        ]
+                    },
+                    {
+                        type: "multiple",
+                        desc: "Theo phần Vận dụng Bài 11, em mở lại tệp đã lưu ở Bài 10, chèn thêm hình ảnh phù hợp và lưu lại tệp văn bản với tên mới nhằm mục đích gì?",
+                        options: [
+                            { text: "A. Củng cố kỹ năng mở tệp, chèn ảnh và lưu tệp thành thạo", correct: true },
+                            { text: "B. Xóa toàn bộ dữ liệu máy tính để giải phóng bộ nhớ", correct: false },
+                            { text: "C. Gửi tệp cho nhà sản xuất phần mềm", correct: false }
+                        ]
+                    }
+                ]
+            },
+            5: {
+                title: "🏆 Trạm Tổng Hợp: Thử Thách Vinh Quang Bài 11",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Trình tự đúng khi thực hiện chèn hình ảnh minh họa vào văn bản là gì?",
+                        options: [
+                            { text: "A. Đặt con trỏ soạn thảo -> Chọn lệnh Picture trong thẻ Insert -> Chọn tệp ảnh -> Nháy Insert", correct: true },
+                            { text: "B. Nháy chuột vào biểu tượng Save As -> Gõ tên tệp -> Tắt máy tính", correct: false },
+                            { text: "C. Chọn toàn bộ văn bản -> Nhấn phím Delete", correct: false }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        function startMission(missionId) {
+            initAudio();
+            gameState.currentMission = missionId;
+            gameState.currentQuestionIdx = 0;
+
+            document.getElementById('screen-map').classList.add('hidden');
+            document.getElementById('screen-challenge').classList.remove('hidden');
+
+            renderCurrentQuestion();
+        }
+
+        function renderCurrentQuestion() {
+            const missionId = gameState.currentMission;
+            const mission = missions[missionId];
+            const qIdx = gameState.currentQuestionIdx;
+            const q = mission.questions[qIdx];
+
+            document.getElementById('missionTitleBadge').innerText = mission.title;
+            document.getElementById('questionProgressBadge').innerText = `Câu ${qIdx + 1}/${mission.questions.length}`;
+
+            let html = `
+                <p class="font-bold text-blue-900 text-lg md:text-xl mb-4">${q.desc}</p>
+                <div class="space-y-3">
+            `;
+
+            q.options.forEach((opt, idx) => {
+                html += `
+                    <button onclick="checkAnswer(${idx})" class="w-full text-left bg-white hover:bg-blue-100 border-2 border-blue-300 p-4 rounded-xl font-semibold text-blue-900 shadow transition transform active:scale-98 flex items-center justify-between">
+                        <span>${opt.text}</span>
+                        <span class="text-xl">👉</span>
+                    </button>
+                `;
+            });
+
+            html += `</div>`;
+            document.getElementById('questionContainer').innerHTML = html;
+            document.getElementById('feedbackBox').classList.add('hidden');
+        }
+
+        function checkAnswer(optionIndex) {
+            initAudio();
+            const missionId = gameState.currentMission;
+            const mission = missions[missionId];
+            const qIdx = gameState.currentQuestionIdx;
+            const q = mission.questions[qIdx];
+            const isCorrect = q.options[optionIndex].correct;
+            const feedbackBox = document.getElementById('feedbackBox');
+
+            if (isCorrect) {
+                playSound('correct');
+                feedbackBox.className = "w-full p-4 rounded-xl text-center font-bold text-lg mb-4 bg-emerald-100 text-emerald-800 border-2 border-emerald-300";
+                feedbackBox.innerHTML = `✅ CHÍNH XÁC! Thử thách ${qIdx + 1} hoàn thành! (+10 Vàng) 🔥`;
+                feedbackBox.classList.remove('hidden');
+                gameState.score += 10;
+
+                setTimeout(() => {
+                    gameState.currentQuestionIdx++;
+                    if (gameState.currentQuestionIdx < mission.questions.length) {
+                        renderCurrentQuestion();
+                    } else {
+                        // Mission Completed!
+                        if (!gameState.completedMissions[missionId]) {
+                            gameState.completedMissions[missionId] = true;
+                            if (missionId !== 5) {
+                                gameState.pieces += 1;
+                            }
+                        }
+
+                        if (missionId === 5) {
+                            triggerVictory();
+                        } else {
+                            backToMap();
+                        }
+                    }
+                }, 1500);
+
+            } else {
+                playSound('wrong');
+                feedbackBox.className = "w-full p-4 rounded-xl text-center font-bold text-lg mb-4 bg-rose-100 text-rose-800 border-2 border-rose-300 shake";
+                feedbackBox.innerHTML = "❌ CHƯA ĐÚNG! Hãy xem lại nội dung Bài 11 SGK và thử lại nhé!";
+                feedbackBox.classList.remove('hidden');
+            }
+        }
+
+        function triggerVictory() {
+            playSound('win');
+            createFireworks();
+
+            document.getElementById('screen-challenge').classList.add('hidden');
+            document.getElementById('screen-victory').classList.remove('hidden');
+
+            document.getElementById('resName').innerText = gameState.playerName;
+            document.getElementById('resClass').innerText = gameState.playerClass;
+            document.getElementById('resGold').innerText = gameState.score;
+            document.getElementById('victoryMessage').innerText = `Chúc mừng học sinh ${gameState.playerName} lớp ${gameState.playerClass} đã hoàn thành xuất sắc toàn bộ Bài 11: Chỉnh sửa văn bản!`;
+        }
+
+        function createFireworks() {
+            const container = document.body;
+            for (let i = 0; i < 30; i++) {
+                const fw = document.createElement('div');
+                fw.className = 'firework';
+                fw.style.left = '50%';
+                fw.style.top = '50%';
+                fw.style.backgroundColor = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 5)];
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 100 + Math.random() * 200;
+                fw.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+                fw.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+
+                container.appendChild(fw);
+                setTimeout(() => fw.remove(), 1000);
+            }
+        }
+
+        function resetGame() {
+            initAudio();
+            gameState = {
+                playerName: "",
+                playerClass: "",
+                score: 0,
+                pieces: 0,
+                completedMissions: [false, false, false, false, false],
+                currentMission: 1,
+                currentQuestionIdx: 0
+            };
+            document.getElementById('playerName').value = "";
+            document.getElementById('playerClass').value = "";
+
+            document.getElementById('screen-victory').classList.add('hidden');
+            document.getElementById('screen-login').classList.remove('hidden');
+            playSound('click');
+        }
+
+        window.onload = function() {
+            // Initial load hook
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ném Vòng Kiến Thức - Sắp Xếp Để Dễ Tìm</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+        :root {
+            --primary: #FF7EB3;
+            --secondary: #FF758C;
+            --accent: #FFD93D;
+            --bg-color: #E0F7FA;
+            --text-dark: #2C3E50;
+            --white: #FFFFFF;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1024px;
+            height: 100%;
+            max-height: 768px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="%2381C784"/><rect width="100%" height="100%" fill="url(%23grid)"/><ellipse cx="50%" cy="40%" rx="45%" ry="35%" fill="rgba(255,255,255,0.2)" filter="blur(20px)"/></svg>') center/cover;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+
+        /* UI Elements */
+        h1, h2 {
+            color: var(--secondary);
+            text-shadow: 2px 2px 0px var(--white);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h1 { font-size: 3rem; line-height: 1.2; }
+        h2 { font-size: 2rem; color: #4CAF50;}
+
+        input {
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            border: 3px solid #b3e5fc;
+            border-radius: 50px;
+            margin: 10px;
+            outline: none;
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+            box-shadow: inset 0 3px 6px rgba(0,0,0,0.1);
+            transition: border-color 0.3s;
+        }
+        input:focus { border-color: var(--primary); }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #D81B60, 0 15px 20px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            margin: 15px;
+            text-transform: uppercase;
+        }
+
+        button:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 #D81B60, 0 5px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Top Bar */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .stat-box {
+            background: var(--white);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border: 3px solid var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        #mission-banner {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            padding: 15px 30px;
+            border-radius: 20px;
+            border: 4px solid #4CAF50;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2E7D32;
+            text-align: center;
+            z-index: 5;
+            pointer-events: none;
+            white-space: pre-wrap;
+        }
+
+        /* Controls */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 6;
+        }
+        .icon-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 0 #ccc;
+            cursor: pointer;
+            padding: 0;
+            pointer-events: auto;
+        }
+        .icon-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #ccc;}
+
+        /* Canvas */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        /* Quiz Panel */
+        .quiz-panel {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            border: 5px solid var(--accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .answer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .ans-btn {
+            background: #f0f8ff;
+            color: #333;
+            border: 3px solid #81D4FA;
+            font-size: 1.1rem;
+            padding: 15px;
+            text-transform: none;
+            box-shadow: 0 4px 0 #4FC3F7;
+        }
+        .ans-btn:hover { background: #E1F5FE; }
+        .ans-btn.correct { background: #C8E6C9; border-color: #4CAF50; box-shadow: 0 4px 0 #388E3C; }
+        .ans-btn.wrong { background: #FFCDD2; border-color: #F44336; box-shadow: 0 4px 0 #D32F2F; }
+
+        /* End Screen Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            text-align: left;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .stats-grid div { font-size: 1.2rem; font-weight: 600; }
+
+        /* Animation class */
+        @keyframes pop { 0% {transform: scale(1);} 50% {transform: scale(1.2);} 100% {transform: scale(1);} }
+        .animate-pop { animation: pop 0.3s ease; }
+        
+        #instruction {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            pointer-events: none;
+            animation: float 2s infinite ease-in-out;
+            font-size: 1.2rem;
+            z-index: 4;
+        }
+        @keyframes float { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -10px); } }
+
+        /* Particle container */
+        #particles { position: absolute; pointer-events: none; top:0; left:0; width:100%; height:100%; z-index: 20; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    
+    <div id="particles"></div>
+
+    <div id="hud">
+        <div class="stat-box" id="info-player">👤 <span id="ui-name">---</span></div>
+        <div class="stat-box animate-pop">⭕ Vòng: <span id="ui-rings">0</span></div>
+        <div class="stat-box">⭐ Điểm: <span id="ui-score">0</span></div>
+        <div class="stat-box">🔥 Combo: <span id="ui-combo">0</span></div>
+    </div>
+
+    <div id="mission-banner" class="hidden"></div>
+    <div id="instruction" class="hidden">Kéo VÒNG xuống dưới để ngắm đường bay và thả!</div>
+
+    <div id="controls">
+        <button class="icon-btn" id="btn-sound" onclick="toggleSound()">🔊</button>
+        <button class="icon-btn" id="btn-music" onclick="toggleMusic()">🎵</button>
+    </div>
+
+    <!-- Màn hình Đăng nhập -->
+    <div id="screen-login" class="screen">
+        <div style="background:white; padding:40px; border-radius:30px; text-align:center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 5px solid var(--primary);">
+            <h1>🎯 NÉM VÒNG<br>KIẾN THỨC</h1>
+            <p style="font-size:1.2rem; color:#666; margin-bottom:20px;">Chủ đề: Sắp xếp để dễ tìm (Tin học 3)</p>
+            <input type="text" id="input-name" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off"><br>
+            <input type="text" id="input-class" placeholder="Nhập Lớp" autocomplete="off"><br>
+            <button onclick="startGame()">BẮT ĐẦU CHƠI</button>
+            
+            <div style="text-align:left; background:#f0f8ff; padding:15px; border-radius:10px; margin-top:20px;">
+                <strong>📖 Hướng dẫn:</strong><br>
+                1. Trả lời đúng câu hỏi để kiếm ⭕ VÒNG.<br>
+                2. Đọc nhiệm vụ phía trên màn hình.<br>
+                3. Chạm vào Vòng, <b>kéo xuống dưới</b> để ngắm đường bay, rồi thả để ném trúng CỌC.<br>
+                4. Ném đúng thứ tự để tạo COMBO 🔥.
+            </div>
+        </div>
+    </div>
+
+    <!-- Màn hình Câu hỏi (Kiếm vòng) -->
+    <div id="screen-quiz" class="screen hidden" style="background: rgba(0,0,0,0.8);">
+        <div class="quiz-panel">
+            <h2>⭕ KIẾM VÒNG</h2>
+            <h3 id="quiz-question" style="font-size: 1.5rem; margin: 20px 0; color:var(--text-dark);"></h3>
+            <div class="answer-grid" id="quiz-options">
+                <!-- Nút đáp án sinh tự động -->
+            </div>
+            <p id="quiz-feedback" style="margin-top:20px; font-weight:bold; font-size:1.2rem; color:#FF5722; height:24px;"></p>
+        </div>
+    </div>
+
+    <!-- Màn hình Boss (Chuyển tiếp) -->
+    <div id="screen-boss-alert" class="screen hidden" style="background: rgba(255, 0, 0, 0.7);">
+        <h1 style="color:white; font-size:4rem; text-shadow: 0 0 20px yellow;">👑 BOSS NÉM VÒNG! 👑</h1>
+        <h2 style="color:white;">Kiến thức trọng tâm. Hoàn thành để chiến thắng!</h2>
+    </div>
+
+    <!-- Màn hình Kết thúc -->
+    <div id="screen-end" class="screen hidden">
+        <div style="background:white; padding:40px; border-radius:30px; text-align:center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 5px solid var(--accent); max-width: 600px; max-height:90vh; overflow-y:auto;">
+            <h1>🎉 XUẤT SẮC! 🎉</h1>
+            <h2 id="end-title">CHINH PHỤC KIẾN THỨC THÀNH CÔNG!</h2>
+            <div style="font-size:1.3rem; color:var(--primary); font-weight:bold;" id="end-player"></div>
+            
+            <div class="stats-grid">
+                <div>🎯 Tổng điểm:</div><div id="res-score">0</div>
+                <div>⭕ Số vòng kiếm được:</div><div id="res-rings">0</div>
+                <div>✅ Ném trúng:</div><div id="res-hits" style="color:green">0</div>
+                <div>❌ Ném sai/trượt:</div><div id="res-misses" style="color:red">0</div>
+                <div>🔥 Combo cao nhất:</div><div id="res-combo">0</div>
+                <div>⏱️ Thời gian:</div><div id="res-time">0s</div>
+            </div>
+
+            <div style="background:#e8f5e9; padding:15px; border-radius:10px; margin-bottom:20px; text-align:left; font-size:1rem; color:#2e7d32;">
+                <strong>📚 KIẾN THỨC ĐÃ ÔN:</strong><br>
+                - Sắp xếp phân loại giúp tìm kiếm nhanh hơn.<br>
+                - Nhóm thiết bị máy tính: Màn hình, Chuột, Bàn phím...<br>
+                - Phân loại môi trường sống động vật, phân loại rau củ quả.
+            </div>
+
+            <div style="display:flex; justify-content:center; gap:10px;">
+                <button onclick="resetGame()" style="font-size:1.2rem; padding: 10px 20px;">🔄 CHƠI LẠI</button>
+                <button onclick="goHome()" style="font-size:1.2rem; padding: 10px 20px; background:linear-gradient(to bottom, #4CAF50, #2E7D32); box-shadow: 0 6px 0 #1B5E20;">🏠 TRANG CHỦ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- DATABASE ---
+    const QUIZ_BANK = [
+        { q: "Theo bài học, sắp xếp đồ vật hợp lí sẽ giúp chúng ta làm gì?", options: ["Quản lí khó hơn", "Tìm kiếm đồ vật nhanh hơn", "Trông đẹp mắt hơn", "Dễ bị mất đồ"], ans: 1 },
+        { q: "Sắp xếp là việc phân loại đồ vật, dữ liệu vào các nhóm sao cho...", options: ["Có màu sắc giống nhau", "Có một số đặc điểm chung", "Có kích thước bằng nhau", "Nằm chung một chỗ"], ans: 1 },
+        { q: "Trong tủ quần áo, cách sắp xếp nào giúp tìm đồ nhanh hơn?", options: ["Nhét tất cả vào một ngăn", "Vứt lộn xộn trên giường", "Xếp vào các ngăn riêng (quần, áo)", "Gấp chung thành một đống"], ans: 2 },
+        { q: "Nhóm 'Thiết bị máy tính' bao gồm các thiết bị nào dưới đây?", options: ["Màn hình, Bàn phím, Quạt điện", "Chuột, Thân máy, Tủ lạnh", "Màn hình, Chuột, Bàn phím, Thân máy", "Máy sấy tóc, Nồi cơm điện"], ans: 2 },
+        { q: "Cách phân loại nào sau đây là hợp lí đối với động vật?", options: ["Động vật trên cạn, Động vật dưới nước", "Con to, Con nhỏ", "Con màu đen, Con màu trắng", "Con bơi nhanh, Con bơi chậm"], ans: 0 },
+        { q: "Đâu là cách sắp xếp sách vở hợp lí trên giá sách?", options: ["Xếp tất cả thành một chồng", "Truyện thơ, SGK, Vở viết để riêng", "Nhét tất cả vào cặp", "Để lộn xộn trên bàn"], ans: 1 }
+    ];
+
+    const MISSIONS = [
+        {
+            type: "single",
+            text: "Nhiệm vụ: Ném vào tất cả các THIẾT BỊ MÁY TÍNH",
+            targets: ["Chuột", "Màn hình", "Bàn phím", "Thân máy"],
+            pegs: ["Chuột", "Quạt điện", "Tủ lạnh", "Màn hình", "Nồi cơm", "Bàn phím", "Máy sấy", "Thân máy"],
+            reqHits: 4 
+        },
+        {
+            type: "single",
+            text: "Nhiệm vụ: Ném vào các ĐỘNG VẬT SỐNG TRÊN CẠN",
+            targets: ["Sư tử", "Mèo", "Ngựa", "Chó", "Voi"],
+            pegs: ["Cá mập", "Mèo", "Ngựa", "Tôm", "Chó", "Cá heo", "Sư tử", "Voi"],
+            reqHits: 5 
+        },
+        {
+            type: "combo",
+            text: "🔥 COMBO THỰC VẬT 🔥\nNém đúng thứ tự: 1 loại RAU ➡️ 1 loại CỦ ➡️ 1 loại QUẢ",
+            targets: [ 
+                ["Bắp cải", "Mồng tơi"],     // Bước 1: Trúng Rau nào cũng được
+                ["Cà rốt", "Khoai tây", "Su hào"], // Bước 2: Trúng Củ nào cũng được
+                ["Dưa hấu", "Mít", "Nhãn", "Nho"]  // Bước 3: Trúng Quả nào cũng được
+            ], 
+            pegs: ["Dưa hấu", "Mít", "Cà rốt", "Su hào", "Khoai tây", "Nhãn", "Bắp cải", "Mồng tơi"],
+            reqHits: 3
+        },
+        {
+            type: "boss",
+            text: "👑 BOSS: PHÂN LOẠI CHI TIẾT 👑\nNém đúng thứ tự: VẬT NUÔI GIA ĐÌNH ➡️ ĐỘNG VẬT RỪNG ➡️ ĐỘNG VẬT DƯỚI NƯỚC",
+            targets: [ ["Mèo"], ["Sư tử"], ["Tôm"] ],
+            pegs: ["Sư tử", "Tôm", "Mèo"],
+            reqHits: 3
+        }
+    ];
+
+    // --- GAME STATE ---
+    let state = {
+        name: "", class: "",
+        score: 0, rings: 0, combo: 0, maxCombo: 0, hits: 0, misses: 0,
+        startTime: 0, endTime: 0,
+        currentMissionIndex: 0,
+        missionHits: 0, // số lần trúng trong nhiệm vụ hiện tại
+        comboProgress: 0, // tiến độ chuỗi combo
+        phase: "login", // login, quiz, toss, boss, end
+        ringObj: null,
+        pegs: []
+    };
+
+    // --- AUDIO SYSTEM ---
+    let audioCtx = null;
+    let isSoundOn = true;
+    let isMusicOn = true;
+    let musicOsc = null;
+    let musicGain = null;
+    let musicInterval = null;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function toggleSound() {
+        isSoundOn = !isSoundOn;
+        document.getElementById('btn-sound').innerText = isSoundOn ? "🔊" : "🔇";
+    }
+
+    function toggleMusic() {
+        isMusicOn = !isMusicOn;
+        document.getElementById('btn-music').innerText = isMusicOn ? "🎵" : "🔇";
+        if (isMusicOn) playBGM();
+        else stopBGM();
+    }
+
+    function playTone(freq, type, duration, vol=0.5) {
+        if (!isSoundOn || !audioCtx) return;
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function soundClick() { playTone(600, 'sine', 0.1, 0.3); }
+    function soundCorrect() { playTone(800, 'square', 0.2, 0.2); setTimeout(()=>playTone(1200, 'square', 0.3, 0.2), 150); }
+    function soundWrong() { playTone(200, 'sawtooth', 0.3, 0.3); }
+    function soundThrow() { 
+        if(!isSoundOn || !audioCtx) return;
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    }
+    function soundHit() { playTone(1000, 'sine', 0.1, 0.5); setTimeout(()=>playTone(1500, 'triangle', 0.4, 0.4), 100); }
+    function soundWin() {
+        [440, 554, 659, 880, 1108].forEach((f, i) => {
+            setTimeout(() => playTone(f, 'square', 0.5, 0.2), i * 150);
+        });
+    }
+
+    // Nhạc nền đơn giản phát sinh bằng mã
+    const melody = [261, 293, 329, 392, 329, 293, 261, 392]; // C D E G E D C G
+    let melodyIndex = 0;
+    function playBGM() {
+        if (!audioCtx || !isMusicOn) return;
+        stopBGM();
+        musicGain = audioCtx.createGain();
+        musicGain.gain.value = 0.05; // Volumetric thấp
+        musicGain.connect(audioCtx.destination);
+        
+        musicInterval = setInterval(() => {
+            if(!isMusicOn) return;
+            let osc = audioCtx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(melody[melodyIndex], audioCtx.currentTime);
+            osc.connect(musicGain);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+            melodyIndex = (melodyIndex + 1) % melody.length;
+        }, 500);
+    }
+    function stopBGM() {
+        if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
+    }
+
+    // --- LOGIC FLOW ---
+    function hideAllScreens() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+    }
+
+    function updateHUD() {
+        document.getElementById('ui-name').innerText = state.name;
+        
+        let ringEl = document.getElementById('ui-rings');
+        if(ringEl.innerText != state.rings) { ringEl.innerText = state.rings; ringEl.parentElement.classList.remove('animate-pop'); void ringEl.parentElement.offsetWidth; ringEl.parentElement.classList.add('animate-pop'); }
+        
+        document.getElementById('ui-score').innerText = state.score;
+        document.getElementById('ui-combo').innerText = state.combo;
+    }
+
+    function startGame() {
+        let n = document.getElementById('input-name').value.trim();
+        let c = document.getElementById('input-class').value.trim();
+        if (!n || !c) {
+            alert("Vui lòng nhập đủ Họ Tên và Lớp!");
+            return;
+        }
+        initAudio();
+        soundClick();
+        playBGM();
+        
+        state.name = n + " - " + c;
+        state.startTime = Date.now();
+        state.phase = "quiz";
+        updateHUD();
+        showQuiz();
+    }
+
+    // --- QUIZ SYSTEM ---
+    function showQuiz() {
+        hideAllScreens();
+        document.getElementById('screen-quiz').classList.remove('hidden');
+        document.getElementById('instruction').classList.add('hidden');
+        document.getElementById('mission-banner').classList.add('hidden');
+        state.phase = "quiz";
+        
+        // Pick random question
+        let q = QUIZ_BANK[Math.floor(Math.random() * QUIZ_BANK.length)];
+        document.getElementById('quiz-question').innerText = q.q;
+        let optGrid = document.getElementById('quiz-options');
+        optGrid.innerHTML = "";
+        
+        q.options.forEach((opt, idx) => {
+            let btn = document.createElement('button');
+            btn.className = "ans-btn";
+            btn.innerText = opt;
+            btn.onclick = () => checkQuiz(idx, q.ans, btn);
+            optGrid.appendChild(btn);
+        });
+        document.getElementById('quiz-feedback').innerText = "";
+    }
+
+    function checkQuiz(selectedIdx, correctIdx, btn) {
+        soundClick();
+        let btns = document.querySelectorAll('.ans-btn');
+        btns.forEach(b => b.style.pointerEvents = 'none'); // disable all
+        
+        if (selectedIdx === correctIdx) {
+            btn.classList.add('correct');
+            soundCorrect();
+            document.getElementById('quiz-feedback').innerText = "CHÍNH XÁC! +5 VÒNG";
+            document.getElementById('quiz-feedback').style.color = "#4CAF50";
+            state.rings += 5; // Tăng số vòng nhận được để thoải mái ném
+            updateHUD();
+            createParticles(window.innerWidth/2, window.innerHeight/2, '#4CAF50', 20);
+            setTimeout(() => {
+                startTossPhase();
+            }, 1500);
+        } else {
+            btn.classList.add('wrong');
+            btns[correctIdx].classList.add('correct');
+            soundWrong();
+            document.getElementById('quiz-feedback').innerText = "CHƯA ĐÚNG! CHÚ Ý KIẾN THỨC NHÉ!";
+            document.getElementById('quiz-feedback').style.color = "#F44336";
+            setTimeout(() => {
+                showQuiz(); // Try again
+            }, 2000);
+        }
+    }
+
+    // --- CANVAS ENGINE (2.5D RING TOSS) ---
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    let rafId = null;
+    
+    function resizeCanvas() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function startTossPhase() {
+        hideAllScreens();
+        state.phase = "toss";
+        document.getElementById('instruction').classList.remove('hidden');
+        document.getElementById('mission-banner').classList.remove('hidden');
+        
+        let m = MISSIONS[state.currentMissionIndex];
+        
+        if(m.type === "boss") {
+            document.getElementById('screen-boss-alert').classList.remove('hidden');
+            soundWin();
+            setTimeout(()=> {
+                document.getElementById('screen-boss-alert').classList.add('hidden');
+                setupField(m);
+            }, 2500);
+        } else {
+            setupField(m);
+        }
+    }
+
+    function setupField(mission) {
+        document.getElementById('mission-banner').innerText = mission.text;
+        state.comboProgress = 0; // Reset combo requirements for new mission
+        
+        // Tạo cọc (Pegs) - Bố trí theo phối cảnh
+        state.pegs = [];
+        let numPegs = mission.pegs.length;
+        let rows = numPegs > 4 ? 2 : 1;
+        let cols = Math.ceil(numPegs / rows);
+        
+        // Đảo ngẫu nhiên vị trí
+        let shuffledPegs = [...mission.pegs].sort(()=>Math.random()-0.5);
+        
+        let cW = canvas.width;
+        let cH = canvas.height;
+        let startY = cH * 0.35; // Đường chân trời giả
+        
+        let index = 0;
+        for(let r=0; r<rows; r++) {
+            for(let c=0; c<cols; c++) {
+                if(index >= shuffledPegs.length) break;
+                
+                // Trải đều theo chiều ngang
+                let px = cW * 0.15 + (c * (cW*0.7 / (cols-1 || 1)));
+                // Các hàng lệch nhau chút xíu và xa gần
+                let py = startY + r * (cH * 0.15) + (c%2)*20;
+                
+                // Nếu là boss, chỉ có 3 cọc to
+                if(mission.type === "boss") {
+                    px = cW * 0.2 + (index * (cW*0.3));
+                    py = cH * 0.4 + (index%2)*30;
+                }
+
+                // Không còn thuộc tính isTarget để giấu màu gợi ý đi, bắt học sinh phải đọc chữ
+                state.pegs.push({
+                    x: px,
+                    y: py, 
+                    text: shuffledPegs[index],
+                    active: true, 
+                    color: mission.type === "boss" ? "#FFD700" : "#fff",
+                    scale: py / cH 
+                });
+                index++;
+            }
+        }
+        
+        spawnRing();
+        if(!rafId) gameLoop();
+    }
+
+    function spawnRing() {
+        if(state.rings <= 0) {
+            showFloatingText(canvas.width/2, canvas.height/2, "HẾT VÒNG!\nHÃY TRẢ LỜI CÂU HỎI ĐỂ KIẾM THÊM", "#F44336", 2000, 30);
+            setTimeout(showQuiz, 2500);
+            return;
+        }
+        
+        state.ringObj = {
+            x: canvas.width / 2,
+            y: canvas.height * 0.85, // vị trí ném (gần người chơi)
+            z: 0, // Độ cao (nhảy lên)
+            vx: 0, vy: 0, vz: 0,
+            aimVx: 0, aimVy: 0, aimVz: 0, // Lưu trữ lực ngắm chuẩn Auto-Aim
+            radius: canvas.width > 600 ? 50 : 35,
+            state: 'idle', // idle, drag, fly, landed
+            dragStartX: 0, dragStartY: 0,
+            currMouseX: 0, currMouseY: 0,
+            hasCollided: false
+        };
+    }
+
+    // Input Handling
+    let isDragging = false;
+
+    function getPointerPos(e) {
+        let rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function handleStart(e) {
+        if(state.phase !== "toss" || !state.ringObj || state.ringObj.state !== 'idle') return;
+        let p = getPointerPos(e);
+        
+        // Kiểm tra xem có chạm vào vòng không
+        let dist = Math.hypot(p.x - state.ringObj.x, p.y - state.ringObj.y);
+        if (dist <= state.ringObj.radius * 3.5) { // TĂNG VÙNG CHẠM TỪ *2 LÊN *3.5 ĐỂ CỰC DỄ CẦM VÒNG
+            isDragging = true;
+            state.ringObj.state = 'drag';
+            state.ringObj.dragStartX = p.x;
+            state.ringObj.dragStartY = p.y;
+            state.ringObj.currMouseX = p.x;
+            state.ringObj.currMouseY = p.y;
+            document.getElementById('instruction').classList.add('hidden');
+        }
+    }
+
+    function handleMove(e) {
+        if (!isDragging) return;
+        let p = getPointerPos(e);
+        state.ringObj.currMouseX = p.x;
+        state.ringObj.currMouseY = p.y;
+        e.preventDefault(); // Chống cuộn trang
+    }
+
+    function handleEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        let dy = state.ringObj.dragStartY - state.ringObj.currMouseY;
+        
+        // Phải kéo đủ lực mới ném (kéo xuống dưới)
+        if (dy < -5) { // CHỈ CẦN KÉO RẤT NHẸ LÀ NÉM ĐƯỢC
+            // Ném đi
+            state.ringObj.state = 'fly';
+            state.rings--;
+            updateHUD();
+            soundThrow();
+            
+            // Sử dụng lực ném chuẩn xác 100% từ hệ thống ngắm khóa mục tiêu
+            state.ringObj.vx = state.ringObj.aimVx || 0; 
+            state.ringObj.vy = state.ringObj.aimVy || 0; 
+            state.ringObj.vz = state.ringObj.aimVz || 0; 
+            
+            // Xóa hiệu ứng phát sáng của cọc
+            state.pegs.forEach(p => p.isAimed = false);
+        } else {
+            // Hủy ném
+            state.ringObj.state = 'idle';
+        }
+    }
+
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('mousemove', handleMove);
+    canvas.addEventListener('mouseup', handleEnd);
+    canvas.addEventListener('touchstart', handleStart, {passive: false});
+    canvas.addEventListener('touchmove', handleMove, {passive: false});
+    canvas.addEventListener('touchend', handleEnd);
+
+    const GRAVITY = 0.8;
+    const GROUND_FRICTION = 0.8;
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        drawEnvironment();
+        updateAndDrawPegs();
+        
+        if (state.ringObj) {
+            updateRing();
+            drawRing();
+        }
+        
+        drawParticles();
+        
+        rafId = requestAnimationFrame(gameLoop);
+    }
+
+    function drawEnvironment() {
+        // Phân tách sàn
+        ctx.fillStyle = "rgba(255,255,255,0.1)";
+        ctx.beginPath();
+        ctx.ellipse(canvas.width/2, canvas.height*0.5, canvas.width*0.8, canvas.height*0.3, 0, 0, Math.PI*2);
+        ctx.fill();
+    }
+
+    function updateAndDrawPegs() {
+        // Vẽ từ trên xuống dưới (để đè đúng chiều sâu)
+        let sortedPegs = [...state.pegs].sort((a,b) => a.y - b.y);
+        
+        sortedPegs.forEach(peg => {
+            let pScale = peg.scale * 1.5;
+            let baseW = (state.currentMissionIndex === 3 ? 60 : 40) * pScale;
+            let baseH = (state.currentMissionIndex === 3 ? 120 : 80) * pScale;
+            
+            // Vẽ bóng
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.beginPath();
+            ctx.ellipse(peg.x, peg.y, baseW*0.8, baseW*0.3, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Vẽ cọc
+            ctx.fillStyle = peg.color;
+            ctx.strokeStyle = "#999";
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(peg.x - baseW/4, peg.y);
+            ctx.lineTo(peg.x - baseW/6, peg.y - baseH);
+            ctx.lineTo(peg.x + baseW/6, peg.y - baseH);
+            ctx.lineTo(peg.x + baseW/4, peg.y);
+            ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            
+            // Chóp cọc: Không hiện màu báo trước đáp án, chỉ đổi màu khi đã trúng
+            ctx.fillStyle = "#CCC";
+            if(!peg.active) ctx.fillStyle = "#4CAF50"; // Trúng thì xanh
+            
+            // Hiệu ứng phát sáng mạnh khi tâm ngắm đã khóa vào cọc này
+            if(peg.isAimed) {
+                ctx.fillStyle = "#00FF00"; 
+                ctx.shadowColor = "#00FF00";
+                ctx.shadowBlur = 20;
+            } else {
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.beginPath();
+            ctx.ellipse(peg.x, peg.y - baseH, baseW/6, baseW/12, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0; // Tắt bóng để không làm nhòe chữ bên dưới
+
+            // Bảng tên
+            ctx.fillStyle = "white";
+            ctx.strokeStyle = "#333";
+            let txtW = ctx.measureText(peg.text).width + 30;
+            ctx.fillRect(peg.x - txtW/2, peg.y - baseH - 25, txtW, 20);
+            ctx.strokeRect(peg.x - txtW/2, peg.y - baseH - 25, txtW, 20);
+            
+            ctx.fillStyle = "#000";
+            ctx.font = "bold 14px Fredoka";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(peg.text, peg.x, peg.y - baseH - 15);
+        });
+    }
+
+    function updateRing() {
+        let r = state.ringObj;
+        if (r.state === 'fly') {
+            r.x += r.vx;
+            r.y += r.vy;
+            r.z += r.vz;
+            r.vz -= GRAVITY;
+            
+            // Thu nhỏ vòng khi bay xa
+            r.scale = Math.max(0.4, r.y / canvas.height);
+
+            // Kiểm tra va chạm khi rơi xuống gần mặt đất (z gần 0) và đang rơi (vz < 0)
+            if (r.z < 25 && r.vz < 0) {
+                checkCollision();
+            }
+
+            // Chạm đất
+            if (r.z <= 0 && !r.hasCollided) {
+                r.z = 0;
+                r.vz = -r.vz * 0.4; // Nảy
+                r.vx *= GROUND_FRICTION;
+                r.vy *= GROUND_FRICTION;
+                
+                if (Math.abs(r.vz) < 2 && Math.abs(r.vx) < 0.5) {
+                    r.state = 'landed';
+                    state.misses++;
+                    handleMiss();
+                }
+            }
+            
+            // Bay ra ngoài màn hình
+            if(r.x < -100 || r.x > canvas.width+100 || r.y < -100) {
+                if(!r.hasCollided && r.state !== 'landed') {
+                    r.state = 'landed';
+                    state.misses++;
+                    handleMiss();
+                }
+            }
+        }
+    }
+
+    function checkCollision() {
+        let r = state.ringObj;
+        if (r.hasCollided) return;
+
+        let m = MISSIONS[state.currentMissionIndex];
+        let closestPeg = null;
+        let minDist = 85; // Bán kính dung sai
+        
+        for (let peg of state.pegs) {
+            if (!peg.active) continue; // Đã có vòng thì thôi
+            
+            let dist = Math.hypot(r.x - peg.x, r.y - peg.y);
+            
+            // Lấy cọc GẦN NHẤT thay vì cọc đầu tiên chạm phải để xử lý triệt để lỗi chồng lấn
+            if (dist < minDist) { 
+                minDist = dist;
+                closestPeg = peg;
+            }
+        }
+
+        if (closestPeg) {
+            // Trúng cọc!
+            r.hasCollided = true;
+            r.state = 'landed';
+            r.x = closestPeg.x;
+            r.y = closestPeg.y;
+            r.z = 0;
+            
+            let isCorrect = false;
+
+            // Đánh giá dựa trên loại nhiệm vụ
+            if (m.type === "single") {
+                if (m.targets.includes(closestPeg.text)) isCorrect = true;
+            } else if (m.type === "combo" || m.type === "boss") {
+                // Phải trúng theo thứ tự, hỗ trợ mảng đáp án (nhiều đáp án đúng cho 1 bước)
+                let expected = m.targets[state.comboProgress];
+                if (Array.isArray(expected)) {
+                    if (expected.includes(closestPeg.text)) isCorrect = true;
+                } else {
+                    if (closestPeg.text === expected) isCorrect = true;
+                }
+            }
+
+            if (isCorrect) {
+                handleHit(closestPeg, m);
+            } else {
+                handleMiss(true); // Trúng cọc sai
+            }
+            return;
+        }
+    }
+
+    function handleHit(peg, mission) {
+        soundHit();
+        peg.active = false; // Khóa cọc này
+        state.hits++;
+        state.combo++;
+        if(state.combo > state.maxCombo) state.maxCombo = state.combo;
+        
+        let pts = 20 * state.combo;
+        state.score += pts;
+        updateHUD();
+        
+        createParticles(peg.x, peg.y - 50, '#FFEB3B', 30);
+        showFloatingText(peg.x, peg.y - 80, `CHÍNH XÁC!\n+${pts}`, '#4CAF50');
+        
+        if (mission.type === "single") {
+            state.missionHits++;
+        } else { // combo & boss
+            state.comboProgress++;
+            state.missionHits = state.comboProgress;
+        }
+
+        setTimeout(() => {
+            if (state.missionHits >= mission.reqHits) {
+                // Qua màn
+                soundWin();
+                state.currentMissionIndex++;
+                if (state.currentMissionIndex >= MISSIONS.length) {
+                    endGame();
+                } else {
+                    showFloatingText(canvas.width/2, canvas.height/2, "TUYỆT VỜI! QUA MÀN", "#FF9800", 2000, 40);
+                    setTimeout(startTossPhase, 2000);
+                }
+            } else {
+                spawnRing(); // Ném tiếp cọc còn lại
+            }
+        }, 1000);
+    }
+
+    function handleMiss(wrongPeg = false) {
+        soundWrong();
+        state.combo = 0;
+        updateHUD();
+        
+        if (wrongPeg) {
+            showFloatingText(state.ringObj.x, state.ringObj.y - 50, "CHƯA ĐÚNG\nMỤC TIÊU!", "#F44336");
+        } else {
+            showFloatingText(state.ringObj.x, state.ringObj.y - 30, "TRƯỢT RỒI!", "#9E9E9E");
+        }
+        
+        let m = MISSIONS[state.currentMissionIndex];
+        if (m.type === "boss" || m.type === "combo") {
+            // Chuỗi bị ngắt, phải làm lại từ đầu nhiệm vụ này
+            setTimeout(() => {
+                showFloatingText(canvas.width/2, canvas.height/2, "CHUỖI BỊ NGẮT!\nLàm lại từ đầu", "#F44336", 2000, 30);
+                setTimeout(() => {
+                    startTossPhase(); // Tạo lại bàn
+                }, 2000);
+            }, 1000);
+        } else {
+            setTimeout(spawnRing, 1000);
+        }
+    }
+
+    function drawRing() {
+        let r = state.ringObj;
+        let scale = r.scale || 1;
+        let drawY = r.y - r.z; // Mô phỏng chiều cao 3D bằng cách trừ z vào y vẽ
+        
+        ctx.save();
+        
+        // Nếu đang drag, vẽ đường quỹ đạo nháp
+        if (r.state === 'drag') {
+            let dx = r.dragStartX - r.currMouseX;
+            let dy = r.dragStartY - r.currMouseY;
+            if(dy < -5) {
+                let vx = dx * 0.08;
+                let vy = dy * 0.1;
+                let vz = 14 + Math.abs(dy) * 0.04;
+                
+                // Tính toán điểm rơi
+                let t = (2 * vz) / GRAVITY;
+                let landX = r.x + vx * t;
+                let landY = r.y + vy * t;
+
+                // --- HỆ THỐNG AUTO-AIM: HÚT ĐIỂM RƠI VÀO CỌC ---
+                let closestPeg = null;
+                let minDist = 100; // Vùng hút mục tiêu khi ngắm
+                
+                for (let peg of state.pegs) {
+                    peg.isAimed = false; // Xóa trạng thái ngắm cũ
+                    if (!peg.active) continue;
+                    let dist = Math.hypot(landX - peg.x, landY - peg.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestPeg = peg;
+                    }
+                }
+
+                if (closestPeg) {
+                    // Kéo bóng điểm rơi vào tâm cọc
+                    landX = closestPeg.x;
+                    landY = closestPeg.y;
+                    
+                    // Cân chỉnh lại lực bay để vòng rơi chính xác 100% vào cọc
+                    vx = (landX - r.x) / t;
+                    vy = (landY - r.y) / t;
+                    closestPeg.isAimed = true; // Bật đèn sáng chóp cọc
+                }
+                
+                // Lưu lại lực ném chuẩn
+                r.aimVx = vx;
+                r.aimVy = vy;
+                r.aimVz = vz;
+
+                // Vẽ đường cong Parabol giả
+                ctx.beginPath();
+                ctx.moveTo(r.x, r.y);
+                ctx.quadraticCurveTo(r.x + (landX - r.x)/2, r.y + (landY - r.y)/2 - 200, landX, landY); // Đỉnh parabol cao hơn
+                ctx.strokeStyle = "rgba(255, 235, 59, 1)"; // ĐỔI SANG MÀU VÀNG RỰC DỄ NHÌN
+                ctx.lineWidth = 6; // LÀM DÀY NÉT ĐƯỜNG NGẮM
+                ctx.setLineDash([15, 10]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Vẽ bóng dự báo điểm rơi
+                ctx.beginPath();
+                ctx.ellipse(landX, landY, r.radius, r.radius*0.4, 0, 0, Math.PI*2);
+                ctx.fillStyle = "rgba(255, 235, 59, 0.6)"; // Bóng đích màu vàng sáng
+                ctx.fill();
+            }
+        }
+
+        // Vẽ bóng vòng
+        if(r.state === 'fly' || r.state === 'drag' || r.state === 'idle') {
+            ctx.fillStyle = "rgba(0,0,0,0.3)";
+            ctx.beginPath();
+            ctx.ellipse(r.x, r.y, r.radius * scale, r.radius * 0.4 * scale, 0, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        // Vẽ Vòng
+        ctx.translate(r.x, drawY);
+        // Nghiêng vòng khi bay
+        if(r.state === 'fly') ctx.rotate(r.vx * 0.05);
+
+        let thick = 12 * scale;
+        
+        // Nửa viền sau
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r.radius*scale, r.radius*0.4*scale, 0, Math.PI, Math.PI*2);
+        ctx.strokeStyle = "#D81B60"; // Màu vòng
+        ctx.lineWidth = thick;
+        ctx.stroke();
+        
+        // Lỗ giữa trong suốt
+        
+        // Nửa viền trước
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r.radius*scale, r.radius*0.4*scale, 0, 0, Math.PI);
+        ctx.strokeStyle = varColor = r.state === 'landed' ? "#E91E63" : "var(--primary)";
+        ctx.lineWidth = thick;
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+
+    // --- EFFECTS ---
+    let particles = [];
+    function createParticles(x, y, color, count) {
+        for(let i=0; i<count; i++) {
+            particles.push({
+                x: x, y: y,
+                vx: (Math.random()-0.5)*10,
+                vy: (Math.random()-0.5)*10 - 5,
+                life: 1, color: color,
+                size: Math.random()*8 + 4
+            });
+        }
+    }
+    function drawParticles() {
+        for(let i=particles.length-1; i>=0; i--) {
+            let p = particles[i];
+            p.x += p.vx; p.y += p.vy; p.vy += 0.2; // gravity
+            p.life -= 0.02;
+            if(p.life <= 0) { particles.splice(i, 1); continue; }
+            
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.life;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    function showFloatingText(x, y, text, color, duration = 1500, size = 20) {
+        let el = document.createElement('div');
+        el.innerText = text;
+        el.style.position = 'absolute';
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.style.transform = 'translate(-50%, -50%)';
+        el.style.color = color;
+        el.style.fontWeight = 'bold';
+        el.style.fontSize = size + 'px';
+        el.style.textShadow = '1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff';
+        el.style.pointerEvents = 'none';
+        el.style.zIndex = 100;
+        el.style.transition = `all ${duration}ms ease-out`;
+        el.style.whiteSpace = 'pre-wrap';
+        el.style.textAlign = 'center';
+        
+        document.getElementById('game-container').appendChild(el);
+        
+        requestAnimationFrame(() => {
+            el.style.top = (y - 80) + 'px';
+            el.style.opacity = '0';
+        });
+        
+        setTimeout(() => el.remove(), duration);
+    }
+
+    // --- END GAME & RESET ---
+    function endGame() {
+        hideAllScreens();
+        state.phase = "end";
+        state.endTime = Date.now();
+        
+        document.getElementById('screen-end').classList.remove('hidden');
+        document.getElementById('instruction').classList.add('hidden');
+        document.getElementById('mission-banner').classList.add('hidden');
+        
+        document.getElementById('end-player').innerText = `Người chơi: ${state.name}`;
+        document.getElementById('res-score').innerText = state.score;
+        document.getElementById('res-rings').innerText = state.rings + (state.hits + state.misses); // Tổng kiếm đc
+        document.getElementById('res-hits').innerText = state.hits;
+        document.getElementById('res-misses').innerText = state.misses;
+        document.getElementById('res-combo').innerText = state.maxCombo;
+        document.getElementById('res-time').innerText = Math.floor((state.endTime - state.startTime)/1000) + "s";
+        
+        // Pháo hoa HTML
+        for(let i=0; i<5; i++) {
+            setTimeout(()=> {
+                createParticles(canvas.width*Math.random(), canvas.height*Math.random()*0.5, ['#FF0000', '#00FF00', '#0000FF', '#FFFF00'][Math.floor(Math.random()*4)], 50);
+                soundHit();
+            }, i*400);
+        }
+    }
+
+    function resetGame() {
+        // Reset full state
+        let oldName = state.name;
+        state = {
+            name: oldName,
+            score: 0, rings: 0, combo: 0, maxCombo: 0, hits: 0, misses: 0,
+            startTime: Date.now(), endTime: 0,
+            currentMissionIndex: 0, missionHits: 0, comboProgress: 0,
+            phase: "quiz", ringObj: null, pegs: []
+        };
+        updateHUD();
+        soundClick();
+        showQuiz();
+    }
+
+    function goHome() {
+        if(rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        stopBGM();
+        hideAllScreens();
+        document.getElementById('screen-login').classList.remove('hidden');
+        document.getElementById('mission-banner').classList.add('hidden');
+        document.getElementById('instruction').classList.add('hidden');
+        document.getElementById('input-name').value = '';
+        document.getElementById('input-class').value = '';
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game: Săn Kho Báu Kiến Thức - Bài 11 Cấu Trúc Lặp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #22c55e;
+            --primary-dark: #15803d;
+            --secondary: #facc15;
+            --secondary-dark: #ca8a04;
+            --bg-color: #f0fdf4;
+            --wood: #365314;
+            --wood-light: #4d7c0f;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .screen {
+            display: none;
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background-image: linear-gradient(to bottom, #dcfce7, #f0fdf4);
+        }
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wood-board {
+            background-color: var(--wood);
+            border: 4px solid var(--wood-light);
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.3);
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        .btn-action {
+            background: linear-gradient(to bottom, #86efac, #22c55e);
+            border: 4px solid #15803d;
+            border-radius: 9999px;
+            color: #14532d;
+            font-weight: 900;
+            text-transform: uppercase;
+            box-shadow: 0 4px 0 #15803d, 0 8px 10px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            text-align: center;
+            cursor: pointer;
+        }
+        .btn-action:active:not(:disabled) {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #15803d, 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .btn-action:disabled {
+            filter: grayscale(100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-option {
+            background: white;
+            border: 3px solid #bbf7d0;
+            border-radius: 16px;
+            color: #14532d;
+            font-weight: 700;
+            box-shadow: 0 4px 0 #86efac;
+            transition: all 0.1s;
+            cursor: pointer;
+        }
+        .btn-option:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #86efac;
+        }
+        .btn-option.selected {
+            background: #dcfce7;
+            border-color: #22c55e;
+            box-shadow: 0 4px 0 #15803d;
+        }
+
+        .map-bg {
+            background: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><path d="M0 50 Q 25 25, 50 50 T 100 50 L 100 100 L 0 100 Z" fill="%23bbf7d0" opacity="0.4"/></svg>');
+            background-color: #f0fdf4;
+            position: relative;
+        }
+        
+        .map-node {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            background: white;
+            border: 4px solid #86efac;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            z-index: 10;
+        }
+        .map-node.locked {
+            filter: grayscale(100%) brightness(0.7);
+            opacity: 0.8;
+        }
+        .map-node.unlocked {
+            border-color: #22c55e;
+            animation: pulse-node 2s infinite;
+            cursor: pointer;
+        }
+        .map-node.completed {
+            border-color: #15803d;
+            background: #dcfce7;
+        }
+        
+        .map-path {
+            position: absolute;
+            border-top: 4px dashed #86efac;
+            z-index: 5;
+            transform-origin: 0 50%;
+        }
+
+        @keyframes pulse-node {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating { animation: float 3s ease-in-out infinite; }
+
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+        .animate-pop { animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        .score-popup {
+            position: absolute;
+            color: #15803d;
+            font-weight: 900;
+            font-size: 1.5rem;
+            text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+            pointer-events: none;
+            animation: floatUp 1s forwards;
+            z-index: 1000;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(2px);
+        }
+        .notebook-item {
+            background: rgba(255,255,255,0.95);
+            border-left: 4px solid #22c55e;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Khung chứa thông báo Toast -->
+    <div id="toast-container" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none w-[95%] max-w-sm"></div>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Nút bật/tắt âm thanh -->
+    <button id="btn-audio" class="fixed top-2 left-2 z-50 bg-white p-2 rounded-full shadow-lg text-xl border-2 border-green-300" onclick="toggleAudio()">🔊</button>
+
+    <!-- MÀN HÌNH BẮT ĐẦU -->
+    <div id="screen-start" class="screen active items-center justify-center p-4">
+        <div class="text-center animate-pop max-w-md w-full">
+            <div class="text-6xl floating mb-4">🏆</div>
+            <div class="wood-board p-6 mb-8">
+                <h2 class="text-xl text-yellow-300 font-bold mb-2">TIN HỌC LỚP 5 - BÀI 11</h2>
+                <h1 class="text-3xl md:text-4xl font-black mb-4 leading-tight text-white">SĂN KHO BÁU<br>CẤU TRÚC LẶP</h1>
+                <p class="text-sm md:text-base font-bold text-gray-100">
+                    "Khám phá các lệnh lặp trong Scratch:<br>Lặp với số lần biết trước, lặp liên tục<br>và lặp có điều kiện!"
+                </p>
+            </div>
+            <button onclick="goToScreen('screen-register')" class="btn-action w-full py-4 text-xl">▶️ BẮT ĐẦU PHIÊU LƯU</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH ĐĂNG KÝ -->
+    <div id="screen-register" class="screen items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-xl p-6 max-w-md w-full animate-pop border-4 border-green-200">
+            <h2 class="text-2xl font-black text-center text-green-800 mb-6">NHÀ THÁM HIỂM LÀ AI?</h2>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-bold mb-2">👤 Họ và Tên:</label>
+                <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" class="w-full p-4 border-2 border-gray-300 rounded-xl text-lg focus:border-green-500 focus:outline-none font-bold text-green-900">
+            </div>
+            
+            <div class="mb-8">
+                <label class="block text-gray-700 font-bold mb-2">🏫 Lớp:</label>
+                <input type="text" id="player-class" placeholder="Nhập tên lớp..." class="w-full p-4 border-2 border-gray-300 rounded-xl text-lg focus:border-green-500 focus:outline-none font-bold text-green-900">
+            </div>
+
+            <button onclick="startGame()" class="btn-action w-full py-4 text-lg">🧭 BƯỚC VÀO CUỘC PHIÊU LƯU</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH BẢN ĐỒ -->
+    <div id="screen-map" class="screen map-bg relative">
+        <div class="absolute top-0 left-0 w-full p-2 flex justify-between items-center z-50 pointer-events-none">
+            <div class="mt-10 ml-2 pointer-events-auto flex flex-col gap-2">
+                <div class="bg-white px-3 py-1 rounded-full shadow font-bold text-green-800 flex items-center border-2 border-green-200">
+                    👤 <span id="hud-name" class="ml-1 max-w-[100px] truncate">...</span>
+                </div>
+                <button onclick="openNotebook()" class="btn-action px-3 py-1 text-sm flex items-center shadow-lg">
+                    📖 SỔ TAY
+                </button>
+            </div>
+            
+            <div class="flex flex-col gap-2 pointer-events-auto items-end mr-2 mt-2">
+                <div class="bg-white px-3 py-1 rounded-full shadow font-bold text-yellow-600 border-2 border-yellow-200 flex justify-between w-32">
+                    <span>⭐</span> <span id="hud-score">0</span>
+                </div>
+                <div id="hud-combo-box" class="bg-orange-500 text-white px-3 py-1 rounded-full shadow font-black hidden border-2 border-orange-700">
+                    🔥 x<span id="hud-combo">1</span>
+                </div>
+                <div class="flex gap-1">
+                    <div class="bg-white w-8 h-8 rounded-full flex items-center justify-center text-sm shadow font-bold border-2 border-green-200">
+                        🧩<span id="hud-pieces" class="text-xs">0</span>
+                    </div>
+                    <div class="bg-white w-8 h-8 rounded-full flex items-center justify-center text-sm shadow font-bold border-2 border-blue-200">
+                        🔎<span id="hud-clues" class="text-xs">0</span>
+                    </div>
+                    <div class="bg-white w-8 h-8 rounded-full flex items-center justify-center text-sm shadow font-bold border-2 border-yellow-200">
+                        🗝️<span id="hud-keys" class="text-xs">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full h-full relative overflow-auto" id="map-container">
+            <div class="w-[800px] h-[800px] relative mx-auto my-auto origin-center transform scale-75 md:scale-100 mt-20" id="map-content">
+                <!-- Nodes/Paths injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH NHIỆM VỤ -->
+    <div id="screen-task" class="screen flex-col">
+        <div class="bg-green-700 text-white p-3 flex justify-between items-center shadow-md shrink-0">
+            <div class="font-bold flex items-center gap-2">
+                <span id="task-stage-icon" class="text-2xl">🌴</span>
+                <span id="task-stage-name" class="uppercase text-sm">Chặng 1</span>
+            </div>
+            <div class="font-black text-yellow-300">⭐ <span id="task-score">0</span></div>
+        </div>
+        
+        <div class="flex-1 p-4 flex flex-col relative bg-white pb-28 overflow-y-auto" id="task-content-area">
+            <!-- Task content injected here -->
+        </div>
+
+        <div class="fixed bottom-0 left-0 w-full p-4 bg-white border-t-2 border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40 hidden" id="task-bottom-bar">
+            <button id="btn-submit-task" class="btn-action w-full py-4 text-xl">XÁC NHẬN</button>
+        </div>
+    </div>
+
+    <!-- MODAL PHẢN HỒI -->
+    <div id="modal-feedback" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-[90%] text-center animate-pop border-4 shadow-2xl" id="feedback-box">
+            <div id="feedback-icon" class="text-6xl mb-2 floating">🎉</div>
+            <h2 id="feedback-title" class="text-2xl font-black mb-2 uppercase">Chính xác!</h2>
+            <p id="feedback-message" class="text-gray-700 font-bold mb-6">Em đã hoàn thành tốt nhiệm vụ.</p>
+            
+            <div id="feedback-reward" class="flex justify-center gap-4 mb-6 hidden">
+                <!-- Rewards injected here -->
+            </div>
+
+            <button id="btn-feedback-next" class="btn-action w-full py-3 text-lg">TIẾP TỤC</button>
+        </div>
+    </div>
+
+    <!-- MODAL GIỚI THIỆU CHẶNG -->
+    <div id="modal-stage-intro" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="wood-board p-6 max-w-sm w-[90%] text-center animate-pop relative">
+            <div id="intro-icon" class="text-6xl absolute -top-10 left-1/2 transform -translate-x-1/2 floating">🌴</div>
+            <h2 id="intro-title" class="text-2xl font-black mt-4 mb-2 text-yellow-300">CHẶNG 1</h2>
+            <h3 id="intro-subtitle" class="text-xl font-bold mb-4">KHỞI ĐỘNG</h3>
+            <p id="intro-task" class="text-sm font-bold bg-black bg-opacity-30 p-3 rounded-lg mb-6">Nhiệm vụ: TÌM HIỂU CẤU TRÚC LẶP</p>
+            <button onclick="startCurrentStageTasks()" class="btn-action w-full py-3 text-lg">TIẾN LÊN!</button>
+        </div>
+    </div>
+
+    <!-- MODAL SỔ TAY -->
+    <div id="modal-notebook" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="bg-green-50 rounded-lg p-6 max-w-md w-[95%] h-[80%] flex flex-col border-8 border-green-800 shadow-2xl relative">
+            <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-green-900 font-black py-1 px-4 rounded-full border-4 border-green-800 text-center w-64 shadow">
+                📖 SỔ TAY KIẾN THỨC BÀI 11
+            </div>
+            
+            <div class="flex-1 overflow-y-auto mt-6 pr-2 pb-4" id="notebook-content">
+                <!-- Notebook content injected -->
+            </div>
+            
+            <button onclick="closeNotebook()" class="btn-action w-full py-3 text-lg mt-4 shrink-0">ĐÓNG SỔ TAY</button>
+        </div>
+    </div>
+
+    <!-- MODAL MỞ KHO BÁU (BOSS) -->
+    <div id="modal-boss-password" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="bg-green-950 border-4 border-yellow-400 rounded-3xl p-6 max-w-md w-[95%] text-center shadow-2xl animate-pop text-white max-h-[95vh] overflow-y-auto">
+            <div class="text-5xl floating mb-2">🔐</div>
+            <h2 class="text-2xl font-black text-yellow-300 mb-2">RƯƠNG KHO BÁU BÀI 11</h2>
+            <p class="text-sm font-bold mb-4">Em đã vượt qua các thử thách! Hãy xếp đúng thứ tự các lệnh và cấu trúc lặp để mở rương khóa:</p>
+            
+            <div id="password-slots" class="flex flex-col gap-2 mb-4">
+                <!-- Slots injected -->
+            </div>
+            
+            <div id="password-options" class="flex flex-wrap justify-center gap-2 mb-4">
+                <!-- Options injected -->
+            </div>
+
+            <button id="btn-check-password" class="btn-action w-full py-3 text-lg bg-gray-400 border-gray-600 text-gray-800 opacity-50" disabled>MỞ KHÓA</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH KẾT QUẢ -->
+    <div id="screen-result" class="screen items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full text-center animate-pop border-4 border-green-500 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-green-300 to-transparent opacity-50 pointer-events-none"></div>
+            
+            <div class="text-7xl floating mb-2 relative z-10" id="result-icon">🏆</div>
+            <h2 class="text-2xl font-black text-green-700 mb-1 relative z-10">CHINH PHỤC BÀI 11 THÀNH CÔNG!</h2>
+            <h3 id="result-rank" class="text-xl font-bold text-yellow-600 mb-6 relative z-10">BẬC THẦY CẤU TRÚC LẶP</h3>
+            
+            <div class="bg-green-50 rounded-xl p-4 mb-6 text-left border-2 border-green-200 relative z-10">
+                <p class="font-bold text-gray-700">👤 <span id="res-name">...</span> - 🏫 <span id="res-class">...</span></p>
+                <div class="h-px bg-green-200 my-2"></div>
+                <div class="grid grid-cols-2 gap-2 text-sm font-bold">
+                    <div>⭐ Điểm: <span id="res-score" class="text-green-700">0</span></div>
+                    <div>🔥 Combo: <span id="res-combo" class="text-orange-600">0</span></div>
+                    <div>🧩 Bản đồ: <span id="res-pieces" class="text-green-600">0/3</span></div>
+                    <div>🔎 Manh mối: <span id="res-clues" class="text-blue-600">0/5</span></div>
+                    <div>🗝️ Chìa khóa: <span id="res-keys" class="text-yellow-600">0/1</span></div>
+                    <div>⏱️ Thời gian: <span id="res-time" class="text-purple-600">0:00</span></div>
+                </div>
+            </div>
+            
+            <p class="text-sm font-bold text-gray-600 mb-6 relative z-10 italic">"Tuyệt vời! Em đã nắm vững kiến thức về cấu trúc lặp và các lệnh lặp trong Scratch."</p>
+            
+            <div class="flex gap-2 relative z-10">
+                <button onclick="location.reload()" class="btn-action flex-1 py-3 text-xs">🔄 CHƠI LẠI</button>
+                <button onclick="openNotebook()" class="btn-option flex-1 py-3 text-xs bg-green-100 border-green-300">📖 XEM SỔ TAY</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DỮ LIỆU ĐÚNG CHUẨN SGK TIN HỌC 5 - BÀI 11: CẤU TRÚC LẶP (KHÔNG DƯỚI BẤT KỲ NGUỒN NGOÀI NÀO KHÁC)
+        const GAME_DATA = {
+            stages: [
+                {
+                    id: 1, title: "ĐẢO KHỞI ĐỘNG", emoji: "🏝️", x: 100, y: 600,
+                    tasks: [
+                        {
+                            type: "mcq",
+                            scenario: "Trong môn Giáo dục thể chất, bài tập nhảy đập bóng yêu cầu thực hiện lặp lại 20 lần động tác nhảy với tay đập bóng.",
+                            question: "Một công việc được thực hiện lặp đi lặp lại nhiều lần như thế được gọi là gì?",
+                            options: [
+                                "A. Cấu trúc rẽ nhánh.",
+                                "B. Công việc có cấu trúc lặp.",
+                                "C. Chương trình không có lệnh.",
+                                "D. Thuật toán tuần tự đơn thuần."
+                            ],
+                            correct: 1,
+                            reward: { type: "piece", val: 1 }
+                        },
+                        {
+                            type: "true-false",
+                            scenario: "Hãy cho biết các phát biểu sau ĐÚNG hay SAI:",
+                            statements: [
+                                { text: "Trong cấu trúc lặp, công việc được thực hiện lặp lại.", correct: true },
+                                { text: "Trong chương trình có cấu trúc lặp, lệnh hoặc khối lệnh được thực hiện lặp lại.", correct: true },
+                                { text: "Cấu trúc lặp chỉ xuất hiện trong Scratch, không có ngoài đời sống.", correct: false },
+                                { text: "Bài tập nhảy đập bóng là một ví dụ cụ thể mô tả cấu trúc lặp.", correct: true }
+                            ],
+                            reward: { type: "clue", text: "Cấu trúc lặp dùng để thực hiện lặp lại một công việc nhiều lần." },
+                            finalInStage: true
+                        }
+                    ]
+                },
+                {
+                    id: 2, title: "RỪNG SCRATCH", emoji: "🌲", x: 300, y: 400,
+                    tasks: [
+                        {
+                            type: "mcq",
+                            scenario: "Quan sát chương trình điều khiển nhân vật mèo di chuyển và thay đổi trang phục (Bài 10/11), khi khối lệnh được lặp lại 3 lần.",
+                            question: "Chương trình có lệnh hoặc khối lệnh được lặp lại được gọi là gì?",
+                            options: [
+                                "A. Chương trình có cấu trúc lặp.",
+                                "B. Chương trình chỉ chạy một lần.",
+                                "C. Chương trình lỗi.",
+                                "D. Chương trình không có điều kiện."
+                            ],
+                            correct: 0,
+                            reward: { type: "clue", text: "Chương trình có lệnh hoặc khối lệnh được lặp lại gọi là chương trình có cấu trúc lặp." }
+                        },
+                        {
+                            type: "categorize",
+                            scenario: "Phân loại các khái niệm về chương trình lặp:",
+                            categories: ["🔄 CÓ CẤU TRÚC LẶP", "❌ KHÔNG PHẢI LẶP"],
+                            items: [
+                                { text: "Khối lệnh được lặp lại 3 lần", cat: 0 },
+                                { text: "Chương trình điều khiển nhân vật mèo lặp lại động tác", cat: 0 },
+                                { text: "Chạy duy nhất một câu lệnh rồi dừng hẳn", cat: 1 },
+                                { text: "Lệnh lặp trong Scratch", cat: 0 }
+                            ]
+                        },
+                        {
+                            type: "order-words",
+                            scenario: "Sắp xếp các từ thành câu đúng SGK:",
+                            words: ["Chương", "trình", "có", "cấu", "trúc", "lặp."],
+                            correct: ["Chương", "trình", "có", "cấu", "trúc", "lặp."]
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Scratch cung cấp lệnh lặp để điều khiển cấu trúc lặp.",
+                            question: "Các lệnh điều khiển cấu trúc lặp thuộc nhóm lệnh nào trong Scratch?",
+                            options: [
+                                "A. Nhóm lệnh Chuyển động (Motion)",
+                                "B. Nhóm lệnh Điều khiển (Control)",
+                                "C. Nhóm lệnh Hiển thị (Looks)",
+                                "D. Nhóm lệnh Sự kiện (Events)"
+                            ],
+                            correct: 1,
+                            reward: { type: "piece", val: 2 },
+                            finalInStage: true
+                        }
+                    ]
+                },
+                {
+                    id: 3, title: "ĐỀN 3 LỆNH LẶP", emoji: "🏛️", x: 600, y: 500,
+                    tasks: [
+                        {
+                            type: "mcq",
+                            scenario: "Scratch có ba lệnh điều khiển cấu trúc lặp thuộc nhóm lệnh Điều khiển.",
+                            question: "Để điều khiển nhân vật lặp lại một việc 10 lần, em sử dụng lệnh nào?",
+                            options: [
+                                "A. Lệnh lặp với số lần biết trước (lập lại 10)",
+                                "B. Lệnh lặp liên tục",
+                                "C. Lệnh lặp có điều kiện",
+                                "D. Lệnh đợi 1 giây"
+                            ],
+                            correct: 0,
+                            reward: { type: "clue", text: "Lệnh lặp với số lần biết trước giúp lặp lại khối lệnh đúng số lần định sẵn." }
+                        },
+                        {
+                            type: "matching-pairs",
+                            scenario: "Hãy nhớ lại các lệnh lặp trong Scratch Bài 11:",
+                            question: "Chọn lệnh lặp ứng với mô tả: 'Khối lệnh trong lệnh lặp được lặp liên tục, không dừng.'",
+                            options: [
+                                "A. Lệnh lặp với số lần biết trước",
+                                "B. Lệnh lặp liên tục (liên tục)",
+                                "C. Lệnh lặp có điều kiện",
+                                "D. Lệnh di chuyển 10 bước"
+                            ],
+                            correct: 1
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Xét lệnh 'lập lại cho đến khi' trong Scratch.",
+                            question: "Khối lệnh trong lệnh lặp có điều kiện được thực hiện cho đến khi nào?",
+                            options: [
+                                "A. Khi hết pin máy tính.",
+                                "B. Khi điều kiện được thoả mãn (ví dụ: chuột được nháy/phím được bấm).",
+                                "C. Khi nhân vật biến mất hoàn toàn.",
+                                "D. Khi tắt màn hình."
+                            ],
+                            correct: 1,
+                            reward: { type: "clue", text: "Lệnh lặp có điều kiện thực hiện cho đến khi điều kiện được thoả mãn." }
+                        },
+                        {
+                            type: "true-false",
+                            scenario: "Đánh giá các phát biểu về ba lệnh lặp trong Scratch:",
+                            statements: [
+                                { text: "Scratch có ba lệnh điều khiển cấu trúc lặp thuộc nhóm lệnh Điều khiển.", correct: true },
+                                { text: "Lệnh 'liên tục' khiến khối lệnh bên trong lặp đi lặp lại không dừng.", correct: true },
+                                { text: "Lệnh lặp với số lần biết trước có ô chứa số lần lặp.", correct: true },
+                                { text: "Lệnh lặp có điều kiện chứa ô điều kiện dừng lặp.", correct: true }
+                            ],
+                            reward: { type: "piece", val: 3 },
+                            finalInStage: true
+                        }
+                    ]
+                },
+                {
+                    id: 4, title: "THỬ THÁCH LUYỆN TẬP", emoji: "⛰️", x: 500, y: 150,
+                    tasks: [
+                        {
+                            type: "mcq",
+                            scenario: "Bài tập Luyện tập: Ghép khối lệnh với nghĩa tương ứng.",
+                            question: "Khối lệnh 'lập lại 10' kèm theo 'trang phục kế tiếp' có nghĩa là gì?",
+                            options: [
+                                "A. Nhân vật lặp lại việc thay đổi trang phục 10 lần.",
+                                "B. Nhân vật thay đổi trang phục liên tục không dừng.",
+                                "C. Nhân vật đứng yên không đổi trang phục.",
+                                "D. Nhân vật lặp lại việc di chuyển 10 bước."
+                            ],
+                            correct: 0
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Tiếp tục bài Luyện tập:",
+                            question: "Khối lệnh 'liên tục' chứa 'trang phục kế tiếp' và 'đợi 1 giây' có nghĩa là gì?",
+                            options: [
+                                "A. Nhân vật thay đổi trang phục liên tục không dừng lại.",
+                                "B. Nhân vật lặp lại đúng 10 lần.",
+                                "C. Nhân vật thay đổi trang phục 3 lần rồi dừng.",
+                                "D. Nhân vật chỉ đổi trang phục khi nhấn phím trắng."
+                            ],
+                            correct: 0
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Bài tập Luyện tập - Lệnh lặp có điều kiện:",
+                            question: "Khối lệnh 'lập lại cho đến khi phím trắng được bấm' có nghĩa là gì?",
+                            options: [
+                                "A. Nhân vật liên tục thay đổi trang phục cho đến khi người sử dụng nhấn phím trắng thì dừng lại.",
+                                "B. Nhân vật lặp lại đúng 5 lần.",
+                                "C. Nhân vật tự động dừng ngay lập tức khi chạy chương trình.",
+                                "D. Nhân vật không bao giờ thay đổi trang phục."
+                            ],
+                            correct: 0,
+                            reward: { type: "clue", text: "Lệnh lặp có điều kiện dừng lại khi điều kiện phím trắng được bấm thoả mãn." }
+                        },
+                        {
+                            type: "multi-select",
+                            scenario: "Chọn các lệnh lặp thuộc nhóm lệnh Điều khiển trong Scratch theo SGK Bài 11:",
+                            options: [
+                                { text: "🔄 Lệnh lặp với số lần biết trước (lập lại 10)", correct: true },
+                                { text: "🔁 Lệnh lặp liên tục (liên tục)", correct: true },
+                                { text: "🛑 Lệnh lặp có điều kiện (lập lại cho đến khi)", correct: true },
+                                { text: "🚶 Lệnh di chuyển 10 bước", correct: false },
+                                { text: "🎨 Lệnh đổi trang phục", correct: false }
+                            ],
+                            reward: { type: "key", val: 1 },
+                            finalInStage: true
+                        }
+                    ]
+                },
+                {
+                    id: 5, title: "HANG KHO BÁU (VẬN DỤNG)", emoji: "🏴‍☠️", x: 150, y: 200,
+                    isBoss: true,
+                    tasks: [
+                        {
+                            type: "mcq",
+                            scenario: "Phần Vận dụng SGK: Mô tả các bước thực hiện của chương trình có một chú cá bơi liên tục trong bể, khi cá chạm cạnh bể thì bật lại.",
+                            question: "Khi tạo chương trình chú cá bơi liên tục, em sẽ sử dụng lệnh lặp nào?",
+                            options: [
+                                "A. Lệnh lặp liên tục (để cá bơi và kiểm tra chạm cạnh không ngừng)",
+                                "B. Lệnh lặp với số lần biết trước (lặp 3 lần)",
+                                "C. Lệnh đợi 1 giây",
+                                "D. Không cần dùng lệnh lặp"
+                            ],
+                            correct: 0
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Câu hỏi tổng kết 1:",
+                            question: "Trong cấu trúc lặp, điều gì được thực hiện lặp lại?",
+                            options: [
+                                "A. Công việc / Lệnh hoặc khối lệnh",
+                                "B. Chỉ số điểm số",
+                                "C. Tên nhân vật",
+                                "D. Màu sắc sân khấu"
+                            ],
+                            correct: 0
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Câu hỏi tổng kết 2:",
+                            question: "Ba lệnh lặp chính trong Scratch thuộc nhóm lệnh nào?",
+                            options: [
+                                "A. Nhóm lệnh Điều khiển",
+                                "B. Nhóm lệnh Chuyển động",
+                                "C. Nhóm lệnh Hiển thị",
+                                "D. Nhóm lệnh Âm thanh"
+                            ],
+                            correct: 0
+                        },
+                        {
+                            type: "mcq",
+                            scenario: "Câu hỏi tổng kết 3:",
+                            question: "Lệnh nào trong Scratch thực hiện khối lệnh cho đến khi một điều kiện được thoả mãn?",
+                            options: [
+                                "A. Lệnh lặp có điều kiện (lập lại cho đến khi)",
+                                "B. Lệnh lặp liên tục",
+                                "C. Lệnh lặp với số lần biết trước",
+                                "D. Lệnh đi tới vị trí ngẫu nhiên"
+                            ],
+                            correct: 0
+                        },
+                        {
+                            type: "multi-select",
+                            scenario: "Tổng kết Bài 11: Chọn tất cả các phát biểu ĐÚNG:",
+                            options: [
+                                { text: "🧩 Công việc thực hiện lặp lại gọi là cấu trúc lặp.", correct: true },
+                                { text: "🧩 Scratch có ba lệnh lặp chính thuộc nhóm Điều khiển.", correct: true },
+                                { text: "🧩 Lệnh lặp với số lần biết trước có xác định số lần lặp cụ thể.", correct: true },
+                                { text: "🧩 Vận dụng lệnh lặp liên tục để tạo chú cá bơi lội trong bể.", correct: true }
+                            ],
+                            finalInStage: true
+                        }
+                    ]
+                }
+            ]
+        };
+
+        let state = {
+            name: "",
+            className: "",
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            pieces: 0,
+            clues: [],
+            keys: 0,
+            currentStageId: 1,
+            unlockedStages: [1],
+            currentTaskIndex: 0,
+            audioEnabled: true,
+            startTime: 0
+        };
+
+        function showToast(msg, type = "error") {
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl font-bold text-white shadow-xl animate-pop pointer-events-auto transition-opacity duration-300 text-center ${type === 'error' ? 'bg-red-500' : 'bg-green-600 border-2 border-green-300 text-white'}`;
+            toast.innerText = msg;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        // Nhạc nền 8-bit nhẹ nhàng
+        const bgmSequence = [
+            261.63, 329.63, 392.00, 523.25, 392.00, 329.63,
+            261.63, 329.63, 392.00, 523.25, 392.00, 329.63,
+            293.66, 349.23, 440.00, 587.33, 440.00, 349.23,
+            196.00, 246.94, 293.66, 392.00, 293.66, 246.94
+        ];
+        let bgmIndex = 0;
+        let bgmTimeout = null;
+        let isBgmPlaying = false;
+
+        function playBGMStep() {
+            if (!state.audioEnabled || !isBgmPlaying) return;
+            initAudio();
+            
+            const freq = bgmSequence[bgmIndex];
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+
+            bgmIndex = (bgmIndex + 1) % bgmSequence.length;
+            bgmTimeout = setTimeout(playBGMStep, 200);
+        }
+
+        function startBGM() {
+            if (isBgmPlaying) return;
+            isBgmPlaying = true;
+            playBGMStep();
+        }
+
+        function stopBGM() {
+            isBgmPlaying = false;
+            clearTimeout(bgmTimeout);
+        }
+
+        function playTone(freq, type, duration, vol = 0.1) {
+            if (!state.audioEnabled) return;
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sfx = {
+            click: () => playTone(600, 'sine', 0.1, 0.1),
+            correct: () => {
+                playTone(523.25, 'sine', 0.1, 0.1); 
+                setTimeout(() => playTone(659.25, 'sine', 0.2, 0.1), 100); 
+            },
+            wrong: () => playTone(200, 'sawtooth', 0.3, 0.1),
+            unlock: () => {
+                playTone(440, 'square', 0.1, 0.05);
+                setTimeout(() => playTone(554.37, 'square', 0.1, 0.05), 100);
+                setTimeout(() => playTone(659.25, 'square', 0.3, 0.05), 200);
+            },
+            victory: () => {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    setTimeout(() => playTone(freq, 'sine', 0.3, 0.2), i * 150);
+                });
+            }
+        };
+
+        function toggleAudio() {
+            state.audioEnabled = !state.audioEnabled;
+            document.getElementById('btn-audio').innerText = state.audioEnabled ? "🔊" : "🔇";
+            if (state.audioEnabled) {
+                initAudio();
+                startBGM();
+            } else {
+                stopBGM();
+            }
+        }
+
+        function goToScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            if (screenId === 'screen-map') renderMap();
+            sfx.click();
+            
+            if (state.audioEnabled && !isBgmPlaying) {
+                startBGM();
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-name').innerText = state.name;
+            const scoreEl = document.getElementById('hud-score');
+            if(parseInt(scoreEl.innerText) !== state.score) {
+                scoreEl.classList.add('animate-pop', 'text-green-600');
+                setTimeout(() => scoreEl.classList.remove('animate-pop', 'text-green-600'), 500);
+            }
+            scoreEl.innerText = state.score;
+
+            const comboEl = document.getElementById('hud-combo-box');
+            if (state.combo > 1) {
+                comboEl.classList.remove('hidden');
+                comboEl.classList.add('animate-pop');
+                document.getElementById('hud-combo').innerText = Math.min(state.combo, 4);
+            } else {
+                comboEl.classList.add('hidden');
+            }
+
+            document.getElementById('hud-pieces').innerText = state.pieces;
+            document.getElementById('hud-clues').innerText = state.clues.length;
+            document.getElementById('hud-keys').innerText = state.keys;
+        }
+
+        function addScore(base) {
+            const multiplier = Math.max(1, Math.min(state.combo, 4));
+            const points = base * multiplier;
+            state.score += points;
+            
+            const mapContainer = document.getElementById('screen-map').classList.contains('active') ? document.body : document.getElementById('screen-task');
+            const floatTxt = document.createElement('div');
+            floatTxt.className = 'score-popup left-1/2 top-1/3 transform -translate-x-1/2';
+            floatTxt.innerText = `+${points}`;
+            mapContainer.appendChild(floatTxt);
+            setTimeout(() => floatTxt.remove(), 1000);
+            
+            updateHUD();
+        }
+
+        function startGame() {
+            const name = document.getElementById('player-name').value.trim();
+            const cls = document.getElementById('player-class').value.trim();
+            if (!name) {
+                return showToast("⚠️ Hãy nhập tên của em nhé!");
+            }
+            state.name = name;
+            state.className = cls;
+            state.startTime = Date.now();
+            initAudio();
+            updateHUD();
+            goToScreen('screen-map');
+            
+            if(state.clues.length === 0) {
+                state.clues.push("Chào mừng nhà thám hiểm đến với Bài 11: Cấu trúc lặp!");
+            }
+        }
+
+        function renderMap() {
+            const container = document.getElementById('map-content');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < GAME_DATA.stages.length - 1; i++) {
+                const s1 = GAME_DATA.stages[i];
+                const s2 = GAME_DATA.stages[i+1];
+                const path = document.createElement('div');
+                path.className = 'map-path';
+                
+                const dx = s2.x - s1.x;
+                const dy = s2.y - s1.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                
+                path.style.width = `${dist}px`;
+                path.style.left = `${s1.x + 40}px`; 
+                path.style.top = `${s1.y + 40}px`;
+                path.style.transform = `rotate(${angle}deg)`;
+                
+                container.appendChild(path);
+            }
+
+            GAME_DATA.stages.forEach(stage => {
+                const node = document.createElement('div');
+                node.className = 'map-node';
+                node.style.left = `${stage.x}px`;
+                node.style.top = `${stage.y}px`;
+                node.innerHTML = `<span>${stage.emoji}</span>`;
+                
+                const label = document.createElement('div');
+                label.className = 'absolute -bottom-8 w-36 text-center text-xs font-bold text-green-900 bg-white bg-opacity-90 rounded px-1 shadow-sm';
+                label.style.left = '-30px';
+                label.innerText = stage.title;
+                node.appendChild(label);
+
+                if (state.unlockedStages.includes(stage.id)) {
+                    if (state.currentStageId > stage.id) {
+                        node.classList.add('completed');
+                        node.innerHTML += '<div class="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">✔️</div>';
+                    } else {
+                        node.classList.add('unlocked');
+                        node.onclick = () => openStageIntro(stage.id);
+                    }
+                } else {
+                    node.classList.add('locked');
+                    node.innerHTML += '<div class="absolute inset-0 flex justify-center items-center text-3xl opacity-80">🔒</div>';
+                }
+                
+                container.appendChild(node);
+            });
+        }
+
+        function openStageIntro(stageId) {
+            sfx.click();
+            const stage = GAME_DATA.stages.find(s => s.id === stageId);
+            state.currentStageId = stageId;
+            state.currentTaskIndex = 0;
+            
+            document.getElementById('intro-icon').innerText = stage.emoji;
+            document.getElementById('intro-title').innerText = `CHẶNG ${stage.id}`;
+            document.getElementById('intro-subtitle').innerText = stage.title;
+            
+            document.getElementById('modal-stage-intro').classList.remove('hidden');
+        }
+
+        function startCurrentStageTasks() {
+            document.getElementById('modal-stage-intro').classList.add('hidden');
+            goToScreen('screen-task');
+            renderTask();
+        }
+
+        let currentTaskState = {};
+
+        function renderTask() {
+            const stage = GAME_DATA.stages.find(s => s.id === state.currentStageId);
+            const task = stage.tasks[state.currentTaskIndex];
+            
+            document.getElementById('task-stage-icon').innerText = stage.emoji;
+            document.getElementById('task-stage-name').innerText = stage.title;
+            document.getElementById('task-score').innerText = state.score;
+            
+            const area = document.getElementById('task-content-area');
+            area.innerHTML = '';
+            
+            if (task.scenario) {
+                area.innerHTML += `<div class="bg-green-100 p-4 rounded-xl border-2 border-green-300 mb-4 font-bold text-green-900 shadow-sm">${task.scenario}</div>`;
+            }
+            if (task.question) {
+                area.innerHTML += `<h3 class="text-xl font-black text-gray-800 mb-4">${task.question}</h3>`;
+            }
+
+            const btnSubmit = document.getElementById('btn-submit-task');
+            document.getElementById('task-bottom-bar').classList.remove('hidden');
+            btnSubmit.onclick = checkTask;
+            btnSubmit.innerText = "XÁC NHẬN";
+            btnSubmit.classList.remove('opacity-50', 'bg-gray-400');
+            btnSubmit.disabled = false;
+            
+            currentTaskState = { type: task.type, selected: [], isCorrect: false };
+
+            if (task.type === "mcq") {
+                const grid = document.createElement('div');
+                grid.className = "flex flex-col gap-3";
+                task.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-option w-full p-4 text-left text-lg";
+                    btn.innerText = opt;
+                    btn.onclick = () => {
+                        sfx.click();
+                        grid.querySelectorAll('.btn-option').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        currentTaskState.selected = [idx];
+                    };
+                    grid.appendChild(btn);
+                });
+                area.appendChild(grid);
+            }
+
+            else if (task.type === "multi-select") {
+                const grid = document.createElement('div');
+                grid.className = "flex flex-wrap gap-3";
+                task.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-option p-3 text-sm md:text-base flex-grow text-left";
+                    btn.innerText = opt.text;
+                    btn.onclick = () => {
+                        sfx.click();
+                        btn.classList.toggle('selected');
+                        if (btn.classList.contains('selected')) {
+                            currentTaskState.selected.push(idx);
+                        } else {
+                            currentTaskState.selected = currentTaskState.selected.filter(i => i !== idx);
+                        }
+                    };
+                    grid.appendChild(btn);
+                });
+                area.appendChild(grid);
+            }
+
+            else if (task.type === "true-false") {
+                currentTaskState.answers = Array(task.statements.length).fill(null);
+                const list = document.createElement('div');
+                list.className = "flex flex-col gap-4 pb-6";
+                task.statements.forEach((stmt, idx) => {
+                    const row = document.createElement('div');
+                    row.className = "bg-gray-50 p-3 rounded-lg border-2 border-gray-200 flex flex-col gap-2";
+                    row.innerHTML = `<div class="font-bold text-gray-800">${idx+1}. ${stmt.text}</div>`;
+                    
+                    const btnGroup = document.createElement('div');
+                    btnGroup.className = "flex gap-2";
+                    
+                    ['ĐÚNG', 'SAI'].forEach((val, vIdx) => {
+                        const btn = document.createElement('button');
+                        btn.className = "btn-option flex-1 py-2 text-sm";
+                        btn.innerText = val;
+                        btn.onclick = () => {
+                            sfx.click();
+                            btnGroup.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+                            btn.classList.add('selected');
+                            currentTaskState.answers[idx] = (vIdx === 0);
+                        };
+                        btnGroup.appendChild(btn);
+                    });
+                    row.appendChild(btnGroup);
+                    list.appendChild(row);
+                });
+                area.appendChild(list);
+            }
+
+            else if (task.type === "categorize") {
+                currentTaskState.answers = Array(task.items.length).fill(null);
+                currentTaskState.currentItemIdx = 0;
+                
+                const header = document.createElement('div');
+                header.className = "text-center font-bold text-gray-500 mb-2";
+                header.id = "cat-progress";
+                header.innerText = `Thẻ 1 / ${task.items.length}`;
+                area.appendChild(header);
+
+                const cardBox = document.createElement('div');
+                cardBox.className = "bg-green-100 p-6 rounded-2xl border-4 border-green-300 text-center text-lg md:text-xl font-black text-gray-800 mb-6 min-h-[100px] flex items-center justify-center animate-pop";
+                cardBox.id = "cat-card";
+                cardBox.innerText = task.items[0].text;
+                area.appendChild(cardBox);
+
+                const btnGrid = document.createElement('div');
+                btnGrid.className = "grid grid-cols-2 gap-4";
+                task.categories.forEach((cat, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "btn-action py-4 md:py-6 text-sm flex flex-col items-center justify-center bg-gradient-to-b from-green-300 to-green-600 border-green-800 text-white font-black leading-tight px-2";
+                    btn.innerText = cat;
+                    btn.onclick = () => {
+                        if (currentTaskState.currentItemIdx >= task.items.length) return;
+                        sfx.click();
+                        currentTaskState.answers[currentTaskState.currentItemIdx] = idx;
+                        currentTaskState.currentItemIdx++;
+                        
+                        if (currentTaskState.currentItemIdx < task.items.length) {
+                            cardBox.classList.remove('animate-pop');
+                            void cardBox.offsetWidth; 
+                            cardBox.classList.add('animate-pop');
+                            cardBox.innerText = task.items[currentTaskState.currentItemIdx].text;
+                            document.getElementById('cat-progress').innerText = `Thẻ ${currentTaskState.currentItemIdx + 1} / ${task.items.length}`;
+                        } else {
+                            cardBox.innerText = "Đã phân loại xong!";
+                            checkTask();
+                        }
+                    };
+                    btnGrid.appendChild(btn);
+                });
+                area.appendChild(btnGrid);
+                
+                document.getElementById('task-bottom-bar').classList.add('hidden');
+            }
+
+            else if (task.type === "order-words") {
+                currentTaskState.selected = [];
+                let available = [...task.words].sort(() => Math.random() - 0.5); 
+                
+                const dropZone = document.createElement('div');
+                dropZone.className = "min-h-[80px] bg-gray-100 border-2 border-dashed border-gray-400 rounded-xl p-3 flex flex-wrap gap-2 mb-6";
+                dropZone.id = "drop-zone";
+                area.appendChild(dropZone);
+
+                const sourceZone = document.createElement('div');
+                sourceZone.className = "flex flex-wrap gap-2 justify-center";
+                
+                const renderWords = () => {
+                    dropZone.innerHTML = '';
+                    sourceZone.innerHTML = '';
+                    
+                    currentTaskState.selected.forEach((word, idx) => {
+                        const w = document.createElement('span');
+                        w.className = "bg-green-600 text-white px-4 py-2 rounded-lg font-bold shadow animate-pop cursor-pointer";
+                        w.innerText = word;
+                        w.onclick = () => {
+                            sfx.click();
+                            currentTaskState.selected.splice(idx, 1);
+                            available.push(word);
+                            renderWords();
+                        };
+                        dropZone.appendChild(w);
+                    });
+
+                    available.forEach((word, idx) => {
+                        const w = document.createElement('span');
+                        w.className = "bg-white border-2 border-green-300 text-gray-800 px-4 py-2 rounded-lg font-bold shadow cursor-pointer";
+                        w.innerText = word;
+                        w.onclick = () => {
+                            sfx.click();
+                            available.splice(idx, 1);
+                            currentTaskState.selected.push(word);
+                            renderWords();
+                        };
+                        sourceZone.appendChild(w);
+                    });
+                };
+                
+                area.appendChild(sourceZone);
+                renderWords();
+            }
+        }
+
+        function checkTask() {
+            const stage = GAME_DATA.stages.find(s => s.id === state.currentStageId);
+            const task = stage.tasks[state.currentTaskIndex];
+            let isCorrect = false;
+
+            if (task.type === "mcq" || task.type === "matching-pairs") {
+                if (currentTaskState.selected.length === 0) return showToast("⚠️ Em hãy chọn một đáp án nhé!");
+                isCorrect = currentTaskState.selected[0] === task.correct;
+            } 
+            else if (task.type === "multi-select") {
+                if (currentTaskState.selected.length === 0) return showToast("⚠️ Em hãy chọn ít nhất một đáp án nhé!");
+                let correctIndices = [];
+                task.options.forEach((o, i) => { if(o.correct) correctIndices.push(i) });
+                
+                const set1 = new Set(currentTaskState.selected);
+                const set2 = new Set(correctIndices);
+                isCorrect = set1.size === set2.size && [...set1].every(x => set2.has(x));
+            }
+            else if (task.type === "true-false") {
+                if (currentTaskState.answers.includes(null)) return showToast("⚠️ Em hãy chọn ĐÚNG/SAI cho tất cả các câu nhé!");
+                isCorrect = true;
+                task.statements.forEach((s, i) => {
+                    if (s.correct !== currentTaskState.answers[i]) isCorrect = false;
+                });
+            }
+            else if (task.type === "categorize") {
+                isCorrect = true;
+                task.items.forEach((item, i) => {
+                    if (item.cat !== currentTaskState.answers[i]) isCorrect = false;
+                });
+            }
+            else if (task.type === "order-words") {
+                if (currentTaskState.selected.length !== task.words.length) return showToast("⚠️ Em hãy ghép tất cả các từ nhé!");
+                isCorrect = currentTaskState.selected.join(" ") === task.correct.join(" ");
+            }
+
+            if (isCorrect) {
+                handleCorrect(task, stage);
+            } else {
+                handleWrong();
+            }
+        }
+
+        function handleWrong() {
+            sfx.wrong();
+            state.combo = 0;
+            updateHUD();
+            
+            const msgs = [
+                "Chưa chính xác! Hãy đọc lại SGK Bài 11 và thử lại nhé.",
+                "Em hãy suy nghĩ kỹ hơn về kiến thức cấu trúc lặp nhé!",
+                "Chưa đúng rồi, hãy thử lại nào!"
+            ];
+            
+            showFeedbackModal(
+                "❌ CHƯA ĐÚNG",
+                msgs[Math.floor(Math.random() * msgs.length)],
+                "text-red-500",
+                "THỬ LẠI",
+                () => { 
+                    document.getElementById('modal-feedback').classList.add('hidden'); 
+                    renderTask();
+                }
+            );
+        }
+
+        function handleCorrect(task, stage) {
+            sfx.correct();
+            state.combo++;
+            if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+            addScore(10);
+            
+            let rewardHtml = "";
+            
+            if (task.reward) {
+                if (task.reward.type === "piece") {
+                    state.pieces++;
+                    rewardHtml += `<div class="bg-green-100 border border-green-500 p-2 rounded text-center"><div class="text-3xl">🧩</div><div class="text-xs font-bold">Mảnh Bản Đồ</div></div>`;
+                }
+                if (task.reward.type === "clue") {
+                    if (!state.clues.includes(task.reward.text)) {
+                        state.clues.push(task.reward.text);
+                        rewardHtml += `<div class="bg-green-100 border border-green-500 p-2 rounded text-center"><div class="text-3xl">🔎</div><div class="text-xs font-bold">Manh Mối</div></div>`;
+                    }
+                }
+                if (task.reward.type === "key") {
+                    state.keys++;
+                    rewardHtml += `<div class="bg-yellow-100 border border-yellow-500 p-2 rounded text-center"><div class="text-3xl">🗝️</div><div class="text-xs font-bold">Chìa Khóa</div></div>`;
+                }
+            }
+
+            const titles = ["🎉 CHÍNH XÁC!", "🌟 TUYỆT VỜI!", "🧠 RẤT GIỎI!"];
+            
+            showFeedbackModal(
+                titles[Math.floor(Math.random() * titles.length)],
+                "Em đã nắm rất vững kiến thức Bài 11!",
+                "text-green-600",
+                "TIẾP TỤC",
+                () => {
+                    document.getElementById('modal-feedback').classList.add('hidden');
+                    advanceTask(stage);
+                },
+                rewardHtml
+            );
+            
+            spawnConfetti(50);
+        }
+
+        function advanceTask(stage) {
+            state.currentTaskIndex++;
+            if (state.currentTaskIndex >= stage.tasks.length || stage.tasks[state.currentTaskIndex-1].finalInStage) {
+                if (!state.unlockedStages.includes(stage.id + 1) && stage.id < 5) {
+                    state.unlockedStages.push(stage.id + 1);
+                    sfx.unlock();
+                    showToast(`🔓 Đã mở khóa: ${GAME_DATA.stages.find(s=>s.id === stage.id+1).title}`, 'success');
+                }
+                goToScreen('screen-map');
+                
+                if (stage.isBoss && state.currentTaskIndex >= stage.tasks.length) {
+                    openBossPassword();
+                }
+            } else {
+                renderTask();
+            }
+        }
+
+        function showFeedbackModal(title, msg, titleColorClass, btnText, callback, rewardHtml = "") {
+            document.getElementById('feedback-title').innerText = title;
+            document.getElementById('feedback-title').className = `text-2xl font-black mb-2 uppercase ${titleColorClass}`;
+            document.getElementById('feedback-message').innerText = msg;
+            
+            const rwDiv = document.getElementById('feedback-reward');
+            if (rewardHtml) {
+                rwDiv.innerHTML = rewardHtml;
+                rwDiv.classList.remove('hidden');
+            } else {
+                rwDiv.classList.add('hidden');
+                rwDiv.innerHTML = "";
+            }
+
+            const btn = document.getElementById('btn-feedback-next');
+            btn.innerText = btnText;
+            btn.onclick = callback;
+            
+            document.getElementById('modal-feedback').classList.remove('hidden');
+        }
+
+        function openNotebook() {
+            sfx.click();
+            const container = document.getElementById('notebook-content');
+            container.innerHTML = '';
+            
+            state.clues.forEach((clue, idx) => {
+                container.innerHTML += `
+                    <div class="notebook-item p-3 mb-3 rounded shadow-sm text-sm font-bold text-gray-800">
+                        <span class="text-green-700 mr-2">🔎 Sổ tay ${idx+1}:</span> ${clue}
+                    </div>
+                `;
+            });
+            
+            if (state.clues.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-500 font-bold mt-10">Sổ tay trống. Hãy vượt qua các thử thách để ghi chép kiến thức!</div>`;
+            }
+            
+            document.getElementById('modal-notebook').classList.remove('hidden');
+        }
+
+        function closeNotebook() {
+            sfx.click();
+            document.getElementById('modal-notebook').classList.add('hidden');
+        }
+
+        let pwdState = { sequence: [], correct: ["🔄", "📊", "⚙️", "🐟", "🏆"] };
+        const pwdMap = {
+            "🔄": "CẤU TRÚC LẶP",
+            "📊": "SỐ LẦN BIẾT TRƯỚC",
+            "⚙️": "LỆNH LIÊN TỤC",
+            "🐟": "CÓ ĐIỀU KIỆN",
+            "🏆": "KHO BÁU"
+        };
+
+        function openBossPassword() {
+            document.getElementById('modal-boss-password').classList.remove('hidden');
+            renderPasswordPuzzle();
+        }
+
+        function renderPasswordPuzzle() {
+            const slots = document.getElementById('password-slots');
+            const opts = document.getElementById('password-options');
+            slots.innerHTML = '';
+            opts.innerHTML = '';
+            
+            pwdState.correct.forEach((_, idx) => {
+                const s = document.createElement('div');
+                s.className = "bg-green-900 border-2 border-green-600 h-12 rounded flex items-center justify-center text-xl cursor-pointer";
+                if (pwdState.sequence[idx]) {
+                    const icon = pwdState.sequence[idx];
+                    s.innerHTML = `${icon} <span class="text-sm ml-2 text-yellow-300 font-bold">${pwdMap[icon]}</span>`;
+                    s.onclick = () => {
+                        sfx.click();
+                        pwdState.sequence.splice(idx, 1);
+                        renderPasswordPuzzle();
+                    };
+                }
+                slots.appendChild(s);
+            });
+
+            const available = pwdState.correct.filter(x => !pwdState.sequence.includes(x));
+            [...available].sort(()=>Math.random()-0.5).forEach(icon => {
+                const btn = document.createElement('button');
+                btn.className = "bg-yellow-400 text-yellow-900 font-black p-2 rounded-lg border-b-4 border-yellow-600 flex flex-col items-center justify-center w-[30%] cursor-pointer";
+                btn.innerHTML = `<span class="text-2xl">${icon}</span><span class="text-[10px] uppercase leading-tight mt-1 text-center">${pwdMap[icon]}</span>`;
+                btn.onclick = () => {
+                    sfx.click();
+                    if (pwdState.sequence.length < pwdState.correct.length) {
+                        pwdState.sequence.push(icon);
+                        renderPasswordPuzzle();
+                    }
+                };
+                opts.appendChild(btn);
+            });
+
+            const btnCheck = document.getElementById('btn-check-password');
+            if (pwdState.sequence.length === pwdState.correct.length) {
+                btnCheck.disabled = false;
+                btnCheck.classList.remove('opacity-50', 'bg-gray-400', 'border-gray-600', 'text-gray-800');
+                btnCheck.classList.add('bg-green-500', 'text-white', 'border-green-700');
+                btnCheck.onclick = verifyPassword;
+            } else {
+                btnCheck.disabled = true;
+                btnCheck.className = "btn-action w-full py-3 text-lg bg-gray-400 border-gray-600 text-gray-800 opacity-50 cursor-not-allowed";
+            }
+        }
+
+        function verifyPassword() {
+            if (pwdState.sequence.join("") === pwdState.correct.join("")) {
+                sfx.unlock();
+                setTimeout(() => {
+                    sfx.victory();
+                    document.getElementById('modal-boss-password').classList.add('hidden');
+                    showVictoryScreen();
+                }, 1000);
+            } else {
+                sfx.wrong();
+                showToast("❌ Thứ tự mở khóa chưa đúng! Hãy sắp xếp theo tiến trình học Bài 11.", "error");
+                pwdState.sequence = [];
+                renderPasswordPuzzle();
+            }
+        }
+
+        function showVictoryScreen() {
+            goToScreen('screen-result');
+            
+            document.getElementById('res-name').innerText = state.name;
+            document.getElementById('res-class').innerText = state.className;
+            document.getElementById('res-score').innerText = state.score;
+            document.getElementById('res-combo').innerText = state.maxCombo;
+            document.getElementById('res-pieces').innerText = `${state.pieces}/3`;
+            document.getElementById('res-clues').innerText = `${state.clues.length}/5`;
+            document.getElementById('res-keys').innerText = `${state.keys}/1`;
+            
+            const timeTaken = Math.floor((Date.now() - state.startTime) / 1000);
+            const min = Math.floor(timeTaken / 60);
+            const sec = (timeTaken % 60).toString().padStart(2, '0');
+            document.getElementById('res-time').innerText = `${min}:${sec}`;
+
+            let rank = "NHÀ THÁM HIỂM TẬP SỰ 🥉";
+            if (state.score >= 120) rank = "NHÀ THÁM HIỂM TÀI BA 🥈";
+            if (state.score >= 180) rank = "BẬC THẦY CẤU TRÚC LẶP 🥇";
+            
+            document.getElementById('result-rank').innerText = rank;
+            
+            spawnConfetti(200, true);
+        }
+
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let confettis = [];
+        let animationId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function spawnConfetti(amount, continuous = false) {
+            const colors = ['#22c55e', '#86efac', '#facc15', '#4ade80', '#15803d'];
+            for (let i = 0; i < amount; i++) {
+                confettis.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 10 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5
+                });
+            }
+            if (!animationId) animateConfetti();
+            
+            if (continuous) {
+                setTimeout(() => {
+                    if (document.getElementById('screen-result').classList.contains('active')) {
+                        spawnConfetti(50, true);
+                    }
+                }, 1000);
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+            
+            for (let i = 0; i < confettis.length; i++) {
+                let p = confettis[i];
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotationSpeed;
+                
+                if (p.y < canvas.height) active = true;
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+            }
+
+            if (active) {
+                animationId = requestAnimationFrame(animateConfetti);
+            } else {
+                confettis = [];
+                animationId = null;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+    </script>
+</body>
+</html>

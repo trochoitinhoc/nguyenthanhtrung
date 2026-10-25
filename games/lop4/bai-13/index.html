@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hành Trình Rô-bốt - Màu Hồng Kẹo Sữa</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-grad: linear-gradient(135deg, #ff758c, #ff7eb3);
+            --card-bg: #ffffff;
+            --primary: #ff477e;
+            --secondary: #ff85a1;
+            --accent: #ffd166;
+            --text-dark: #4a2832;
+        }
+
+        * { box-sizing: border-box; font-family: 'Fredoka', sans-serif; user-select: none; }
+        
+        body {
+            margin: 0; padding: 0; min-height: 100vh;
+            background: var(--bg-grad);
+            display: flex; justify-content: center; align-items: center;
+            overflow-x: hidden;
+        }
+
+        .game-wrapper {
+            width: 100%; max-width: 750px; background: var(--card-bg);
+            border-radius: 30px; box-shadow: 0 20px 50px rgba(255, 117, 140, 0.4);
+            overflow: hidden; display: flex; flex-direction: column; position: relative;
+            border: 8px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* HEADER THÔNG TIN */
+        .hud-bar {
+            background: #fff0f3; padding: 15px 25px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 4px solid #ffccd5; font-size: 1.1rem; font-weight: 600; color: var(--text-dark);
+        }
+        .hud-item { display: flex; align-items: center; gap: 8px; background: white; padding: 8px 16px; border-radius: 20px; box-shadow: 0 4px 6px rgba(255, 117, 140, 0.1); }
+
+        /* MÀN HÌNH CHUNG */
+        .screen { padding: 30px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .hidden { display: none !important; }
+
+        /* MÀN HÌNH BẮT ĐẦU */
+        .hero-icon { font-size: 5rem; animation: floatAnim 3s ease-in-out infinite; margin-bottom: 10px; }
+        @keyframes floatAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        
+        h1 { color: #d81159; font-size: 2.3rem; margin: 0 0 10px 0; text-shadow: 2px 2px 0px var(--accent); }
+        h2 { color: #ff5c8a; font-size: 1.1rem; margin-bottom: 25px; }
+        
+        .input-name {
+            padding: 15px 20px; font-size: 1.2rem; border: 3px solid #ffb3c6;
+            border-radius: 20px; width: 100%; max-width: 350px; text-align: center;
+            outline: none; transition: 0.3s; margin-bottom: 20px; font-weight: 600; color: var(--text-dark);
+        }
+        .input-name:focus { border-color: #ff477e; box-shadow: 0 0 15px rgba(255, 71, 126, 0.3); }
+
+        .btn-game {
+            background: linear-gradient(to bottom, #ff5c8a, #ff477e); color: white;
+            border: none; padding: 16px 35px; font-size: 1.3rem; font-weight: 700;
+            border-radius: 50px; cursor: pointer; box-shadow: 0 8px 0 #c9184a, 0 12px 20px rgba(255, 71, 126, 0.3);
+            transition: 0.1s; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-game:active { transform: translateY(6px); box-shadow: 0 2px 0 #c9184a, 0 5px 10px rgba(255, 71, 126, 0.3); }
+
+        /* BẢN ĐỒ MÊ CUNG / TRẠM DỪNG */
+        .world-map {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+            width: 100%; max-width: 500px; margin: 20px 0;
+        }
+        .map-node {
+            background: #ffe5ec; height: 75px; border-radius: 18px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: 700; color: #b7094c; border: 3px solid #ffb3c6;
+            transition: 0.3s; position: relative;
+        }
+        .map-node.completed { background: #d8f3dc; border-color: #52b788; color: #2d6a4f; }
+        .map-node.current { background: #fff0f3; border-color: #ff477e; color: #d81159; transform: scale(1.08); box-shadow: 0 8px 15px rgba(255, 71, 126, 0.3); animation: pulseNode 1s infinite alternate; }
+        @keyframes pulseNode { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        /* KHU VỰC CÂU HỎI TRONG MÊ CUNG */
+        .q-header-box { display: flex; justify-content: space-between; width: 100%; margin-bottom: 15px; font-weight: 600; color: #a53860; }
+        .q-title { font-size: 1.3rem; color: #d81159; text-align: left; margin-bottom: 20px; font-weight: 600; line-height: 1.5; }
+        
+        .options-list { display: flex; flex-direction: column; gap: 12px; width: 100%; }
+        .option-card {
+            background: #fff0f3; border: 3px solid #ffccd5; border-radius: 18px;
+            padding: 16px 20px; font-size: 1.05rem; font-weight: 600; color: #590d22;
+            text-align: left; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 12px;
+        }
+        .option-card:hover { background: #ff477e; border-color: #d81159; color: white; transform: translateX(5px); }
+        .option-card.correct { background: #d8f3dc !important; border-color: #52b788 !important; color: #1b4332 !important; }
+        .option-card.wrong { background: #ffccd5 !important; border-color: #e63946 !important; color: #9d0208 !important; }
+
+        /* HIỆU ỨNG PHẢN HỒI THƯỞNG */
+        .reward-popup {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(74, 40, 50, 0.7); backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .reward-box { background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 15px 35px rgba(255, 71, 126, 0.3); }
+    </style>
+</head>
+<body>
+
+<div class="game-wrapper" id="app">
+    
+    <!-- HUD THANH TRẠNG THÁI -->
+    <div id="hud" class="hud-bar hidden">
+        <div class="hud-item">❤️ Mạng: <span id="hud-lives" style="color: #e63946;">3</span></div>
+        <div class="hud-item">🌸 Trạm: <span id="hud-stage">1</span>/10</div>
+        <div class="hud-item">⭐ Năng lượng: <span id="hud-score" style="color: #52b788;">0</span></div>
+    </div>
+
+    <!-- MÀN HÌNH 1: BẮT ĐẦU -->
+    <div id="screen-start" class="screen">
+        <div class="hero-icon">💖🤖</div>
+        <h1>HÀNH TRÌNH RÔ-BỐT</h1>
+        <h2>Khám Phá Mê Cung Hồng - Bài 13</h2>
+        <input type="text" id="player-name" class="input-name" placeholder="Nhập tên phi hành gia..." autocomplete="off">
+        <button class="btn-game" onclick="initGame()">BẮT ĐẦU KHÁM PHÁ</button>
+    </div>
+
+    <!-- MÀN HÌNH 2: BẢN ĐỒ MÊ CUNG -->
+    <div id="screen-map" class="screen hidden">
+        <h2 style="font-size: 1.5rem; color: #d81159; margin-bottom: 5px;">🗺️ BẢN ĐỒ TRẠM HỒNG PHÚC</h2>
+        <p style="color: #a53860; margin-bottom: 15px;">Chọn ô trạm tiếp theo để vượt qua thử thách ngọt ngào!</p>
+        <div class="world-map" id="map-grid"></div>
+        <button class="btn-game" id="btn-enter-station" onclick="enterStation()">VÀO TRẠM THỬ THÁCH 🚀</button>
+    </div>
+
+    <!-- MÀN HÌNH 3: CÂU HỎI TRONG TRẠM -->
+    <div id="screen-question" class="screen hidden">
+        <div class="q-header-box">
+            <span id="q-station-name">Trạm 1</span>
+            <span style="color: #ff477e;">⏱️ Thử thách trí tuệ</span>
+        </div>
+        <div class="q-title" id="q-text">Đang tải thử thách...</div>
+        <div class="options-list" id="q-options"></div>
+    </div>
+
+    <!-- MÀN HÌNH 4: KẾT QUẢ -->
+    <div id="screen-end" class="screen hidden">
+        <div class="hero-icon" id="end-icon">👑</div>
+        <h1 id="end-title">HOÀN THÀNH XUẤT SẮC!</h1>
+        <p id="end-desc" style="font-size: 1.2rem; color: #590d22; margin: 15px 0; font-weight: 600;"></p>
+        <button class="btn-game" onclick="restartGame()">CHƠI LẠI HÀNH TRÌNH 🔄</button>
+    </div>
+
+    <!-- POPUP PHẢN HỒI / THƯỞNG -->
+    <div id="reward-popup" class="reward-popup hidden">
+        <div class="reward-box">
+            <div id="popup-icon" style="font-size: 4rem; margin-bottom: 15px;">🎉</div>
+            <h2 id="popup-title" style="font-size: 1.5rem; color: #d81159; margin-bottom: 10px;">CHÍNH XÁC!</h2>
+            <p id="popup-desc" style="color: #a53860; font-size: 1.1rem; margin-bottom: 20px; font-weight: 600;"></p>
+            <button class="btn-game" onclick="closePopup()">TIẾP TỤC ⚡</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const questions = [
+        {
+            q: "Trong phần Khởi động trò chơi Điều khiển rô-bốt, rô-bốt có khả năng thực hiện hành động nào?",
+            options: [
+                "Đi về phía trước từng bước, quay trái hoặc phải một góc 90 độ.",
+                "Chạy nhanh, nhảy cao và hát hò.",
+                "Vẽ tranh phong cảnh và giải toán đố phức tạp."
+            ],
+            correct: 0
+        },
+        {
+            q: "Chỉ dẫn: 'Di chuyển 100 bước. Quay trái 90 độ. Dừng lại 1 giây.' Nếu thực hiện 4 lần liên tiếp, bạn học sinh sẽ đi theo hình gì?",
+            options: [
+                "Hình tam giác",
+                "Hình vuông",
+                "Hình tròn"
+            ],
+            correct: 1
+        },
+        {
+            q: "Nếu rô-bốt là một nhân vật trong máy tính, em cần sử dụng gì để chỉ dẫn cho nhân vật đó?",
+            options: [
+                "Ngôn ngữ nói giao tiếp hằng ngày",
+                "Ngôn ngữ lập trình",
+                "Bút màu và giấy vẽ"
+            ],
+            correct: 1
+        },
+        {
+            q: "Mỗi chỉ dẫn trong ngôn ngữ lập trình được gọi là gì?",
+            options: [
+                "Một câu lệnh",
+                "Một đoạn văn bản",
+                "Một bức tranh hướng dẫn"
+            ],
+            correct: 0
+        },
+        {
+            q: "Các trò chơi trên máy tính được tạo ra bằng cách nào?",
+            options: [
+                "Vẽ bằng phần mềm Paint",
+                "Viết chương trình gồm các câu lệnh sắp xếp theo thứ tự xác định",
+                "Chụp ảnh màn hình máy tính"
+            ],
+            correct: 1
+        },
+        {
+            q: "Để khởi động phần mềm Scratch trong bài thực hành, em thực hiện thao tác nào?",
+            options: [
+                "Nháy đúp chuột vào biểu tượng Scratch 3 trên màn hình nền",
+                "Nháy chuột phải chọn Delete tệp",
+                "Nhấn giữ phím Enter liên tục"
+            ],
+            correct: 0
+        },
+        {
+            q: "Trong cửa sổ Scratch, để chuyển sang giao diện Tiếng Việt, em nháy chuột vào biểu tượng nào ở góc trên bên trái?",
+            options: [
+                "Biểu tượng thư mục mở tệp",
+                "Biểu tượng quả địa cầu",
+                "Biểu tượng cờ xanh"
+            ],
+            correct: 1
+        },
+        {
+            q: "Để mở tệp chương trình trò chơi 'Robot' đã lưu sẵn trên máy tính, em chọn lệnh nào trong bảng chọn Tập tin?",
+            options: [
+                "Mở từ máy tính",
+                "Lưu về máy tính của tôi",
+                "Tạo dự án mới"
+            ],
+            correct: 0
+        },
+        {
+            q: "Trong cửa sổ lập trình Scratch, nút lệnh hình 'cờ xanh' có ý nghĩa gì?",
+            options: [
+                "Dừng chương trình ngay lập tức",
+                "Chạy chương trình",
+                "Lưu tệp chương trình"
+            ],
+            correct: 1
+        },
+        {
+            q: "Để dừng chương trình đang chạy trong Scratch, em nháy chuột vào nút lệnh nào?",
+            options: [
+                "Nút lệnh hình tròn màu đỏ",
+                "Nút cờ xanh",
+                "Biểu tượng quả địa cầu"
+            ],
+            correct: 0
+        }
+    ];
+
+    let gameState = {
+        name: "",
+        lives: 3,
+        score: 0,
+        currentStage: 0,
+        completedStages: []
+    };
+
+    function initGame() {
+        const nameInput = document.getElementById('player-name').value.trim();
+        if(!nameInput) {
+            alert("Vui lòng nhập tên phi hành gia trước khi bắt đầu!");
+            return;
+        }
+        gameState.name = nameInput;
+        gameState.lives = 3;
+        gameState.score = 0;
+        gameState.currentStage = 0;
+        gameState.completedStages = [];
+
+        document.getElementById('hud').classList.remove('hidden');
+        updateHUD();
+        showScreen('screen-map');
+        buildMapGrid();
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    function updateHUD() {
+        document.getElementById('hud-lives').innerText = gameState.lives;
+        document.getElementById('hud-stage').innerText = Math.min(gameState.currentStage + 1, 10);
+        document.getElementById('hud-score').innerText = gameState.score;
+    }
+
+    function buildMapGrid() {
+        const grid = document.getElementById('map-grid');
+        grid.innerHTML = '';
+        for(let i = 0; i < 10; i++) {
+            let node = document.createElement('div');
+            node.className = 'map-node';
+            if(gameState.completedStages.includes(i)) {
+                node.classList.add('completed');
+                node.innerHTML = `<span>⭐</span><small style="font-size:0.7rem">Trạm ${i+1}</small>`;
+            } else if(i === gameState.currentStage) {
+                node.classList.add('current');
+                node.innerHTML = `<span>🤖</span><small style="font-size:0.7rem">Trạm ${i+1}</small>`;
+            } else {
+                node.innerHTML = `<span>🔒</span><small style="font-size:0.7rem">Trạm ${i+1}</small>`;
+            }
+            grid.appendChild(node);
+        }
+    }
+
+    function enterStation() {
+        if(gameState.currentStage >= 10) {
+            endGame();
+            return;
+        }
+        showScreen('screen-question');
+        loadQuestionData();
+    }
+
+    function loadQuestionData() {
+        const qObj = questions[gameState.currentStage];
+        document.getElementById('q-station-name').innerText = `Trạm ${gameState.currentStage + 1} / 10`;
+        document.getElementById('q-text').innerText = qObj.q;
+
+        const optContainer = document.getElementById('q-options');
+        optContainer.innerHTML = '';
+
+        qObj.options.forEach((optText, idx) => {
+            let card = document.createElement('div');
+            card.className = 'option-card';
+            card.innerHTML = `<span style="background:#ffccd5; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; shrink:0; color:#590d22; font-weight:bold;">${String.fromCharCode(65 + idx)}</span> <span>${optText}</span>`;
+            card.onclick = () => selectAnswer(idx, card);
+            optContainer.appendChild(card);
+        });
+    }
+
+    let isAnswering = false;
+    function selectAnswer(selectedIndex, cardElement) {
+        if(isAnswering) return;
+        isAnswering = true;
+
+        const qObj = questions[gameState.currentStage];
+        const allCards = document.querySelectorAll('.option-card');
+        
+        allCards.forEach(c => c.style.pointerEvents = 'none');
+
+        const popup = document.getElementById('reward-popup');
+        const pIcon = document.getElementById('popup-icon');
+        const pTitle = document.getElementById('popup-title');
+        const pDesc = document.getElementById('popup-desc');
+
+        if(selectedIndex === qObj.correct) {
+            cardElement.classList.add('correct');
+            gameState.score += 10;
+            pIcon.innerText = "💖";
+            pTitle.innerText = "CHÍNH XÁC - TUYỆT VỜI!";
+            pTitle.style.color = "#2d6a4f";
+            pDesc.innerText = "Rô-bốt đã nhận được thêm năng lượng ngọt ngào (+10 điểm).";
+            gameState.completedStages.push(gameState.currentStage);
+            gameState.currentStage++;
+        } else {
+            cardElement.classList.add('wrong');
+            allCards[qObj.correct].classList.add('correct');
+            gameState.lives--;
+            pIcon.innerText = "🌸";
+            pTitle.innerText = "CHƯA ĐÚNG RỒI!";
+            pTitle.style.color = "#9d0208";
+            pDesc.innerText = `Rô-bốt bị mất 1 mạng. Cố gắng lên ở các trạm sau nhé!`;
+            gameState.completedStages.push(gameState.currentStage);
+            gameState.currentStage++;
+        }
+
+        updateHUD();
+        setTimeout(() => {
+            popup.classList.remove('hidden');
+        }, 600);
+    }
+
+    function closePopup() {
+        document.getElementById('reward-popup').classList.add('hidden');
+        isAnswering = false;
+
+        if(gameState.lives <= 0 || gameState.currentStage >= 10) {
+            endGame();
+        } else {
+            showScreen('screen-map');
+            buildMapGrid();
+        }
+    }
+
+    function endGame() {
+        document.getElementById('hud').classList.add('hidden');
+        showScreen('screen-end');
+
+        const endIcon = document.getElementById('end-icon');
+        const endTitle = document.getElementById('end-title');
+        const endDesc = document.getElementById('end-desc');
+
+        if(gameState.lives > 0) {
+            endIcon.innerText = "👑";
+            endTitle.innerText = "XUẤT SẮC QUÁ PHI HÀNH GIA!";
+            endDesc.innerHTML = `Bạn <span style="color:#d81159">${gameState.name}</span> đã hoàn thành chuyến hành trình màu hồng!<br>Tổng năng lượng thu thập: <strong style="color:#52b788; font-size:1.5rem;">${gameState.score}/100 điểm</strong> ⭐`;
+        } else {
+            endIcon.innerText = "🎀";
+            endTitle.innerText = "CỐ GẮNG LẦN SAU NHÉ!";
+            endDesc.innerHTML = `Rô-bốt đã cạn kiệt năng lượng.<br>Điểm số đạt được: <strong style="color:#e63946; font-size:1.5rem;">${gameState.score}/100 điểm</strong>`;
+        }
+    }
+
+    function restartGame() {
+        showScreen('screen-start');
+    }
+</script>
+</body>
+</html>
+```eof

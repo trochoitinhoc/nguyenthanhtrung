@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đại Chiến Tìm Kiếm Thông Tin - Hành Trình Thỉnh Kinh</title>
+    <style>
+        :root {
+            --primary: #d97706; /* Cam đất */
+            --primary-dark: #b45309;
+            --secondary: #16a34a; /* Xanh ngọc */
+            --secondary-dark: #15803d;
+            --danger: #dc2626;
+            --danger-dark: #b91c1c;
+            --info: #0284c7;
+            --bg-color: #fef3c7; /* Vàng nhạt */
+            --text-main: #451a03;
+            --font-main: 'Arial', 'Segoe UI', Tahoma, sans-serif;
+            --panel-bg: rgba(255, 253, 245, 0.95);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: #1c1917;
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            max-height: 800px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #7dd3fc, #fde047);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        @media (min-width: 1024px) {
+            #game-container { border-radius: 20px; height: 95vh; }
+        }
+
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; z-index: 10;
+        }
+        .screen.active { display: flex; }
+
+        /* Nút và công cụ toàn cục */
+        .global-tools {
+            position: absolute; top: 15px; right: 15px;
+            display: flex; gap: 10px; z-index: 50;
+        }
+        .btn-icon {
+            width: 45px; height: 45px; border-radius: 50%;
+            background: rgba(255,255,255,0.95); border: 3px solid var(--primary);
+            color: var(--primary-dark); font-size: 1.5rem;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .btn-icon:hover { transform: scale(1.1); }
+        .btn-icon:active { transform: scale(0.9); }
+
+        .btn {
+            background: linear-gradient(to bottom, var(--primary), var(--primary-dark));
+            border: 2px solid #fff; border-bottom: 6px solid #78350f;
+            border-radius: 12px; color: white; font-size: 1.2rem; font-weight: bold;
+            padding: 12px 24px; cursor: pointer; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.1s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            text-transform: uppercase; font-family: inherit;
+        }
+        .btn:active { transform: translateY(4px); border-bottom-width: 2px; }
+        .btn.secondary { background: linear-gradient(to bottom, var(--secondary), var(--secondary-dark)); border-bottom-color: #064e3b; }
+        .btn.danger { background: linear-gradient(to bottom, var(--danger), var(--danger-dark)); border-bottom-color: #7f1d1d; }
+        .btn.info { background: linear-gradient(to bottom, var(--info), #0369a1); border-bottom-color: #075985; }
+        .btn:disabled { filter: grayscale(100%); cursor: not-allowed; transform: none; border-bottom-width: 6px; opacity: 0.7;}
+
+        /* Trang chủ & Hướng dẫn */
+        #screen-home, #screen-guide {
+            background: radial-gradient(circle at center, #fef08a, #f59e0b);
+            align-items: center; justify-content: center;
+        }
+        .title-box { text-align: center; margin-bottom: 10px; animation: float 3s ease-in-out infinite; }
+        .main-title {
+            font-size: 2.8rem; color: #fff; text-transform: uppercase;
+            text-shadow: 3px 3px 0 #b45309, -2px -2px 0 #b45309, 2px -2px 0 #b45309, -2px 2px 0 #b45309, 5px 5px 15px rgba(0,0,0,0.6);
+            line-height: 1.2; margin-bottom: 10px;
+        }
+        @media (min-width: 768px) { .main-title { font-size: 4rem; } }
+        
+        .sub-title {
+            font-size: 1.1rem; color: #fef08a; font-weight: bold;
+            background: rgba(120, 53, 15, 0.8); padding: 8px 20px; border-radius: 20px;
+            display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .panel-box {
+            background: var(--panel-bg); border: 4px solid var(--primary);
+            padding: 25px; border-radius: 20px; width: 90%; max-width: 450px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 15px;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .input-group label { font-weight: bold; color: var(--text-main); font-size: 1.1rem; display: block; margin-bottom: 5px;}
+        .input-group input {
+            width: 100%; padding: 12px; border: 3px solid #cbd5e1; border-radius: 10px;
+            font-size: 1.2rem; font-family: inherit; outline: none; background: #fff;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus { border-color: var(--primary); }
+        .guide-content h2 { color: var(--primary-dark); text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 15px;}
+        .guide-content p, .guide-content li { font-size: 1.1rem; line-height: 1.5; margin-bottom: 10px; color: #334155;}
+        
+        /* Bản đồ */
+        #screen-map { background: #bbf7d0; position: relative; }
+        .map-bg { position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0.6; pointer-events: none;}
+        .map-header {
+            position: absolute; top: 15px; left: 15px; z-index: 20;
+            background: rgba(255,255,255,0.95); padding: 10px 20px; border-radius: 15px;
+            border: 3px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            font-weight: bold; color: var(--text-main); font-size: 1.1rem;
+        }
+
+        .inventory {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 20; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+            background: rgba(255,255,255,0.9); padding: 10px; border-radius: 20px;
+            border: 3px solid var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+        .item-slot {
+            width: 55px; height: 55px; border-radius: 12px; background: #fef3c7;
+            border: 2px dashed #b45309; position: relative;
+            display: flex; justify-content: center; align-items: center; font-size: 2rem;
+            cursor: pointer; transition: transform 0.2s, background 0.2s;
+        }
+        .item-slot:hover { transform: scale(1.1); background: #fde68a; border-style: solid; }
+        .item-count {
+            position: absolute; bottom: -5px; right: -5px; background: var(--danger);
+            color: white; font-size: 0.9rem; font-weight: bold; width: 24px; height: 24px;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 2px solid white;
+        }
+
+        /* Điểm trên bản đồ */
+        .node {
+            position: absolute; width: 50px; height: 50px; border-radius: 50%;
+            background: #9ca3af; border: 4px solid #4b5563; z-index: 5;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; color: white; font-size: 1.2rem;
+            box-shadow: 0 5px 0 #374151, 0 10px 10px rgba(0,0,0,0.4);
+            cursor: pointer; transition: all 0.2s;
+        }
+        @media (min-width: 768px) { .node { width: 65px; height: 65px; font-size: 1.5rem; } }
+        
+        .node::after {
+            content: attr(data-name); position: absolute; top: -40px; white-space: nowrap;
+            background: rgba(0,0,0,0.8); padding: 5px 12px; border-radius: 8px;
+            font-size: 1rem; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+            border: 1px solid #fde047;
+        }
+        .node:hover::after { opacity: 1; }
+        .node.completed { background: var(--secondary); border-color: #065f46; box-shadow: 0 5px 0 #064e3b; }
+        .node.completed::before { content: '✓'; position: absolute; font-size: 2rem; color: #fff; opacity: 0.5; }
+        .node.unlocked { background: #fde047; border-color: #ca8a04; box-shadow: 0 5px 0 #a16207; animation: pulseNode 1.5s infinite; color: #713f12;}
+        .node.boss { width: 70px; height: 70px; background: var(--danger); border-color: #7f1d1d; box-shadow: 0 6px 0 #450a0a; font-size: 2rem;}
+
+        @keyframes pulseNode { 0% { transform: scale(1); } 50% { transform: scale(1.15); box-shadow: 0 5px 0 #a16207, 0 0 20px #fde047; } 100% { transform: scale(1); } }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        #player-avatar {
+            position: absolute; width: 100px; height: 60px; z-index: 10;
+            transition: all 1s cubic-bezier(0.25, 0.1, 0.25, 1); pointer-events: none;
+            filter: drop-shadow(0 10px 5px rgba(0,0,0,0.5));
+            display: flex; justify-content: center; align-items: flex-end;
+        }
+
+        /* Màn hình chơi */
+        #screen-stage { background: linear-gradient(to bottom, #1e3a8a, #0f172a); }
+        .stage-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; background: rgba(0,0,0,0.6); border-bottom: 3px solid #475569;
+        }
+        .stage-title { color: #fde047; font-size: 1.5rem; font-weight: bold; text-transform: uppercase; text-shadow: 2px 2px 4px black;}
+        
+        .stage-content {
+            flex: 1; display: flex; flex-direction: column; padding: 15px;
+            max-width: 900px; margin: 0 auto; width: 100%; position: relative; overflow-y: auto;
+        }
+        
+        .question-panel {
+            background: var(--panel-bg); border-radius: 15px; padding: 25px;
+            font-size: 1.3rem; font-weight: bold; text-align: center;
+            border: 4px solid var(--primary); box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+            margin-bottom: 20px; line-height: 1.5; color: var(--text-main);
+        }
+
+        .answers-grid { display: grid; gap: 15px; grid-template-columns: 1fr; }
+        @media (min-width: 768px) { .answers-grid { grid-template-columns: 1fr 1fr; } }
+        
+        .ans-btn {
+            background: white; border: 3px solid #cbd5e1; border-radius: 12px;
+            padding: 15px; font-size: 1.2rem; font-weight: bold; color: #1e293b;
+            cursor: pointer; transition: all 0.2s; text-align: left;
+            display: flex; align-items: center; gap: 15px; box-shadow: 0 6px 10px rgba(0,0,0,0.15);
+            font-family: inherit; line-height: 1.4;
+        }
+        .ans-btn:hover:not(:disabled) { border-color: var(--primary); background: #fef3c7; transform: translateY(-3px); box-shadow: 0 8px 15px rgba(217, 119, 6, 0.3);}
+        .ans-btn.correct { background: var(--secondary); color: white; border-color: #064e3b; animation: flashCorrect 0.5s;}
+        .ans-btn.wrong { background: var(--danger); color: white; border-color: #7f1d1d; animation: shake 0.4s;}
+        .ans-btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        
+        .ans-idx {
+            background: var(--primary); color: white; width: 40px; height: 40px;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; font-size: 1.3rem; border: 2px solid white;
+        }
+
+        /* Sắp xếp */
+        .sort-container { display: flex; flex-direction: column; gap: 12px; }
+        .sort-item {
+            background: white; border: 3px solid #94a3b8; padding: 15px; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center; font-weight: bold;
+            font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .sort-controls { display: flex; gap: 8px;}
+        .sort-controls button {
+            background: #e2e8f0; border: 2px solid #cbd5e1; padding: 10px 15px; border-radius: 8px;
+            font-size: 1.2rem; cursor: pointer; color: #1e293b; font-weight: bold;
+        }
+        .sort-controls button:active { background: #cbd5e1; transform: scale(0.95);}
+        .sort-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Animation */
+        @keyframes flashCorrect { 0%, 100% { background: var(--secondary); } 50% { background: #86efac; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+
+        .battle-view {
+            height: 180px; display: flex; justify-content: space-between; align-items: flex-end;
+            margin-bottom: 20px; border-bottom: 5px solid #475569; padding: 0 20px 10px; position: relative;
+        }
+        .char-svg { width: 140px; height: 140px; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.6)); transition: all 0.3s;}
+        
+        .anim-attack { animation: attackMove 1s ease-in-out forwards; z-index: 100;}
+        @keyframes attackMove {
+            0% { transform: translateX(0) scale(1); }
+            40% { transform: translateX(40vw) scale(1.2) translateY(-20px); }
+            60% { transform: translateX(40vw) scale(1.2) translateY(-20px); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        
+        .anim-hit { animation: takeHit 0.8s ease-in-out forwards; }
+        @keyframes takeHit {
+            0% { transform: translateX(0); filter: brightness(1); }
+            40% { transform: translateX(20px) rotate(15deg); filter: brightness(2) hue-rotate(90deg); }
+            100% { transform: translateX(0); filter: brightness(1); opacity: 0;}
+        }
+
+        /* Hỏa Diệm Sơn */
+        .fire-bg {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to top, #dc2626, #f97316, #fde047, transparent);
+            opacity: 0.9; z-index: -1; transition: height 0.8s ease-in-out;
+            pointer-events: none; mix-blend-mode: screen;
+        }
+        .streak-box {
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px;
+            font-weight: bold; border: 3px solid #f59e0b; text-align: center; margin-bottom: 15px;
+            font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .streak-dots { display: flex; gap: 15px; margin-top: 10px; justify-content: center;}
+        .dot { width: 25px; height: 25px; border-radius: 50%; background: #475569; border: 3px solid white; transition: all 0.3s;}
+        .dot.active { background: #fde047; box-shadow: 0 0 15px 5px rgba(253, 224, 71, 0.8); border-color: #ca8a04; }
+
+        /* Modal */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000;
+            backdrop-filter: blur(3px);
+        }
+        .modal-box {
+            background: var(--panel-bg); padding: 30px; border-radius: 25px; text-align: center;
+            max-width: 450px; width: 90%; border: 5px solid var(--primary);
+            box-shadow: 0 0 50px rgba(0,0,0,0.9); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-title { font-size: 1.8rem; color: var(--primary-dark); margin-bottom: 15px; font-weight: bold; text-transform: uppercase;}
+        .modal-msg { font-size: 1.2rem; margin-bottom: 25px; line-height: 1.5; color: #1e293b;}
+        .modal-actions { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;}
+
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* Màn hình kết thúc */
+        #screen-end { background: radial-gradient(circle, #fef08a, #d97706); align-items: center; justify-content: center;}
+        .cert-box {
+            background: white; padding: 30px 20px; border-radius: 20px; border: 12px solid #b45309;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); max-width: 600px; width: 95%; text-align: center;
+            position: relative; overflow-y: auto; max-height: 90vh;
+        }
+        .cert-box::before {
+            content: ''; position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px;
+            border: 3px dashed #b45309; border-radius: 10px; pointer-events: none;
+        }
+        .c-title { color: #dc2626; font-size: 2.2rem; font-weight: bold; margin-bottom: 5px; text-shadow: 2px 2px 0 #fde047;}
+        .c-subtitle { font-size: 1.2rem; font-weight: bold; color: #475569;}
+        .c-name { font-size: 2.5rem; color: #1d4ed8; font-weight: bold; margin: 10px 0; text-transform: uppercase; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);}
+        
+        .c-stats { 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; 
+            background: #f8fafc; padding: 20px; border-radius: 12px; border: 2px solid #cbd5e1; margin: 20px 0;
+        }
+        .c-stat-item { font-size: 1.2rem; font-weight: bold; color: #334155; display: flex; align-items: center; gap: 8px;}
+        .c-review { 
+            background: #fee2e2; padding: 15px; border-radius: 12px; border: 2px solid #f87171; 
+            color: #991b1b; font-size: 1.1rem; line-height: 1.4; font-weight: bold; margin-bottom: 25px; 
+            display: none; text-align: left;
+        }
+    </style>
+</head>
+<body>
+<div id="game-container">
+    
+    <!-- Các nút toàn cục -->
+    <div class="global-tools">
+        <button class="btn-icon" id="btn-sound" onclick="game.toggleSound()" title="Bật/Tắt Nhạc">🎵</button>
+        <button class="btn-icon" onclick="game.showHomeConfirm()" title="Về Trang Chủ">🏠</button>
+    </div>
+
+    <!-- MÀN HÌNH 1: TRANG CHỦ -->
+    <div id="screen-home" class="screen active">
+        <div class="title-box">
+            <div class="main-title">ĐẠI CHIẾN<br><span style="color: #fde047; text-shadow: 4px 4px 0 #dc2626;">TÌM KIẾM THÔNG TIN</span></div>
+            <div class="sub-title">Vượt qua các kiếp nạn – Thu thập pháp bảo – Đánh bại Đại Boss!</div>
+        </div>
+        
+        <!-- Nhóm nhân vật vẽ bằng SVG (Tôn Ngộ Không đứng giữa) -->
+        <div style="margin-bottom: 25px; display: flex; justify-content: center; gap: -20px; animation: float 2s infinite alternate;">
+            <!-- Trư Bát Giới (Trái) -->
+            <svg width="80" height="80" viewBox="0 0 100 100" style="transform: rotate(-10deg) translateY(20px);">
+                <circle cx="50" cy="50" r="35" fill="#fca5a5" stroke="#991b1b" stroke-width="2"/> <!-- Đầu Heo -->
+                <ellipse cx="50" cy="60" rx="15" ry="10" fill="#fecaca" stroke="#991b1b" stroke-width="2"/> <!-- Mũi -->
+                <circle cx="45" cy="60" r="2" fill="black"/><circle cx="55" cy="60" r="2" fill="black"/> <!-- Lỗ mũi -->
+                <circle cx="35" cy="40" r="4" fill="black"/><circle cx="65" cy="40" r="4" fill="black"/> <!-- Mắt -->
+                <path d="M 20 50 Q 10 30 25 20" fill="none" stroke="#fca5a5" stroke-width="8" stroke-linecap="round"/> <!-- Tai -->
+                <path d="M 80 50 Q 90 30 75 20" fill="none" stroke="#fca5a5" stroke-width="8" stroke-linecap="round"/>
+                <line x1="80" y1="20" x2="100" y2="80" stroke="#475569" stroke-width="4"/> <!-- Cào -->
+                <path d="M 90 20 L 100 20 M 95 15 L 95 25" stroke="#94a3b8" stroke-width="3"/>
+            </svg>
+            <!-- Tôn Ngộ Không (Giữa) -->
+            <svg width="120" height="120" viewBox="0 0 100 100" style="z-index: 2;">
+                <circle cx="50" cy="50" r="30" fill="#fcd34d" stroke="#b45309" stroke-width="2"/>
+                <circle cx="35" cy="45" r="8" fill="white"/><circle cx="35" cy="45" r="4" fill="black"/>
+                <circle cx="65" cy="45" r="8" fill="white"/><circle cx="65" cy="45" r="4" fill="black"/>
+                <path d="M 20 40 Q 50 20 80 40" fill="none" stroke="#fde047" stroke-width="4" stroke-linecap="round"/> <!-- Vòng kim cô -->
+                <path d="M 40 65 Q 50 75 60 65" fill="none" stroke="#b45309" stroke-width="3" stroke-linecap="round"/> <!-- Miệng -->
+                <line x1="10" y1="90" x2="90" y2="10" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/> <!-- Gậy -->
+                <line x1="15" y1="85" x2="25" y2="75" stroke="#fde047" stroke-width="8"/>
+                <line x1="75" y1="25" x2="85" y2="15" stroke="#fde047" stroke-width="8"/>
+            </svg>
+            <!-- Đường Tăng (Phải) -->
+            <svg width="80" height="80" viewBox="0 0 100 100" style="transform: rotate(10deg) translateY(20px);">
+                <circle cx="50" cy="50" r="25" fill="#fef08a" stroke="#b45309" stroke-width="2"/>
+                <circle cx="40" cy="45" r="3" fill="black"/><circle cx="60" cy="45" r="3" fill="black"/>
+                <path d="M 25 35 L 50 10 L 75 35 Z" fill="#dc2626" stroke="#991b1b" stroke-width="2"/> <!-- Mũ -->
+                <circle cx="50" cy="65" r="15" fill="#dc2626"/> <!-- Áo -->
+                <line x1="70" y1="20" x2="80" y2="90" stroke="#b45309" stroke-width="4"/> <!-- Tích trượng -->
+                <circle cx="70" cy="20" r="5" fill="#fde047"/>
+            </svg>
+        </div>
+
+        <div class="panel-box">
+            <div class="input-group">
+                <label for="p-name">HỌ VÀ TÊN CHIẾN BINH</label>
+                <input type="text" id="p-name" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label for="p-class">LỚP</label>
+                <input type="text" id="p-class" placeholder="Ví dụ: 4A1" autocomplete="off">
+            </div>
+            <button class="btn" style="width: 100%; margin-top: 5px; padding: 15px;" onclick="game.startGame()">▶ BẮT ĐẦU PHIÊU LƯU</button>
+            <button class="btn info" style="width: 100%;" onclick="game.showScreen('screen-guide')">❓ XEM HƯỚNG DẪN</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH 2: HƯỚNG DẪN -->
+    <div id="screen-guide" class="screen">
+        <div class="panel-box guide-content">
+            <h2>📜 HƯỚNG DẪN CÁCH CHƠI</h2>
+            <p>Chào mừng chiến binh gia nhập hành trình thỉnh kinh kiến thức Bài 4: Tìm kiếm và trao đổi thông tin!</p>
+            <ul>
+                <li>🎯 <b>Nhiệm vụ:</b> Vượt qua các kiếp nạn bằng cách trả lời đúng câu hỏi Tin học. Hoàn thành để mở đường.</li>
+                <li>🔥 <b>Hỏa Diệm Sơn:</b> Phải trả lời đúng 3 câu liên tiếp. Sai sẽ bị ngắt chuỗi.</li>
+                <li>🪄 <b>Túi Pháp Bảo (Dùng có giới hạn):</b>
+                    <br>👁️ <b>Hỏa Nhãn:</b> Bỏ đi 1 đáp án sai.
+                    <br>📜 <b>Bí Kíp:</b> Mở gợi ý kiến thức.
+                    <br>☁️ <b>Cân Đẩu Vân:</b> Vượt ải tức thì (bỏ qua câu hỏi).
+                    <br>🪭 <b>Quạt Ba Tiêu:</b> Dùng để dập tắt Hỏa Diệm Sơn sau khi đáp đúng 3 câu.
+                    <br>🍑 <b>Đào Tiên:</b> Thêm 1 lượt thử lại khi trả lời sai mà không bị tính lỗi.
+                </li>
+            </ul>
+            <button class="btn secondary" style="margin-top: 15px;" onclick="game.showScreen('screen-home')">🔙 QUAY LẠI TRANG CHỦ</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH 3: BẢN ĐỒ -->
+    <div id="screen-map" class="screen">
+        <!-- Đường cong trang trí cho bản đồ -->
+        <svg class="map-bg" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <path d="M 10 90 Q 20 60 40 50 T 80 70 T 90 10" fill="none" stroke="#166534" stroke-width="1.5" stroke-dasharray="2 2"/>
+        </svg>
+
+        <div class="map-header">
+            👤 <span id="ui-name">Tên</span> - <span id="ui-class">Lớp</span><br>
+            🏆 Điểm: <span id="ui-score" style="color:var(--primary-dark); font-size:1.3rem;">0</span>
+        </div>
+
+        <!-- Các Node Bản Đồ (Vị trí x,y tính bằng % để Responsive) -->
+        <div id="node-0" class="node" style="bottom: 15%; left: 10%;" data-name="1. Mắt Thần Từ Khóa" onclick="game.enterStage(0)">1</div>
+        <div id="node-1" class="node" style="bottom: 30%; left: 25%;" data-name="2. Cổng Máy Tìm Kiếm" onclick="game.enterStage(1)">2</div>
+        <div id="node-2" class="node" style="bottom: 50%; left: 20%;" data-name="3. Bước Chân Truy Cập" onclick="game.enterStage(2)">3</div>
+        <div id="node-3" class="node" style="top: 25%; left: 35%;" data-name="4. Tháp Kết Quả" onclick="game.enterStage(3)">4</div>
+        <div id="node-4" class="node" style="top: 20%; left: 55%;" data-name="5. Trình Tự Hóa Giải" onclick="game.enterStage(4)">5</div>
+        <div id="node-5" class="node" style="top: 45%; left: 70%;" data-name="6. Khu Rừng Vua Hùng" onclick="game.enterStage(5)">6</div>
+        <div id="node-6" class="node" style="bottom: 35%; left: 85%;" data-name="7. Động Phong Cảnh" onclick="game.enterStage(6)">7</div>
+        <div id="node-7" class="node" style="bottom: 15%; left: 60%;" data-name="8. Nhận Xét Yêu Tinh" onclick="game.enterStage(7)">8</div>
+        <div id="node-8" class="node" style="bottom: 15%; left: 38%; background:#ea580c; border-color:#9a3412;" data-name="9. Hỏa Diệm Sơn" onclick="game.enterStage(8)">🔥</div>
+        <div id="node-9" class="node boss" style="top: 10%; left: 80%;" data-name="10. Chúa Tể Thông Tin" onclick="game.enterStage(9)">👹</div>
+
+        <!-- Avatar di chuyển (Đoàn thỉnh kinh thu nhỏ) -->
+        <div id="player-avatar">
+            <svg viewBox="0 0 100 60" width="100%" height="100%">
+                <ellipse cx="50" cy="55" rx="40" ry="5" fill="rgba(0,0,0,0.3)"/>
+                <!-- Tôn ngộ không nhỏ -->
+                <circle cx="20" cy="35" r="10" fill="#fcd34d"/><line x1="10" y1="50" x2="30" y2="20" stroke="#ef4444" stroke-width="2"/>
+                <!-- Bát Giới nhỏ -->
+                <circle cx="40" cy="40" r="12" fill="#fca5a5"/>
+                <!-- Đường Tăng nhỏ -->
+                <circle cx="60" cy="30" r="10" fill="#fef08a"/><path d="M 55 20 L 65 20 L 60 10 Z" fill="#dc2626"/>
+                <!-- Sa Tăng nhỏ -->
+                <circle cx="80" cy="38" r="11" fill="#475569"/>
+            </svg>
+        </div>
+
+        <!-- Túi Pháp Bảo -->
+        <div class="inventory">
+            <div class="item-slot" title="Hỏa Nhãn Kim Tinh - Loại 1 đáp án sai" onclick="game.useItem('mat')">👁️<div class="item-count" id="inv-mat">2</div></div>
+            <div class="item-slot" title="Bí Kíp - Xem gợi ý" onclick="game.useItem('biKip')">📜<div class="item-count" id="inv-biKip">2</div></div>
+            <div class="item-slot" title="Đào Tiên - Cứu 1 lần sai" onclick="game.useItem('dao')">🍑<div class="item-count" id="inv-dao">1</div></div>
+            <div class="item-slot" title="Cân Đẩu Vân - Vượt ải tức thì" onclick="game.useItem('may')">☁️<div class="item-count" id="inv-may">1</div></div>
+            <div class="item-slot" id="slot-quat" title="Quạt Ba Tiêu - Dùng ở Hỏa Diệm Sơn" style="opacity: 0.5;" onclick="game.useItem('quat')">🪭<div class="item-count" id="inv-quat">1</div></div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH 4: CHIẾN ĐẤU (TRẢ LỜI CÂU HỎI) -->
+    <div id="screen-stage" class="screen">
+        <div class="fire-bg" id="fire-bg" style="display:none;"></div>
+        
+        <div class="stage-header">
+            <button class="btn secondary" style="padding: 8px 15px; font-size: 1rem;" onclick="game.backToMap()">🔙 BẢN ĐỒ</button>
+            <div class="stage-title" id="stg-title">Tên Kiếp Nạn</div>
+            <div style="width: 80px;"></div> <!-- Spacer -->
+        </div>
+        
+        <div class="stage-content">
+            <!-- Vùng Animation Trận chiến -->
+            <div class="battle-view">
+                <div id="battle-party" style="position: relative;">
+                    <!-- Nhóm 4 thầy trò đứng cạnh nhau -->
+                    <svg class="char-svg" viewBox="0 0 150 100" id="anim-wukong">
+                        <circle cx="50" cy="50" r="25" fill="#fcd34d" stroke="#b45309" stroke-width="2"/>
+                        <path d="M 35 45 Q 50 30 65 45" fill="none" stroke="#fde047" stroke-width="3"/>
+                        <line x1="10" y1="90" x2="90" y2="10" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/>
+                        <!-- Các nhân vật khác đứng sau bóng mờ -->
+                        <circle cx="20" cy="60" r="15" fill="#fca5a5" opacity="0.8"/> <!-- Bát Giới -->
+                        <circle cx="80" cy="40" r="15" fill="#fef08a" opacity="0.8"/> <!-- Sư phụ -->
+                    </svg>
+                </div>
+                
+                <div id="battle-monster">
+                    <!-- Yêu quái SVG sẽ được chèn qua JS -->
+                </div>
+            </div>
+
+            <!-- Tiến trình Hỏa Diệm Sơn -->
+            <div class="streak-box" id="streak-box" style="display:none;">
+                🔥 DẬP TẮT HỎA DIỆM SƠN 🔥
+                <div class="streak-dots">
+                    <div class="dot" id="dot-1"></div>
+                    <div class="dot" id="dot-2"></div>
+                    <div class="dot" id="dot-3"></div>
+                </div>
+            </div>
+
+            <div class="question-panel" id="q-text">Nội dung câu hỏi?</div>
+            
+            <!-- Trả lời trắc nghiệm -->
+            <div class="answers-grid" id="ans-container"></div>
+            
+            <!-- Trả lời sắp xếp -->
+            <div id="sort-container" class="sort-container" style="display:none;"></div>
+            <button class="btn info" id="btn-submit-sort" style="display:none; margin-top:20px; align-self:center;" onclick="game.checkSort()">KIỂM TRA SẮP XẾP</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH 5: TỔNG KẾT KẾT THÚC -->
+    <div id="screen-end" class="screen">
+        <div class="cert-box">
+            <div class="c-title">🏆 CHỨNG NHẬN 🏆</div>
+            <div class="c-subtitle">CAO THỦ TÌM KIẾM THÔNG TIN</div>
+            <div class="c-name" id="end-name">TÊN CHIẾN BINH</div>
+            <div style="font-size: 1.2rem; font-weight: bold; color: #1e293b;">Lớp: <span id="end-class">4A</span></div>
+            
+            <div class="c-stats">
+                <div class="c-stat-item">⛰️ Kiếp nạn qua: <span id="end-stages" style="color:var(--info)">10/10</span></div>
+                <div class="c-stat-item">✅ Câu đúng: <span id="end-correct" style="color:var(--secondary)">0</span></div>
+                <div class="c-stat-item">❌ Lần sai: <span id="end-wrong" style="color:var(--danger)">0</span></div>
+                <div class="c-stat-item">🪄 Pháp bảo dùng: <span id="end-items" style="color:#8b5cf6">0</span></div>
+                <div class="c-stat-item">🔥 Chuỗi đúng cao: <span id="end-streak" style="color:#ea580c">0</span></div>
+                <div class="c-stat-item">⏱️ Thời gian: <span id="end-time">0</span>s</div>
+                <div class="c-stat-item" style="grid-column: span 2; justify-content:center; font-size: 1.6rem; color:var(--primary-dark); background: #fef3c7; padding: 10px; border-radius: 10px; border: 2px dashed var(--primary);">
+                    🎯 TỔNG ĐIỂM: <span id="end-score">0</span>
+                </div>
+            </div>
+
+            <div class="c-review" id="end-review">
+                <b>Kiến thức cần ôn lại:</b> Hãy nhớ 4 bước tìm kiếm thông tin và cách chọn từ khóa ngắn gọn, đúng trọng tâm để máy tìm kiếm làm việc hiệu quả nhất nhé!
+            </div>
+
+            <div style="display:flex; gap:15px; justify-content:center; flex-wrap: wrap;">
+                <button class="btn secondary" onclick="game.fullReset()">🔄 CHƠI LẠI TỪ ĐẦU</button>
+                <button class="btn danger" onclick="game.fullReset()">🏠 VỀ TRANG CHỦ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH MODAL THÔNG BÁO (Tùy chỉnh) -->
+    <div class="modal-overlay" id="sys-modal">
+        <div class="modal-box">
+            <div class="modal-title" id="sys-m-title">Thông báo</div>
+            <div class="modal-msg" id="sys-m-msg">Nội dung thông báo</div>
+            <div class="modal-actions" id="sys-m-actions">
+                <!-- Nút tự động sinh -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * AUDIO ENGINE BẰNG WEB AUDIO API
+ * Đảm bảo phát nhạc offline 100% không dùng file âm thanh ngoài
+ */
+const audioManager = {
+    ctx: null,
+    enabled: true,
+    bgmOsc: null, bgmGain: null,
+    isPlayingBGM: false,
+    currentBgmType: '',
+    bgmLoop: null,
+    
+    init: function() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    },
+    
+    toggle: function() {
+        this.enabled = !this.enabled;
+        document.getElementById('btn-sound').innerText = this.enabled ? '🎵' : '🔇';
+        if (this.enabled) {
+            this.init();
+            this.playBGM(this.currentBgmType || 'home');
+        } else {
+            this.stopBGM();
+        }
+    },
+
+    // Hàm tạo âm thanh synth cơ bản
+    playTone: function(freq, type, duration, vol=0.1, slideFreq=null) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            if(slideFreq) {
+                osc.frequency.exponentialRampToValueAtTime(slideFreq, this.ctx.currentTime + duration);
+            }
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            
+            // Fade out mượt
+            gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+            osc.stop(this.ctx.currentTime + duration);
+        } catch (e) { console.warn("Audio play error", e); }
+    },
+
+    // Hiệu ứng âm thanh trò chơi
+    playClick: function() { this.playTone(800, 'sine', 0.1, 0.05); },
+    playMove: function() { this.playTone(300, 'triangle', 0.15, 0.05, 500); },
+    playCorrect: function() {
+        this.playTone(523.25, 'square', 0.1, 0.05); // C5
+        setTimeout(() => this.playTone(659.25, 'square', 0.1, 0.05), 100); // E5
+        setTimeout(() => this.playTone(783.99, 'square', 0.3, 0.05), 200); // G5
+    },
+    playWrong: function() {
+        this.playTone(250, 'sawtooth', 0.2, 0.05, 200);
+        setTimeout(() => this.playTone(200, 'sawtooth', 0.3, 0.05, 150), 200);
+    },
+    playArtifact: function() {
+        for(let i=0; i<6; i++) {
+            setTimeout(() => this.playTone(400 + i*150, 'sine', 0.1, 0.05), i*60);
+        }
+    },
+    playHit: function() { this.playTone(150, 'square', 0.2, 0.1, 50); },
+    
+    // Nhạc nền (Tự sinh bằng mã lặp)
+    stopBGM: function() {
+        clearTimeout(this.bgmLoop);
+        this.isPlayingBGM = false;
+    },
+
+    playBGM: function(type) {
+        if (!this.enabled) return;
+        this.init();
+        if (this.currentBgmType === type && this.isPlayingBGM) return;
+        this.stopBGM();
+        this.currentBgmType = type;
+        
+        let notes = [];
+        let tempo = 200; // ms / note
+        let wave = 'triangle';
+        let vol = 0.02;
+
+        if (type === 'home') { notes = [392, 523, 659, 523, 392, 523, 659, 0]; tempo = 300; wave='sine'; }
+        else if (type === 'map') { notes = [261, 329, 392, 329, 440, 392, 0, 0]; tempo = 250; }
+        else if (type === 'battle') { notes = [220, 246, 220, 196, 220, 0]; tempo = 150; wave='square'; vol=0.015;}
+        else if (type === 'fire') { notes = [150, 180, 150, 180, 200, 0]; tempo = 120; wave='sawtooth'; vol=0.02;}
+        else if (type === 'boss') { notes = [130, 146, 130, 164, 130, 196]; tempo = 140; wave='sawtooth'; vol=0.03;}
+        else if (type === 'win') { notes = [523, 659, 783, 1046, 783, 1046, 0, 0]; tempo = 200; wave='square';}
+
+        let noteIdx = 0;
+        this.isPlayingBGM = true;
+        
+        const playNextNote = () => {
+            if (!this.isPlayingBGM) return;
+            let freq = notes[noteIdx];
+            if (freq > 0) this.playTone(freq, wave, tempo/1000, vol);
+            noteIdx = (noteIdx + 1) % notes.length;
+            this.bgmLoop = setTimeout(playNextNote, tempo);
+        };
+        playNextNote();
+    }
+};
+
+/**
+ * NGÂN HÀNG CÂU HỎI (Bám sát Tin học 4 - Bài 4: Tìm kiếm và trao đổi thông tin)
+ */
+const STAGES = [
+    { type: 'mcq', name: 'Mắt Thần Từ Khóa', 
+      q: 'Trong Bài 4, "Từ khóa" (Keyword) được định nghĩa là gì?', 
+      hint: 'Đó là một cụm từ ngắn gọn, bao hàm ý chính nhất.',
+      ans: ['Là một hình ảnh lưu trên máy tính.','Là từ hoặc cụm từ thể hiện nội dung thông tin muốn tìm kiếm.','Là mật khẩu để mở khoá máy tính.','Là địa chỉ của một trang web.'], 
+      cor: 1 
+    },
+    { type: 'mcq', name: 'Cổng Máy Tìm Kiếm', 
+      q: 'Để tìm kiếm thông tin trên Internet, em cần sử dụng phần mềm/công cụ nào?', 
+      hint: 'Google hay Bing là một ví dụ điển hình của loại công cụ này.',
+      ans: ['Máy in tài liệu.','Phần mềm soạn thảo văn bản (Word).','Máy tìm kiếm (Ví dụ: Google).','Phần mềm vẽ tranh Paint.'], 
+      cor: 2 
+    },
+    { type: 'mcq', name: 'Bước Chân Truy Cập', 
+      q: 'Để mở máy tìm kiếm Google, em gõ địa chỉ nào vào thanh địa chỉ của trình duyệt web?', 
+      hint: 'Đây là trang tìm kiếm phổ biến nhất.',
+      ans: ['www.google.com','www.youtube.com','www.tinhoc4.vn','www.paint.com'], 
+      cor: 0 
+    },
+    { type: 'mcq', name: 'Tháp Kết Quả', 
+      q: 'Khi em gõ từ khóa vào ô tìm kiếm và nhấn phím Enter, máy tìm kiếm sẽ trả về kết quả dưới dạng gì?', 
+      hint: 'Kết quả không chỉ là 1 bài mà là một dãy rất nhiều sự lựa chọn.',
+      ans: ['Một bản nhạc tự động phát lớn.','Danh sách các trang web có chứa từ khóa tìm kiếm.','Một tệp Word tự động tải về máy.','Một bộ phim hoạt hình ngắn.'], 
+      cor: 1 
+    },
+    { type: 'sort', name: 'Trình Tự Hóa Giải', 
+      q: 'SẮP XẾP: Hãy sắp xếp 4 bước tìm kiếm thông tin theo đúng thứ tự (Từ trên xuống dưới):', 
+      hint: 'Trước tiên phải nghĩ xem mình tìm gì, sau đó mở máy tìm kiếm, gõ chữ, và cuối cùng click vào kết quả.',
+      steps: ['Xác định từ khóa cần tìm kiếm.', 'Mở trình duyệt và gõ địa chỉ máy tìm kiếm.', 'Gõ từ khóa vào ô tìm kiếm rồi nhấn Enter.', 'Nháy chọn một siêu liên kết trong danh sách kết quả.'],
+      corOrder: [0, 1, 2, 3] 
+    },
+    { type: 'mcq', name: 'Khu Rừng Vua Hùng', 
+      q: 'VÍ DỤ SGK: Nếu muốn tìm kiếm thông tin về "Các đời Vua Hùng", em nên gõ từ khóa nào vào ô tìm kiếm để kết quả chính xác nhất?', 
+      hint: 'Từ khóa cần sát với yêu cầu nhất, không nên ghi quá dài hoặc quá ngắn.',
+      ans: ['Lịch sử Việt Nam xưa.','Vua.','Các đời Vua Hùng.','Em muốn biết về vua Hùng thứ 18.'], 
+      cor: 2 
+    },
+    { type: 'mcq', name: 'Động Phong Cảnh', 
+      q: 'Từ khóa nào sau đây phù hợp nhất để xem hình ảnh các cảnh đẹp của đất nước?', 
+      hint: 'Cảnh đẹp thì gọi là gì nhỉ?',
+      ans: ['Bản đồ Việt Nam.','Danh lam thắng cảnh.','Học địa lý lớp 4.','Những bức ảnh đẹp.'], 
+      cor: 1 
+    },
+    { type: 'mcq', name: 'Nhận Xét Yêu Tinh', 
+      q: 'Vì sao chúng ta phải lựa chọn từ khóa thật phù hợp và ngắn gọn?', 
+      hint: 'Nếu từ khóa dài dòng hoặc chung chung, kết quả sẽ rất lộn xộn.',
+      ans: ['Để máy tìm kiếm chạy nhanh hơn, đỡ tốn điện.','Để kết quả tìm kiếm trả về chính xác với nội dung em cần.','Để không làm hỏng máy tính.','Vì máy tìm kiếm không hiểu câu dài.'], 
+      cor: 1 
+    },
+    // Hỏa Diệm Sơn - 3 câu liên tục
+    { type: 'streak', name: 'Hỏa Diệm Sơn', 
+      questions: [
+        { q: 'HỎA LÒ 1: Theo ví dụ bài học, từ khóa "Hồ Gươm" sẽ giúp em tìm kiếm thông tin về điều gì?', ans: ['Một hồ nước ở châu Âu.','Hồ Hoàn Kiếm ở thủ đô Hà Nội.','Trò chơi bắt cá dưới hồ.'], cor: 1 },
+        { q: 'HỎA LÒ 2: Làm thế nào để xem thông tin chi tiết của một kết quả sau khi máy tìm kiếm hiện ra danh sách?', ans: ['Nháy chuột vào siêu liên kết (đường link) đó.','Nhấn phím Cách (Space) nhiều lần.','Tắt máy tính đi mở lại.'], cor: 0 },
+        { q: 'HỎA LÒ 3: Máy tìm kiếm trên Internet KHÔNG THỂ giúp em làm việc gì sau đây?', ans: ['Tìm kiếm thông tin lịch sử, địa lý.','Tìm hình ảnh phong cảnh, động vật.','Ăn giúp em bữa sáng và dọn nhà.'], cor: 2 }
+      ]
+    },
+    // Boss Cuối
+    { type: 'mcq', name: 'Chúa Tể Thông Tin', 
+      q: 'ĐẠI CHIẾN TỔNG HỢP: Em được giao bài tập tìm hiểu về "Văn Miếu – Quốc Tử Giám". Trình tự nào sau đây là chuẩn xác nhất theo Bài 4?', 
+      ans: [
+        'Mở máy tính -> Mở game chơi -> Đóng máy tính.',
+        'Xác định từ khóa "Văn Miếu Quốc Tử Giám" -> Mở máy tìm kiếm google.com -> Gõ từ khóa, nhấn Enter -> Nháy chọn link phù hợp.',
+        'Mở máy tìm kiếm -> Gõ từ khóa "Trường học cũ" -> Nháy đại vào link đầu tiên thấy được.',
+        'Gõ từ khóa vào phần mềm Word -> Nhấn Enter -> Lưu tệp lại và nộp cô giáo.'
+      ], cor: 1 
+    }
+];
+
+// Trạng thái mặc định
+const getInitialState = () => ({
+    player: { name: '', class: '' },
+    stats: { score: 0, correct: 0, wrong: 0, highestStreak: 0, currentStreak: 0, itemsUsed: 0, startTime: 0, endTime: 0 },
+    progression: { unlocked: [0], completed: [], currentStage: 0, fireStreak: 0 },
+    inventory: { mat: 2, biKip: 2, dao: 1, may: 1, quat: 1 } // Số lượng item ban đầu
+});
+
+const game = {
+    state: getInitialState(),
+    currentSortState: [],
+    tempFailedStage: null, // Dùng để lưu màn đang lỗi khi xét xài Đào Tiên
+    
+    init: function() {
+        // Đăng ký sự kiện click chuột/chạm lần đầu để khởi động AudioContext (tránh lỗi Autoplay trên điện thoại)
+        const startAudio = () => {
+            audioManager.init();
+            document.body.removeEventListener('touchstart', startAudio);
+            document.body.removeEventListener('click', startAudio);
+        };
+        document.body.addEventListener('touchstart', startAudio, {once:true});
+        document.body.addEventListener('click', startAudio, {once:true});
+    },
+
+    startGame: function() {
+        const n = document.getElementById('p-name').value.trim();
+        const c = document.getElementById('p-class').value.trim();
+        if(!n || !c) {
+            this.showModal('Cảnh Báo', 'Bạn hãy nhập đầy đủ Họ Tên và Lớp để bắt đầu nhé!');
+            audioManager.init(); audioManager.playWrong(); return;
+        }
+        
+        audioManager.init();
+        audioManager.playClick();
+        
+        this.state.player = { name: n, class: c };
+        this.state.stats.startTime = Date.now();
+        this.updateMapUI();
+        this.showScreen('screen-map');
+        audioManager.playBGM('map');
+    },
+
+    showScreen: function(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    },
+
+    toggleSound: function() { audioManager.toggle(); },
+
+    backToMap: function() {
+        audioManager.playClick();
+        this.showScreen('screen-map');
+        audioManager.playBGM('map');
+    },
+
+    updateMapUI: function() {
+        document.getElementById('ui-name').innerText = this.state.player.name;
+        document.getElementById('ui-class').innerText = this.state.player.class;
+        document.getElementById('ui-score').innerText = this.state.stats.score;
+        
+        // Cập nhật số lượng item
+        ['mat','biKip','dao','may','quat'].forEach(id => {
+            document.getElementById(`inv-${id}`).innerText = this.state.inventory[id];
+        });
+        
+        // Quạt chỉ sáng ở màn 8 (Hỏa Diệm Sơn)
+        document.getElementById('slot-quat').style.opacity = (this.state.progression.currentStage === 8 && this.state.progression.fireStreak >= 3) ? '1' : '0.4';
+
+        // Cập nhật style cho 10 Nodes
+        for(let i=0; i<10; i++) {
+            const node = document.getElementById(`node-${i}`);
+            node.classList.remove('unlocked', 'completed');
+            if (this.state.progression.completed.includes(i)) {
+                node.classList.add('completed');
+            } else if (this.state.progression.unlocked.includes(i)) {
+                node.classList.add('unlocked');
+            }
+        }
+
+        // Di chuyển Avatar trên Map
+        let target = Math.max(...this.state.progression.unlocked);
+        if(target > 9) target = 9;
+        const targetNode = document.getElementById(`node-${target}`);
+        const avatar = document.getElementById('player-avatar');
+        avatar.style.left = targetNode.style.left;
+        avatar.style.top = targetNode.style.top;
+        avatar.style.bottom = targetNode.style.bottom;
+        avatar.style.right = targetNode.style.right;
+        
+        // Căn chỉnh vị trí avatar so với node
+        avatar.style.transform = 'translate(-25px, -60px)';
+    },
+
+    enterStage: function(idx) {
+        audioManager.playClick();
+        if (!this.state.progression.unlocked.includes(idx)) {
+            if(this.state.progression.completed.includes(idx)) {
+                this.showModal('Thông báo', 'Kiếp nạn này đã được hóa giải thành công!');
+            } else {
+                this.showModal('Cảnh báo', 'Kiếp nạn chưa mở. Hãy hoàn thành các cửa trước để thông đường!');
+                audioManager.playWrong();
+            }
+            return;
+        }
+        
+        this.state.progression.currentStage = idx;
+        const stageData = STAGES[idx];
+        document.getElementById('stg-title').innerText = stageData.name;
+        
+        // Reset giao diện
+        document.getElementById('ans-container').style.display = 'grid';
+        document.getElementById('sort-container').style.display = 'none';
+        document.getElementById('btn-submit-sort').style.display = 'none';
+        document.getElementById('fire-bg').style.display = 'none';
+        document.getElementById('streak-box').style.display = 'none';
+        document.getElementById('slot-quat').style.opacity = '0.4';
+        
+        // Sinh hình ảnh quái vật
+        document.getElementById('battle-monster').innerHTML = this.getMonsterSVG(idx);
+
+        // Chơi nhạc
+        if (idx === 8) { audioManager.playBGM('fire'); }
+        else if (idx === 9) { audioManager.playBGM('boss'); }
+        else { audioManager.playBGM('battle'); }
+
+        // Hiển thị nội dung dựa trên type
+        if (idx === 8) {
+            this.state.progression.fireStreak = 0;
+            this.renderFireStage();
+        } else if (stageData.type === 'mcq') {
+            this.renderMCQ(stageData);
+        } else if (stageData.type === 'sort') {
+            // Xáo trộn đáp án
+            this.currentSortState = [...stageData.steps].map((t,i)=>({t, orgIdx:i})).sort(()=>Math.random()-0.5);
+            this.renderSortStage();
+        }
+        
+        this.showScreen('screen-stage');
+        audioManager.playMove();
+    },
+
+    renderMCQ: function(data) {
+        document.getElementById('q-text').innerText = data.q;
+        const cont = document.getElementById('ans-container');
+        cont.innerHTML = '';
+        const labels = ['A','B','C','D'];
+        data.ans.forEach((txt, i) => {
+            cont.innerHTML += `<button class="ans-btn" id="ans-btn-${i}" onclick="game.checkMCQ(${i}, ${data.cor})">
+                <div class="ans-idx">${labels[i]}</div><div>${txt}</div>
+            </button>`;
+        });
+    },
+
+    checkMCQ: function(selected, correct) {
+        this.disableAnsBtns();
+        const btn = document.getElementById(`ans-btn-${selected}`);
+        if(selected === correct) {
+            btn.classList.add('correct');
+            this.handleCorrect();
+        } else {
+            btn.classList.add('wrong');
+            document.getElementById(`ans-btn-${correct}`).classList.add('correct');
+            this.handleWrong();
+        }
+    },
+
+    renderSortStage: function() {
+        const data = STAGES[this.state.progression.currentStage];
+        document.getElementById('q-text').innerText = data.q;
+        document.getElementById('ans-container').style.display = 'none';
+        const cont = document.getElementById('sort-container');
+        cont.style.display = 'flex';
+        document.getElementById('btn-submit-sort').style.display = 'block';
+        document.getElementById('btn-submit-sort').disabled = false;
+        
+        let html = '';
+        this.currentSortState.forEach((item, i) => {
+            html += `<div class="sort-item">
+                <span><b>B.${i+1}:</b> ${item.t}</span>
+                <div class="sort-controls">
+                    <button onclick="game.moveSort(${i}, -1)" ${i===0?'disabled':''}>▲</button>
+                    <button onclick="game.moveSort(${i}, 1)" ${i===3?'disabled':''}>▼</button>
+                </div>
+            </div>`;
+        });
+        cont.innerHTML = html;
+    },
+
+    moveSort: function(idx, dir) {
+        audioManager.playClick();
+        if(idx+dir < 0 || idx+dir > 3) return;
+        const temp = this.currentSortState[idx];
+        this.currentSortState[idx] = this.currentSortState[idx+dir];
+        this.currentSortState[idx+dir] = temp;
+        this.renderSortStage();
+    },
+
+    checkSort: function() {
+        document.getElementById('btn-submit-sort').disabled = true;
+        let ok = true;
+        this.currentSortState.forEach((item, i) => { 
+            if(item.orgIdx !== STAGES[this.state.progression.currentStage].corOrder[i]) ok = false; 
+        });
+        if(ok) this.handleCorrect();
+        else this.handleWrong();
+    },
+
+    renderFireStage: function() {
+        const fireBg = document.getElementById('fire-bg');
+        fireBg.style.display = 'block';
+        
+        // Chiều cao lửa giảm dần
+        let fireHeight = 80 - (this.state.progression.fireStreak * 25);
+        if(fireHeight < 0) fireHeight = 0;
+        fireBg.style.height = fireHeight + '%';
+        
+        document.getElementById('streak-box').style.display = 'block';
+        for(let i=1; i<=3; i++) {
+            document.getElementById(`dot-${i}`).className = i <= this.state.progression.fireStreak ? 'dot active' : 'dot';
+        }
+        
+        // Nếu đủ 3 câu đúng
+        if(this.state.progression.fireStreak >= 3) {
+            document.getElementById('q-text').innerHTML = "<span style='color:var(--danger)'>🔥 Lửa đã yếu đi! Nhanh tay bấm vào Quạt Ba Tiêu dưới thanh Pháp Bảo để dập tắt Hỏa Diệm Sơn!</span>";
+            document.getElementById('ans-container').innerHTML = '';
+            document.getElementById('slot-quat').style.opacity = '1';
+            document.getElementById('slot-quat').style.animation = 'pulseNode 1s infinite';
+            return;
+        }
+
+        const qData = STAGES[8].questions[this.state.progression.fireStreak];
+        document.getElementById('q-text').innerText = qData.q;
+        const cont = document.getElementById('ans-container');
+        cont.innerHTML = '';
+        const labels = ['A','B','C'];
+        qData.ans.forEach((txt, i) => {
+            cont.innerHTML += `<button class="ans-btn" id="ans-btn-${i}" onclick="game.checkFire(${i}, ${qData.cor})">
+                <div class="ans-idx">${labels[i]}</div><div>${txt}</div>
+            </button>`;
+        });
+    },
+
+    checkFire: function(selected, correct) {
+        this.disableAnsBtns();
+        if(selected === correct) {
+            this.state.progression.fireStreak++;
+            this.state.stats.correct++;
+            audioManager.playCorrect();
+            this.playHitAnim();
+            
+            setTimeout(() => this.renderFireStage(), 1200);
+        } else {
+            this.handleWrong(true); // Tham số true để báo là đang ở FireStage
+        }
+    },
+
+    disableAnsBtns: function() { 
+        document.querySelectorAll('.ans-btn').forEach(b => b.disabled = true); 
+    },
+
+    handleCorrect: function() {
+        this.state.stats.correct++;
+        this.state.stats.currentStreak++;
+        if(this.state.stats.currentStreak > this.state.stats.highestStreak) {
+            this.state.stats.highestStreak = this.state.stats.currentStreak;
+        }
+        this.state.stats.score += 100 * this.state.stats.currentStreak; // Điểm combo
+        
+        audioManager.playCorrect();
+        this.playHitAnim();
+        
+        setTimeout(() => {
+            this.passCurrentStage();
+        }, 1500);
+    },
+
+    handleWrong: function(isFireStage = false) {
+        audioManager.playWrong();
+        this.state.stats.currentStreak = 0;
+
+        // Xử lý dùng Đào Tiên cứu trợ
+        if (this.state.inventory.dao > 0) {
+            this.showModal('Thất Bại', 'Bạn đã trả lời sai. Bạn có muốn dùng 1 🍑 Đào Tiên để được thử lại câu này không bị tính lỗi không?', [
+                { text: 'DÙNG ĐÀO TIÊN', class: 'secondary', cb: () => {
+                    this.state.inventory.dao--;
+                    this.state.stats.itemsUsed++;
+                    audioManager.playArtifact();
+                    this.updateMapUI();
+                    
+                    // Khôi phục nút
+                    if(STAGES[this.state.progression.currentStage].type === 'sort') {
+                        this.renderSortStage();
+                    } else if (isFireStage) {
+                        this.renderFireStage();
+                    } else {
+                        document.querySelectorAll('.ans-btn').forEach(b => { 
+                            b.disabled = false; b.classList.remove('wrong','correct'); 
+                        });
+                    }
+                }},
+                { text: 'KHÔNG DÙNG', class: 'danger', cb: () => this.applyPenalty(isFireStage) }
+            ]);
+        } else {
+            this.applyPenalty(isFireStage);
+        }
+    },
+
+    applyPenalty: function(isFireStage) {
+        this.state.stats.wrong++;
+        
+        if (isFireStage) {
+            this.state.progression.fireStreak = 0; // Sai reset chuỗi lửa
+            this.showModal('Sai Rồi', 'Lửa bùng lên lại! Bạn phải trả lời đúng 3 câu liên tiếp.', [
+                {text:'THỬ LẠI', cb: ()=>this.renderFireStage()}
+            ]);
+        } else {
+            const hint = STAGES[this.state.progression.currentStage].hint || 'Hãy đọc kỹ lại kiến thức SGK nhé.';
+            this.showModal('KIẾP NẠN CHƯA ĐƯỢC HÓA GIẢI', `Gợi ý: ${hint}`, [
+                { text: 'QUAY LẠI BẢN ĐỒ', class: 'danger', cb: () => this.backToMap() }
+            ]);
+        }
+    },
+
+    playHitAnim: function() {
+        const wk = document.getElementById('anim-wukong');
+        const ms = document.getElementById('battle-monster');
+        wk.classList.add('anim-attack');
+        setTimeout(() => { 
+            audioManager.playHit();
+            if(ms) ms.classList.add('anim-hit'); 
+        }, 500);
+        setTimeout(() => { 
+            wk.classList.remove('anim-attack'); 
+            if(ms) ms.classList.remove('anim-hit'); 
+        }, 1200);
+    },
+
+    passCurrentStage: function() {
+        const cur = this.state.progression.currentStage;
+        if (!this.state.progression.completed.includes(cur)) {
+            this.state.progression.completed.push(cur);
+        }
+        
+        if (cur < 9 && !this.state.progression.unlocked.includes(cur + 1)) {
+            this.state.progression.unlocked.push(cur + 1);
+        }
+
+        if (cur === 9) { // Xong Boss
+            this.showEndScreen();
+        } else {
+            this.backToMap();
+            this.updateMapUI();
+            
+            // Random tặng đồ (30% ra đồ) khi qua cửa
+            if(Math.random() > 0.7 && cur < 8) {
+                const items = ['mat','biKip'];
+                const i = items[Math.floor(Math.random()*items.length)];
+                this.state.inventory[i]++;
+                setTimeout(()=> {
+                    audioManager.playArtifact();
+                    this.showModal('🎁 Nhận Phần Thưởng', `Đoàn thỉnh kinh vừa nhặt được 1 ${i==='mat'?'👁️ Hỏa Nhãn Kim Tinh':'📜 Bí Kíp'}!`);
+                    this.updateMapUI();
+                }, 800);
+            }
+        }
+    },
+
+    useItem: function(type) {
+        audioManager.playClick();
+        
+        if(this.state.inventory[type] <= 0) {
+            this.showModal('Hết Pháp Bảo', 'Pháp bảo này đã được sử dụng hết!'); 
+            audioManager.playWrong(); 
+            return;
+        }
+        
+        const curStg = this.state.progression.currentStage;
+        const onMap = document.getElementById('screen-map').classList.contains('active');
+
+        // Logic Quạt Ba Tiêu
+        if(type === 'quat') {
+            if(curStg !== 8 || onMap || this.state.progression.fireStreak < 3) {
+                this.showModal('Lưu ý', '🪭 Quạt Ba Tiêu chỉ được dùng ở Hỏa Diệm Sơn SAU KHI bạn đã trả lời đúng 3 câu hỏi liên tiếp!'); 
+                return;
+            }
+            this.state.inventory[type]--;
+            this.state.stats.itemsUsed++;
+            this.updateMapUI();
+            audioManager.playArtifact();
+            document.getElementById('fire-bg').style.height = '0';
+            document.getElementById('slot-quat').style.animation = 'none';
+            document.getElementById('q-text').innerText = "Hỏa Diệm Sơn đã bị dập tắt! Thông đường!";
+            setTimeout(() => this.passCurrentStage(), 2000);
+            return;
+        }
+
+        // Đào Tiên dùng tự động khi sai
+        if(type === 'dao') {
+            this.showModal('Lưu ý', '🍑 Đào Tiên sẽ tự động hiện ra gợi ý sử dụng để cứu bạn khi bạn lỡ tay trả lời sai câu hỏi.');
+            return;
+        }
+
+        if(onMap) { 
+            this.showModal('Lưu ý', 'Pháp bảo này chỉ có thể sử dụng khi đang chiến đấu (trả lời câu hỏi)!'); 
+            return; 
+        }
+
+        // Logic Mắt (Loại 1 sai)
+        if (type === 'mat') {
+            if(STAGES[curStg].type !== 'mcq') { 
+                this.showModal('Không Thể Sử Dụng', '👁️ Hỏa Nhãn Kim Tinh chỉ dùng được ở các câu hỏi Trắc Nghiệm.'); 
+                return;
+            }
+            const cor = STAGES[curStg].cor;
+            let wrongs = [0,1,2,3].filter(i => {
+                let btn = document.getElementById(`ans-btn-${i}`);
+                return i !== cor && btn && !btn.disabled;
+            });
+            
+            if(wrongs.length > 0) {
+                this.state.inventory[type]--;
+                this.state.stats.itemsUsed++;
+                this.updateMapUI();
+                audioManager.playArtifact();
+                
+                let r = wrongs[Math.floor(Math.random()*wrongs.length)];
+                const btn = document.getElementById(`ans-btn-${r}`);
+                btn.disabled = true; 
+                btn.style.opacity = '0.3';
+                this.showModal('Hỏa Nhãn Kim Tinh', '👁️ Mắt thần đã nhìn thấu và loại bỏ đi 1 đáp án sai!');
+            } else {
+                this.showModal('Lỗi', 'Không còn đáp án sai nào để loại bỏ nữa!');
+            }
+        } 
+        // Logic Bí Kíp
+        else if (type === 'biKip') {
+            this.state.inventory[type]--;
+            this.state.stats.itemsUsed++;
+            this.updateMapUI();
+            audioManager.playArtifact();
+            
+            const hint = STAGES[curStg].hint || 'Kiến thức Bài 4: Từ khóa phải ngắn gọn, đúng trọng tâm. Dùng máy tìm kiếm (Google) để tìm thông tin.';
+            this.showModal('📜 Bí Kíp', hint);
+        } 
+        // Logic Mây
+        else if (type === 'may') {
+            if(curStg === 8 || curStg === 9) {
+                this.showModal('Lưu ý', '☁️ Không thể dùng Cân Đẩu Vân ở Hỏa Diệm Sơn hoặc phòng Boss cuối!'); return;
+            }
+            this.showModal('Cân Đẩu Vân', '☁️ Bay vèo một phát qua kiếp nạn!', [
+                {text: 'ĐI TIẾP', cb: () => {
+                    this.state.inventory[type]--;
+                    this.state.stats.itemsUsed++;
+                    audioManager.playArtifact();
+                    this.passCurrentStage();
+                }}
+            ]);
+        }
+    },
+
+    showEndScreen: function() {
+        this.state.stats.endTime = Date.now();
+        const timeTaken = Math.floor((this.state.stats.endTime - this.state.stats.startTime) / 1000);
+        
+        document.getElementById('end-name').innerText = this.state.player.name;
+        document.getElementById('end-class').innerText = this.state.player.class;
+        
+        document.getElementById('end-stages').innerText = this.state.progression.completed.length + "/10";
+        document.getElementById('end-correct').innerText = this.state.stats.correct;
+        document.getElementById('end-wrong').innerText = this.state.stats.wrong;
+        document.getElementById('end-items').innerText = this.state.stats.itemsUsed;
+        document.getElementById('end-streak').innerText = this.state.stats.highestStreak;
+        document.getElementById('end-time').innerText = timeTaken;
+        
+        const finalScore = this.state.stats.score + (this.state.stats.correct * 50) - (this.state.stats.wrong * 20);
+        document.getElementById('end-score').innerText = Math.max(0, finalScore); // Không cho âm điểm
+        
+        if (this.state.stats.wrong >= 3) {
+            document.getElementById('end-review').style.display = 'block';
+        } else {
+            document.getElementById('end-review').style.display = 'none';
+        }
+
+        this.showScreen('screen-end');
+        audioManager.playBGM('win');
+    },
+
+    showHomeConfirm: function() {
+        audioManager.playClick();
+        this.showModal('Xác nhận', 'Bạn có chắc chắn muốn quay về Trang chủ và BẮT ĐẦU LẠI TỪ ĐẦU KHÔNG?<br><br><span style="color:red; font-size: 1rem;">Lưu ý: Toàn bộ tiến trình, điểm số, và pháp bảo sẽ bị xóa sạch!</span>', [
+            { text: 'TIẾP TỤC CHƠI', class: 'secondary', cb: () => {} },
+            { text: 'QUAY VỀ TRANG CHỦ', class: 'danger', cb: () => this.fullReset() }
+        ]);
+    },
+
+    fullReset: function() {
+        // Khôi phục lại state mặc định
+        this.state = getInitialState();
+        document.getElementById('p-name').value = '';
+        document.getElementById('p-class').value = '';
+        
+        // Reset giao diện map
+        this.updateMapUI();
+        
+        this.showScreen('screen-home');
+        audioManager.playBGM('home');
+    },
+
+    showModal: function(title, msg, buttons = [{text: 'ĐÓNG', class: 'info', cb: null}]) {
+        document.getElementById('sys-m-title').innerText = title;
+        document.getElementById('sys-m-msg').innerHTML = msg;
+        const act = document.getElementById('sys-m-actions');
+        act.innerHTML = '';
+        buttons.forEach(b => {
+            const btn = document.createElement('button');
+            btn.className = `btn ${b.class || 'info'}`;
+            btn.innerText = b.text;
+            btn.onclick = () => {
+                audioManager.playClick();
+                this.closeModal();
+                if(b.cb) b.cb();
+            };
+            act.appendChild(btn);
+        });
+        document.getElementById('sys-modal').style.display = 'flex';
+    },
+
+    closeModal: function() { 
+        document.getElementById('sys-modal').style.display = 'none'; 
+    },
+
+    /* Helpers tạo SVG nhân vật/quái vật */
+    getMonsterSVG: function(idx) {
+        // Boss 
+        if (idx === 9) {
+            return `<svg class="char-svg" viewBox="0 0 120 120" style="width:180px;height:180px">
+                <polygon points="60,10 110,40 100,100 20,100 10,40" fill="#dc2626" stroke="#7f1d1d" stroke-width="4"/>
+                <polygon points="30,30 45,50 20,45" fill="#fde047"/>
+                <polygon points="90,30 75,50 100,45" fill="#fde047"/>
+                <circle cx="40" cy="60" r="12" fill="white"/><circle cx="40" cy="60" r="5" fill="black"/>
+                <circle cx="80" cy="60" r="12" fill="white"/><circle cx="80" cy="60" r="5" fill="black"/>
+                <path d="M 40 85 Q 60 70 80 85" fill="none" stroke="white" stroke-width="6" stroke-linecap="round"/>
+            </svg>`;
+        }
+        // Yêu quái nhỏ thay đổi màu theo ải
+        const colors = ['#475569','#166534','#7f1d1d','#854d0e','#4c1d95','#065f46','#9f1239','#1e3a8a','#3f6212'];
+        const c = colors[idx % colors.length];
+        return `<svg class="char-svg" viewBox="0 0 100 100">
+            <path d="M 20 80 L 50 20 L 80 80 Z" fill="${c}" stroke="#1e293b" stroke-width="4"/>
+            <circle cx="40" cy="55" r="8" fill="#ef4444"/><circle cx="40" cy="55" r="3" fill="black"/>
+            <circle cx="60" cy="55" r="8" fill="#ef4444"/><circle cx="60" cy="55" r="3" fill="black"/>
+            <path d="M 30 20 L 40 40 M 70 20 L 60 40" stroke="${c}" stroke-width="5" stroke-linecap="round"/>
+        </svg>`;
+    }
+};
+
+// Khởi chạy khi load xong DOM
+window.onload = () => { 
+    game.init(); 
+    audioManager.playBGM('home'); 
+};
+</script>
+</body>
+</html>

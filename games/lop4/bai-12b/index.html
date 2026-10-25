@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Xây Thành Phố Gõ Phím - Tin Học 4 Bài 12b</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #87CEEB;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700; }
+            50% { box-shadow: 0 0 20px #FFD700, 0 0 40px #FFA500; }
+        }
+
+        .animate-pop-in { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        .glow-effect { animation: glowPulse 1.5s infinite; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .map-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 12px;
+            background: linear-gradient(135deg, #74c365, #55a630);
+            border-radius: 16px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2), 0 8px 16px rgba(0,0,0,0.3);
+            border: 4px solid #386641;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 640px) {
+            .map-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px; }
+        }
+
+        .plot {
+            aspect-ratio: 1;
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 2px dashed rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            position: relative;
+        }
+
+        @media (max-width: 640px) { .plot { font-size: 2rem; border-width: 1px;} }
+
+        .plot:hover:not(.built) {
+            background-color: rgba(255, 255, 255, 0.4);
+            border-color: white;
+            transform: scale(1.05);
+        }
+
+        .plot.built {
+            border: none;
+            background: transparent;
+            cursor: default;
+        }
+
+        .plot.placement-mode {
+            animation: glowPulse 1s infinite;
+            border-style: solid;
+            background-color: rgba(255, 215, 0, 0.3);
+            z-index: 10;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-3d {
+            transition: all 0.1s;
+            box-shadow: 0 4px 0 var(--btn-shadow, #0ea5e9);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 var(--btn-shadow, #0ea5e9);
+        }
+
+        #fireworksCanvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100;
+        }
+        
+        .hide { display: none !important; }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col items-center justify-center relative">
+
+    <canvas id="fireworksCanvas" class="hide"></canvas>
+
+    <div id="loginScreen" class="absolute inset-0 z-50 flex items-center justify-center bg-blue-500/80 backdrop-blur-md p-4">
+        <div class="glass-panel p-8 rounded-3xl max-w-md w-full text-center animate-pop-in border-4 border-white">
+            <h1 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2 drop-shadow-sm">
+                XÂY THÀNH PHỐ GÕ PHÍM
+            </h1>
+            <p class="text-gray-600 font-bold mb-6">Tin học lớp 4 - Bài 12b: Phần mềm luyện gõ bàn phím</p>
+            
+            <img src="https://placehold.co/200x150/FFD700/FFF?text=Typing+Tutor" alt="Typing Tutor" class="mx-auto rounded-xl mb-6 shadow-md" onerror="this.style.display='none'">
+
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-1 ml-1"><i class="fas fa-user text-blue-500"></i> Họ và Tên học sinh:</label>
+                    <input type="text" id="inputName" class="w-full px-4 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:outline-none text-lg font-bold text-gray-800 placeholder-gray-400" placeholder="Biệt danh (không nhập tên thật)">
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-1 ml-1"><i class="fas fa-users text-purple-500"></i> Lớp:</label>
+                    <input type="text" id="inputClass" class="w-full px-4 py-3 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none text-lg font-bold text-gray-800 placeholder-gray-400" placeholder="Ví dụ: 4A">
+                </div>
+                
+                <button id="btnStart" class="btn-3d w-full mt-4 bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-black text-xl py-4 rounded-xl border-2 border-green-700" style="--btn-shadow: #166534;">
+                    <i class="fas fa-play mr-2"></i> BẮT ĐẦU XÂY DỰNG
+                </button>
+                <p id="loginError" class="text-red-500 font-bold text-center h-5 mt-2 opacity-0 transition-opacity">Vui lòng nhập đầy đủ thông tin!</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameScreen" class="h-full w-full flex flex-col max-w-6xl mx-auto p-2 md:p-4 hide">
+        
+        <!-- Top HUD -->
+        <div class="glass-panel rounded-2xl p-3 mb-4 flex flex-wrap justify-between items-center gap-2 md:gap-4 border-b-4 border-blue-200 shadow-lg relative z-20">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg text-xl shadow-inner">
+                    <i class="fas fa-keyboard"></i>
+                </div>
+                <div>
+                    <div id="hudName" class="font-bold text-gray-800 text-sm md:text-base uppercase">Học sinh</div>
+                    <div class="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full inline-block mt-0.5">
+                        <i class="fas fa-star text-yellow-500"></i> Cấp <span id="hudLevel">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resources -->
+            <div class="flex gap-2 md:gap-4">
+                <div class="bg-yellow-100 border-2 border-yellow-400 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-sm animate-float" style="animation-delay: 0s;">
+                    <i class="fas fa-coins text-yellow-500 text-xl md:text-2xl drop-shadow-sm"></i>
+                    <span id="hudCoins" class="font-black text-xl md:text-2xl text-yellow-700">0</span>
+                </div>
+                <div class="bg-orange-100 border-2 border-orange-400 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-sm animate-float" style="animation-delay: 1.5s;">
+                    <i class="fas fa-cubes text-orange-500 text-xl md:text-2xl drop-shadow-sm"></i>
+                    <span id="hudMats" class="font-black text-xl md:text-2xl text-orange-700">0</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="hidden md:flex flex-col items-end mr-4">
+                    <span class="text-xs font-bold text-gray-500">Tiến độ xây dựng</span>
+                    <div class="w-32 h-3 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
+                        <div id="hudProgress" class="h-full bg-green-500 w-0 transition-all duration-500"></div>
+                    </div>
+                </div>
+                <button id="btnToggleMusic" class="w-10 h-10 rounded-full bg-gray-100 border-2 border-gray-300 text-gray-600 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                    <i class="fas fa-music"></i>
+                </button>
+                <button id="btnToggleSound" class="w-10 h-10 rounded-full bg-gray-100 border-2 border-gray-300 text-gray-600 hover:bg-gray-200 flex items-center justify-center transition-colors">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Map Area -->
+        <div class="flex-1 w-full relative flex flex-col justify-center mb-24 md:mb-20">
+            <div id="levelUpBanner" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-8 py-3 rounded-full font-black text-2xl shadow-[0_0_20px_rgba(255,165,0,0.8)] border-4 border-white z-30 hide animate-pop-in">
+                🎉 LÊN CẤP <span id="bannerLevelNum">2</span>! 🎉
+            </div>
+            
+            <div id="placementGuide" class="text-center font-bold text-white bg-red-500/80 p-2 rounded-xl mb-4 max-w-sm mx-auto shadow-lg border-2 border-white animate-bounce hide z-20">
+                <i class="fas fa-arrow-down"></i> Hãy chọn một mảnh đất trống để xây dựng công trình!
+            </div>
+
+            <div id="cityMap" class="map-grid">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="fixed bottom-0 left-0 w-full p-4 bg-white/90 backdrop-blur-lg border-t-4 border-blue-200 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] z-40">
+            <div class="max-w-4xl mx-auto flex gap-4 justify-center">
+                <button id="btnOpenQuiz" class="btn-3d flex-1 bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white rounded-2xl py-4 flex flex-col items-center justify-center border-2 border-blue-800" style="--btn-shadow: #1e3a8a;">
+                    <i class="fas fa-question-circle text-3xl mb-1"></i>
+                    <span class="font-black text-lg">TRẢ LỜI CÂU HỎI</span>
+                </button>
+                
+                <button id="btnOpenShop" class="btn-3d flex-1 bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white rounded-2xl py-4 flex flex-col items-center justify-center border-2 border-amber-800 relative" style="--btn-shadow: #78350f;">
+                    <i class="fas fa-store text-3xl mb-1"></i>
+                    <span class="font-black text-lg">CỬA HÀNG</span>
+                    <span id="shopBadge" class="absolute -top-2 -right-2 bg-red-500 text-white font-bold text-xs rounded-full h-8 w-8 flex items-center justify-center border-2 border-white shadow-md hide animate-bounce">!</span>
+                </button>
+
+                <button id="btnFinish" class="btn-3d flex-none bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-2xl py-4 px-6 flex flex-col items-center justify-center border-2 border-purple-800 hide" style="--btn-shadow: #4a044e;">
+                    <i class="fas fa-flag-checkered text-3xl mb-1"></i>
+                    <span class="font-black text-lg">KẾT THÚC</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="shopModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hide">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl overflow-hidden animate-pop-in flex flex-col max-h-[90vh]">
+            <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-4 flex justify-between items-center text-white">
+                <h2 class="text-2xl font-black"><i class="fas fa-store mr-2"></i> CỬA HÀNG CÔNG TRÌNH THÀNH PHỐ</h2>
+                <button class="close-shop text-white hover:text-red-200 text-3xl leading-none">&times;</button>
+            </div>
+            
+            <div class="p-4 bg-amber-50 border-b-2 border-amber-200 flex justify-center gap-6 font-bold text-lg">
+                <div class="flex items-center gap-2 text-yellow-700"><i class="fas fa-coins text-yellow-500"></i> Xu: <span id="shopCoins">0</span></div>
+                <div class="flex items-center gap-2 text-orange-700"><i class="fas fa-cubes text-orange-500"></i> Vật liệu: <span id="shopMats">0</span></div>
+            </div>
+
+            <div class="p-4 overflow-y-auto flex-1 bg-white">
+                <div id="shopGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+            
+            <div class="p-4 bg-gray-50 border-t-2 border-gray-200 text-center">
+                <button class="close-shop btn-3d bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-8 rounded-xl" style="--btn-shadow: #374151;">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="quizModal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 hide">
+        <div class="bg-white w-full max-w-2xl rounded-3xl overflow-hidden animate-pop-in shadow-2xl flex flex-col border-4 border-blue-400">
+            <div class="bg-blue-500 p-4 text-white flex justify-between items-center relative">
+                <div class="font-black text-xl"><i class="fas fa-question-circle mr-2"></i> THỬ THÁCH BÀI 12B</div>
+                <div id="questionCounter" class="bg-blue-700 px-3 py-1 rounded-full text-sm font-bold shadow-inner">Câu 1/15</div>
+                <button class="close-quiz text-white hover:text-red-200 text-3xl leading-none absolute right-4">&times;</button>
+            </div>
+
+            <div class="p-6 md:p-8 flex-1">
+                <div class="flex gap-2 mb-4">
+                    <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded border border-blue-300"><i class="fas fa-book"></i> Tin Học 4 - Bài 12b</span>
+                    <span id="qTypeBadge" class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded border border-purple-300">Cơ bản</span>
+                    <span id="qRewardBadge" class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-1 rounded border border-yellow-300">+10 Xu</span>
+                </div>
+
+                <h3 id="questionText" class="text-xl md:text-2xl font-bold text-gray-800 mb-6 leading-snug"></h3>
+
+                <div id="answersGrid" class="grid grid-cols-1 gap-3"></div>
+
+                <div id="quizFeedback" class="mt-6 p-4 rounded-xl border-2 hide text-center font-bold text-lg"></div>
+            </div>
+            
+            <div class="p-4 bg-gray-50 border-t-2 flex justify-between items-center">
+                <div class="text-sm text-gray-500 font-semibold"><i class="fas fa-info-circle"></i> Trả lời đúng để nhận Xu và Vật liệu xây dựng thành phố.</div>
+                <button id="btnNextQuestion" class="btn-3d bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-xl hide" style="--btn-shadow: #1e3a8a;">Tiếp tục <i class="fas fa-arrow-right ml-1"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="endScreen" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 hide">
+        <div class="glass-panel w-full max-w-lg rounded-3xl p-8 text-center animate-pop-in border-4 border-yellow-400 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-50" style="background-image: radial-gradient(#FFF 2px, transparent 2px); background-size: 30px 30px;"></div>
+            
+            <div class="text-6xl mb-4 animate-bounce">🏆</div>
+            <h1 class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 mb-2 drop-shadow-md">
+                CHÚC MỪNG KỸ SƯ XUẤT SẮC
+            </h1>
+            <h2 id="endName" class="text-2xl font-bold text-white mb-6 uppercase tracking-wider">Tên Học Sinh</h2>
+            
+            <div class="bg-white/90 rounded-2xl p-4 mb-6 shadow-lg border-2 border-white inline-block w-full">
+                <div class="text-yellow-600 font-black text-xl mb-4 border-b-2 border-yellow-200 pb-2">DANH HIỆU: CHUYÊN GIA GÕ BÀN PHÍM</div>
+                
+                <div class="grid grid-cols-2 gap-4 text-left">
+                    <div class="bg-blue-50 p-3 rounded-xl flex items-center gap-3">
+                        <i class="fas fa-city text-blue-500 text-2xl"></i>
+                        <div>
+                            <div class="text-xs text-gray-500 font-bold uppercase">Công trình</div>
+                            <div id="endBuildings" class="font-black text-xl text-blue-700">0</div>
+                        </div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-xl flex items-center gap-3">
+                        <i class="fas fa-star text-green-500 text-2xl"></i>
+                        <div>
+                            <div class="text-xs text-gray-500 font-bold uppercase">Cấp độ</div>
+                            <div id="endLevel" class="font-black text-xl text-green-700">1</div>
+                        </div>
+                    </div>
+                    <div class="bg-yellow-50 p-3 rounded-xl flex items-center gap-3">
+                        <i class="fas fa-coins text-yellow-500 text-2xl"></i>
+                        <div>
+                            <div class="text-xs text-gray-500 font-bold uppercase">Tổng Xu</div>
+                            <div id="endCoins" class="font-black text-xl text-yellow-700">0</div>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-3 rounded-xl flex items-center gap-3">
+                        <i class="fas fa-cubes text-orange-500 text-2xl"></i>
+                        <div>
+                            <div class="text-xs text-gray-500 font-bold uppercase">Vật liệu</div>
+                            <div id="endMats" class="font-black text-xl text-orange-700">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-white font-semibold mb-6">Em đã hoàn thành xuất sắc Bài 12b: Phần mềm luyện gõ bàn phím!</p>
+
+            <button id="btnReplay" class="btn-3d w-full bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-black text-xl py-4 rounded-xl border-2 border-green-700" style="--btn-shadow: #166534;">
+                <i class="fas fa-redo mr-2"></i> CHƠI LẠI TỪ ĐẦU
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.masterGain = null;
+                this.isMusicOn = true;
+                this.isSoundOn = true;
+                this.bgmInterval = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.connect(this.ctx.destination);
+                    this.masterGain.gain.value = 0.5;
+                } catch (e) {
+                    console.error("Web Audio API error", e);
+                }
+            }
+
+            resume() {
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            toggleMusic() {
+                this.isMusicOn = !this.isMusicOn;
+                if (this.isMusicOn) this.startBGM();
+                else this.stopBGM();
+                return this.isMusicOn;
+            }
+
+            toggleSound() {
+                this.isSoundOn = !this.isSoundOn;
+                return this.isSoundOn;
+            }
+
+            startBGM() {
+                if (!this.ctx || !this.isMusicOn || this.bgmInterval) return;
+                this.resume();
+                
+                const scale = [261.63, 293.66, 329.63, 392.00, 440.00];
+                let noteIndex = 0;
+                
+                const bgmGain = this.ctx.createGain();
+                bgmGain.gain.value = 0.05;
+                bgmGain.connect(this.masterGain);
+
+                const playNote = () => {
+                    if (!this.isMusicOn) return;
+                    const osc = this.ctx.createOscillator();
+                    osc.type = 'sine';
+                    noteIndex = (noteIndex + Math.floor(Math.random() * 3) - 1 + scale.length) % scale.length;
+                    let freq = scale[noteIndex];
+                    if (Math.random() > 0.7) freq *= 2;
+                    
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    
+                    const env = this.ctx.createGain();
+                    env.connect(bgmGain);
+                    osc.connect(env);
+                    
+                    env.gain.setValueAtTime(0, this.ctx.currentTime);
+                    env.gain.linearRampToValueAtTime(1, this.ctx.currentTime + 0.1);
+                    env.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                    
+                    osc.start(this.ctx.currentTime);
+                    osc.stop(this.ctx.currentTime + 0.5);
+                };
+
+                this.bgmInterval = setInterval(playNote, 600);
+            }
+
+            stopBGM() {
+                if (this.bgmInterval) {
+                    clearInterval(this.bgmInterval);
+                    this.bgmInterval = null;
+                }
+            }
+
+            playTone(freq, type, duration, vol = 0.5) {
+                if (!this.ctx || !this.isSoundOn) return;
+                this.resume();
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.masterGain);
+                
+                osc.start(this.ctx.currentTime);
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playCoin() {
+                this.playTone(987.77, 'sine', 0.1, 0.3);
+                setTimeout(() => this.playTone(1318.51, 'sine', 0.2, 0.3), 100);
+            }
+
+            playWrong() {
+                this.playTone(200, 'sawtooth', 0.2, 0.3);
+                setTimeout(() => this.playTone(150, 'sawtooth', 0.4, 0.4), 150);
+            }
+
+            playBuild() {
+                this.playTone(440, 'square', 0.1, 0.2);
+                setTimeout(() => this.playTone(554, 'square', 0.1, 0.2), 100);
+                setTimeout(() => this.playTone(659, 'square', 0.2, 0.2), 200);
+            }
+
+            playLevelUp() {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 'triangle', 0.3, 0.4);
+                        if (i === notes.length - 1) {
+                            setTimeout(() => this.playTone(freq, 'triangle', 0.6, 0.5), 150);
+                        }
+                    }, i * 150);
+                });
+            }
+
+            playWin() {
+                this.playLevelUp();
+                setTimeout(() => {
+                    const notes = [1046.50, 783.99, 659.25, 523.25, 1046.50];
+                    notes.forEach((freq, i) => {
+                        setTimeout(() => this.playTone(freq, 'square', 0.2, 0.3), i * 120);
+                    });
+                }, 1000);
+            }
+            
+            playClick() {
+                this.playTone(600, 'sine', 0.05, 0.1);
+            }
+        }
+
+        const audio = new AudioEngine();
+
+        const questionsData = [
+            {
+                q: "1. Bài 12b giới thiệu phần mềm luyện gõ bàn phím nào để minh hoạ?",
+                opts: ["Microsoft Word", "Kiran's Typing Tutor", "Paint", "Scratch"],
+                ans: 1,
+                hint: "Bài học này sẽ sử dụng phần mềm Kiran's Typing Tutor để minh hoạ.",
+                hard: false, coins: 10, mats: 0
+            },
+            {
+                q: "2. Để luyện gõ chữ hoa trong phần mềm Kiran's Typing Tutor, sau khi chọn 'Kids Typing', em chọn mục Course nào?",
+                opts: ["Numbers", "Words", "Capitals", "Colours"],
+                ans: 2,
+                hint: "Capitals nghĩa là chữ hoa trong tiếng Anh.",
+                hard: false, coins: 10, mats: 0
+            },
+            {
+                q: "3. Muốn gõ chữ hoa (ví dụ chữ K), em cần thao tác phím nào đồng thời?",
+                opts: ["Nhấn giữ phím Shift đồng thời gõ phím chữ", "Chỉ gõ phím chữ không cần phím khác", "Nhấn phím Enter", "Nhấn phím Tab"],
+                ans: 0,
+                hint: "Bước 3 nhiệm vụ 1 hướng dẫn: Nhấn giữ phím Shift đồng thời gõ phím chữ tương ứng chữ hoa.",
+                hard: false, coins: 10, mats: 0
+            },
+            {
+                q: "4. Theo hướng dẫn nhiệm vụ 1, để gõ chữ K, ngón tay nào của tay trái dùng để nhấn giữ phím Shift?",
+                opts: ["Ngón trỏ", "Ngón giữa", "Ngón út", "Ngón cái"],
+                ans: 2,
+                hint: "Ví dụ trong sách: Muốn gõ chữ K, em cần dùng ngón út của tay trái nhấn giữ phím Shift đồng thời ngón giữa của tay phải gõ phím K.",
+                hard: true, coins: 15, mats: 1
+            },
+            {
+                q: "5. Để luyện gõ các từ chỉ màu sắc trong phần mềm, em chọn bài học nào trong mục Course?",
+                opts: ["Capitals", "Words", "Colours", "NumericKeys-Qwerty"],
+                ans: 2,
+                hint: "Colours trong tiếng Anh có nghĩa là màu sắc.",
+                hard: false, coins: 10, mats: 0
+            },
+            {
+                q: "6. Khi luyện gõ từ (bài học Words), nếu em gõ sai nhiều, phần mềm sẽ hiển thị thông báo gì?",
+                opts: ["Your Accuracy is less than your minimum accuracy setting", "Game Over", "Congratulations!", "File not found"],
+                ans: 0,
+                hint: "Hình 57 trong sách hiển thị thông báo 'Your Accuracy is less than your minimum accuracy setting'.",
+                hard: true, coins: 15, mats: 1
+            },
+            {
+                q: "7. Khi xuất hiện thông báo gõ sai trong phần mềm, em cần làm gì để gõ tiếp?",
+                opts: ["Tắt máy tính ngay lập tức", "Nháy vào nút lệnh OK hoặc nhấn phím Enter", "Khởi động lại phần mềm", "Gỡ cài đặt phần mềm"],
+                ans: 1,
+                hint: "Sách hướng dẫn: Khi đó em hãy nháy vào nút lệnh OK hoặc nhấn phím Enter để gõ tiếp.",
+                hard: false, coins: 15, mats: 0
+            },
+            {
+                q: "8. Để luyện gõ các kí tự trên của hàng phím số, trong mục Typing Practice, em chọn bài học nào?",
+                opts: ["HomeKeys-Qwerty", "LowerKeys-Qwerty", "NumericKeys-Qwerty", "UpperKeys-Qwerty"],
+                ans: 2,
+                hint: "NumericKeys có nghĩa là các phím số.",
+                hard: false, coins: 15, mats: 0
+            },
+            {
+                q: "9. Trong bài tập luyện gõ kí tự trên hàng phím số, phím cần gõ tiếp theo được phần mềm chỉ dẫn bằng màu gì?",
+                opts: ["Màu đỏ", "Màu xanh", "Màu vàng", "Màu đen"],
+                ans: 1,
+                hint: "Hình 59 chú thích rõ: Phím cần gõ có màu xanh.",
+                hard: false, coins: 15, mats: 0
+            },
+            {
+                q: "10. Trong giao diện luyện tập của phần mềm, kí tự em gõ sai sẽ hiển thị bằng màu gì?",
+                opts: ["Màu đỏ", "Màu xanh", "Màu vàng", "Màu tím"],
+                ans: 0,
+                hint: "Hình 59 chú thích rõ: Kí tự gõ sai màu đỏ.",
+                hard: false, coins: 15, mats: 0
+            },
+            {
+                q: "11. Muốn gõ các kí tự trên như !, @, #, $, %, em phải thực hiện thao tác nào?",
+                opts: ["Nhấn giữ phím Shift khi gõ", "Chỉ gõ phím số đó", "Nhấn phím Caps Lock", "Nhấn phím Spacebar"],
+                ans: 0,
+                hint: "Lưu ý bài học: Với các phím có hai kí tự, muốn có kí tự trên của phím như !, @, #,... em nhấn giữ phím Shift khi gõ.",
+                hard: false, coins: 15, mats: 0
+            },
+            {
+                q: "12. Theo câu hỏi phần Luyện tập 1 trong SGK: Muốn gõ chữ hoa, em sử dụng phím nào sau đây?",
+                opts: ["Tab", "Shift", "Ctrl", "Alt"],
+                ans: 1,
+                hint: "Phím Shift dùng để viết hoa và gõ các kí tự trên.",
+                hard: false, coins: 15, mats: 0
+            },
+            {
+                q: "13. Theo phần Luyện tập 2 trong SGK: Muốn gõ các kí tự trên ở khu vực 2 (phía bên phải bàn phím số), em sử dụng phím Shift nào?",
+                opts: ["Phím Shift bên trái", "Phím Shift bên phải", "Cả hai phím Shift cùng lúc", "Phím nào cũng được"],
+                ans: 0,
+                hint: "Lưu ý trong SGK: Nếu cần gõ các kí tự trên do tay phải phụ trách thì ngón út tay trái sẽ nhấn giữ phím Shift và ngược lại.",
+                hard: true, coins: 20, mats: 1
+            },
+            {
+                q: "14. Sau khi luyện tập xong, để về màn hình chính của phần mềm, em nháy vào nút lệnh nào?",
+                opts: ["Close", "Exit", "Save", "Open"],
+                ans: 0,
+                hint: "Bước 4 hướng dẫn: Nháy vào nút lệnh Close để về màn hình chính.",
+                hard: false, coins: 20, mats: 1
+            },
+            {
+                q: "15. Để thoát hoàn toàn khỏi phần mềm Kiran's Typing Tutor, sau khi về màn hình chính em nháy vào nút lệnh nào?",
+                opts: ["Close", "Exit", "Cancel", "Help"],
+                ans: 1,
+                hint: "Nhiệm vụ 3 hướng dẫn: Nháy chuột tiếp vào nút lệnh Exit để thoát khỏi phần mềm.",
+                hard: false, coins: 25, mats: 2
+            }
+        ];
+
+        questionsData.sort(() => Math.random() - 0.5);
+
+        const buildingsData = [
+            { id: 'house', name: 'Nhà ở', emoji: '🏠', type: 'residential', coins: 10, mats: 0, minLevel: 1, desc: 'Tăng dân số cho thành phố.' },
+            { id: 'park', name: 'Công viên', emoji: '🌲', type: 'nature', coins: 15, mats: 0, minLevel: 1, desc: 'Làm xanh thành phố.' },
+            { id: 'school', name: 'Trường học', emoji: '🏫', type: 'edu', coins: 25, mats: 1, minLevel: 2, desc: 'Nơi học tập của học sinh.' },
+            { id: 'library', name: 'Thư viện', emoji: '📚', type: 'edu', coins: 30, mats: 2, minLevel: 2, desc: 'Lưu trữ sách và tri thức.' },
+            { id: 'hospital', name: 'Bệnh viện', emoji: '🏥', type: 'service', coins: 40, mats: 2, minLevel: 3, desc: 'Chăm sóc sức khỏe cư dân.' },
+            { id: 'stadium', name: 'Sân vận động', emoji: '🏟️', type: 'entertainment', coins: 50, mats: 3, minLevel: 3, desc: 'Nơi tổ chức hội thao.' },
+            { id: 'computer', name: 'Phòng Máy Tin Học', emoji: '💻', type: 'special', coins: 60, mats: 5, minLevel: 4, desc: 'Nơi luyện gõ 10 ngón tuyệt vời!' }
+        ];
+
+        const LEVEL_THRESHOLDS = [0, 0, 3, 7, 12];
+        const TOTAL_PLOTS = 20;
+
+        let gameState = {
+            name: '',
+            cls: '',
+            coins: 0,
+            mats: 0,
+            level: 1,
+            plots: Array(TOTAL_PLOTS).fill(null),
+            qIndex: 0,
+            totalEarnedCoins: 0,
+            totalEarnedMats: 0,
+            placementItem: null
+        };
+
+        const D = {
+            loginScn: document.getElementById('loginScreen'),
+            gameScn: document.getElementById('gameScreen'),
+            endScn: document.getElementById('endScreen'),
+            btnStart: document.getElementById('btnStart'),
+            loginErr: document.getElementById('loginError'),
+            
+            hName: document.getElementById('hudName'),
+            hLevel: document.getElementById('hudLevel'),
+            hCoins: document.getElementById('hudCoins'),
+            hMats: document.getElementById('hudMats'),
+            hProg: document.getElementById('hudProgress'),
+            btnMus: document.getElementById('btnToggleMusic'),
+            btnSnd: document.getElementById('btnToggleSound'),
+            
+            map: document.getElementById('cityMap'),
+            lvlBanner: document.getElementById('levelUpBanner'),
+            bnLvlNum: document.getElementById('bannerLevelNum'),
+            placeGuide: document.getElementById('placementGuide'),
+            
+            btnQuiz: document.getElementById('btnOpenQuiz'),
+            btnShop: document.getElementById('btnOpenShop'),
+            btnFin: document.getElementById('btnFinish'),
+            shopBadge: document.getElementById('shopBadge'),
+            
+            quizMod: document.getElementById('quizModal'),
+            qCount: document.getElementById('questionCounter'),
+            qText: document.getElementById('questionText'),
+            qGrid: document.getElementById('answersGrid'),
+            qFeed: document.getElementById('quizFeedback'),
+            btnNextQ: document.getElementById('btnNextQuestion'),
+            qTypeB: document.getElementById('qTypeBadge'),
+            qRewB: document.getElementById('qRewardBadge'),
+            
+            shopMod: document.getElementById('shopModal'),
+            sGrid: document.getElementById('shopGrid'),
+            sCoins: document.getElementById('shopCoins'),
+            sMats: document.getElementById('shopMats'),
+            
+            eName: document.getElementById('endName'),
+            eBlds: document.getElementById('endBuildings'),
+            eLvl: document.getElementById('endLevel'),
+            eCoins: document.getElementById('endCoins'),
+            eMats: document.getElementById('endMats'),
+            btnReplay: document.getElementById('btnReplay'),
+            fwCanvas: document.getElementById('fireworksCanvas')
+        };
+
+        function initMap() {
+            D.map.innerHTML = '';
+            for (let i = 0; i < TOTAL_PLOTS; i++) {
+                const plot = document.createElement('div');
+                plot.className = 'plot';
+                plot.dataset.index = i;
+                plot.addEventListener('click', () => handlePlotClick(i, plot));
+                D.map.appendChild(plot);
+            }
+        }
+
+        D.btnStart.addEventListener('click', () => {
+            const n = document.getElementById('inputName').value.trim();
+            const c = document.getElementById('inputClass').value.trim();
+            if (!n || !c) {
+                D.loginErr.style.opacity = '1';
+                audio.playWrong();
+                return;
+            }
+            
+            audio.init();
+            audio.playClick();
+            audio.startBGM();
+            
+            gameState.name = n;
+            gameState.cls = c;
+            D.hName.innerHTML = `${n} <span class="font-normal text-xs text-blue-200">(${c})</span>`;
+            
+            D.loginScn.classList.add('hide');
+            D.gameScn.classList.remove('hide');
+            
+            initMap();
+            updateHUD();
+        });
+
+        function updateHUD() {
+            D.hCoins.innerText = gameState.coins;
+            D.hMats.innerText = gameState.mats;
+            D.hLevel.innerText = gameState.level;
+            
+            D.sCoins.innerText = gameState.coins;
+            D.sMats.innerText = gameState.mats;
+
+            const builtCount = gameState.plots.filter(p => p !== null).length;
+            const nextLvlReq = LEVEL_THRESHOLDS[gameState.level] || TOTAL_PLOTS;
+            const prevLvlReq = LEVEL_THRESHOLDS[gameState.level - 1] || 0;
+            const progress = Math.min(100, Math.max(0, ((builtCount - prevLvlReq) / (nextLvlReq - prevLvlReq)) * 100));
+            D.hProg.style.width = `${progress}%`;
+
+            if (gameState.level < LEVEL_THRESHOLDS.length - 1 && builtCount >= LEVEL_THRESHOLDS[gameState.level + 1]) {
+                levelUp();
+            }
+
+            if (gameState.qIndex >= questionsData.length || builtCount >= TOTAL_PLOTS) {
+                D.btnFin.classList.remove('hide');
+            }
+            
+            const affordableBldgs = buildingsData.filter(b => gameState.coins >= b.coins && gameState.mats >= b.mats && gameState.level >= b.minLevel);
+            if (affordableBldgs.length > 0 && !gameState.placementItem) {
+                D.shopBadge.classList.remove('hide');
+            } else {
+                D.shopBadge.classList.add('hide');
+            }
+        }
+
+        function levelUp() {
+            gameState.level++;
+            audio.playLevelUp();
+            D.bnLvlNum.innerText = gameState.level;
+            D.lvlBanner.classList.remove('hide');
+            D.map.classList.add('glow-effect');
+            
+            setTimeout(() => {
+                D.lvlBanner.classList.add('hide');
+                D.map.classList.remove('glow-effect');
+            }, 3000);
+            
+            updateHUD();
+        }
+
+        D.btnMus.addEventListener('click', () => {
+            const isOn = audio.toggleMusic();
+            D.btnMus.innerHTML = isOn ? '<i class="fas fa-music"></i>' : '<i class="fas fa-music text-red-400 opacity-50"></i>';
+            audio.playClick();
+        });
+        D.btnSnd.addEventListener('click', () => {
+            const isOn = audio.toggleSound();
+            D.btnSnd.innerHTML = isOn ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute text-red-400 opacity-50"></i>';
+            if(isOn) audio.playClick();
+        });
+
+        D.btnQuiz.addEventListener('click', () => {
+            audio.playClick();
+            if (gameState.qIndex >= questionsData.length) {
+                alert("Em đã trả lời hết tất cả các câu hỏi của Bài 12b!");
+                return;
+            }
+            openQuiz();
+        });
+
+        document.querySelectorAll('.close-quiz').forEach(btn => {
+            btn.addEventListener('click', () => {
+                audio.playClick();
+                D.quizMod.classList.add('hide');
+            });
+        });
+
+        function openQuiz() {
+            D.quizMod.classList.remove('hide');
+            D.qFeed.classList.add('hide');
+            D.btnNextQ.classList.add('hide');
+            D.qGrid.classList.remove('hide');
+            
+            const qData = questionsData[gameState.qIndex];
+            D.qCount.innerText = `Câu ${gameState.qIndex + 1}/${questionsData.length}`;
+            D.qText.innerHTML = qData.q;
+            
+            D.qTypeB.innerText = qData.hard ? 'Vận dụng / Khó' : 'Cơ bản';
+            D.qTypeB.className = `text-xs font-bold px-2 py-1 rounded border ${qData.hard ? 'bg-orange-100 text-orange-700 border-orange-300' : 'bg-purple-100 text-purple-700 border-purple-300'}`;
+            
+            let rewText = `+${qData.coins} Xu`;
+            if (qData.mats > 0) rewText += `, +${qData.mats} Vật liệu`;
+            D.qRewB.innerText = rewText;
+
+            D.qGrid.innerHTML = '';
+            qData.opts.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-4 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 font-bold text-gray-700 transition-all shadow-sm';
+                btn.innerHTML = `<span class="inline-block w-8 h-8 bg-gray-100 rounded-full text-center leading-8 mr-3 border border-gray-300 font-black">${String.fromCharCode(65+idx)}</span> ${opt}`;
+                btn.addEventListener('click', () => handleAnswer(idx, btn));
+                D.qGrid.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedIdx, btnElement) {
+            const qData = questionsData[gameState.qIndex];
+            const isCorrect = selectedIdx === qData.ans;
+            
+            Array.from(D.qGrid.children).forEach(b => {
+                b.disabled = true;
+                b.classList.add('opacity-50', 'cursor-not-allowed');
+            });
+
+            D.qFeed.classList.remove('hide');
+            
+            if (isCorrect) {
+                audio.playCoin();
+                btnElement.classList.remove('border-gray-200', 'hover:bg-blue-50', 'opacity-50');
+                btnElement.classList.add('border-green-500', 'bg-green-100', 'text-green-800');
+                
+                gameState.coins += qData.coins;
+                gameState.mats += qData.mats;
+                gameState.totalEarnedCoins += qData.coins;
+                gameState.totalEarnedMats += qData.mats;
+                
+                D.qFeed.className = 'mt-6 p-4 rounded-xl border-2 text-center font-black text-xl border-green-500 bg-green-50 text-green-700 animate-pop-in';
+                let rewMsg = `Chính xác! Em nhận được ${qData.coins} <i class="fas fa-coins text-yellow-500"></i>`;
+                if(qData.mats > 0) rewMsg += ` và ${qData.mats} <i class="fas fa-cubes text-orange-500"></i>`;
+                D.qFeed.innerHTML = `<i class="fas fa-check-circle text-2xl mr-2"></i> ${rewMsg}`;
+                
+                gameState.qIndex++;
+                D.btnNextQ.classList.remove('hide');
+                updateHUD();
+            } else {
+                audio.playWrong();
+                btnElement.classList.remove('border-gray-200', 'opacity-50');
+                btnElement.classList.add('border-red-500', 'bg-red-50', 'animate-shake');
+                
+                D.qGrid.children[qData.ans].classList.remove('opacity-50');
+                D.qGrid.children[qData.ans].classList.add('border-green-500', 'border-dashed');
+
+                D.qFeed.className = 'mt-6 p-4 rounded-xl border-2 text-left font-bold border-red-500 bg-red-50 text-red-700 animate-pop-in';
+                D.qFeed.innerHTML = `<div class="text-xl mb-2"><i class="fas fa-times-circle"></i> Chưa chính xác!</div>
+                                     <div class="text-gray-700 bg-white p-3 rounded border border-red-200"><i class="fas fa-lightbulb text-yellow-500"></i> <b>Gợi ý SGK:</b> ${qData.hint}</div>
+                                     <div class="text-center mt-3"><button id="btnRetryQ" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 font-bold">Thử lại câu này</button></div>`;
+                
+                document.getElementById('btnRetryQ').addEventListener('click', () => {
+                    audio.playClick();
+                    openQuiz();
+                });
+            }
+        }
+
+        D.btnNextQ.addEventListener('click', () => {
+            audio.playClick();
+            D.quizMod.classList.add('hide');
+        });
+
+        D.btnShop.addEventListener('click', () => {
+            audio.playClick();
+            if (gameState.placementItem) {
+                gameState.placementItem = null;
+                togglePlacementMode(false);
+                return;
+            }
+            renderShop();
+            D.shopMod.classList.remove('hide');
+        });
+
+        document.querySelectorAll('.close-shop').forEach(btn => {
+            btn.addEventListener('click', () => {
+                audio.playClick();
+                D.shopMod.classList.add('hide');
+            });
+        });
+
+        function renderShop() {
+            D.sGrid.innerHTML = '';
+            buildingsData.forEach(b => {
+                const canAfford = gameState.coins >= b.coins && gameState.mats >= b.mats;
+                const levelReqMet = gameState.level >= b.minLevel;
+                const isUnlockable = levelReqMet && canAfford;
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-2xl border-2 flex flex-col relative transition-transform ${isUnlockable ? 'bg-white border-amber-300 hover:-translate-y-1 hover:shadow-lg' : 'bg-gray-100 border-gray-200 opacity-80'}`;
+                
+                if (!levelReqMet) {
+                    card.innerHTML += `<div class="absolute inset-0 bg-gray-900/40 rounded-2xl flex items-center justify-center z-10 backdrop-blur-[1px]">
+                        <div class="bg-red-500 text-white font-bold px-3 py-1 rounded-full"><i class="fas fa-lock"></i> Cần Cấp ${b.minLevel}</div>
+                    </div>`;
+                }
+
+                card.innerHTML += `
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="text-4xl w-14 h-14 bg-amber-100 flex items-center justify-center rounded-xl shadow-inner">${b.emoji}</div>
+                        <div>
+                            <h3 class="font-black text-gray-800 text-lg">${b.name}</h3>
+                            <p class="text-xs text-gray-500 font-bold leading-tight">${b.desc}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mb-3 mt-auto">
+                        <span class="text-sm font-bold text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded flex items-center gap-1"><i class="fas fa-coins text-yellow-500"></i> ${b.coins}</span>
+                        ${b.mats > 0 ? `<span class="text-sm font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded flex items-center gap-1"><i class="fas fa-cubes text-orange-500"></i> ${b.mats}</span>` : ''}
+                    </div>
+                `;
+
+                const btn = document.createElement('button');
+                if (isUnlockable) {
+                    btn.className = 'w-full btn-3d bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 rounded-xl mt-auto';
+                    btn.style.setProperty('--btn-shadow', '#b45309');
+                    btn.innerHTML = '<i class="fas fa-hammer"></i> Xây Dựng';
+                    btn.addEventListener('click', () => initiatePlacement(b));
+                } else {
+                    btn.className = 'w-full bg-gray-300 text-gray-500 font-bold py-2 rounded-xl mt-auto cursor-not-allowed';
+                    btn.innerHTML = 'Không đủ điều kiện';
+                }
+                card.appendChild(btn);
+                D.sGrid.appendChild(card);
+            });
+        }
+
+        function initiatePlacement(building) {
+            audio.playClick();
+            D.shopMod.classList.add('hide');
+            gameState.placementItem = building;
+            togglePlacementMode(true);
+        }
+
+        function togglePlacementMode(on) {
+            const plots = D.map.querySelectorAll('.plot');
+            if (on) {
+                D.placeGuide.classList.remove('hide');
+                D.btnShop.innerHTML = '<i class="fas fa-times-circle text-3xl mb-1 text-red-500"></i><span class="font-black text-lg text-red-500">HUỶ XÂY</span>';
+                D.btnShop.classList.replace('from-amber-400', 'from-gray-100');
+                D.btnShop.classList.replace('to-amber-600', 'to-gray-200');
+                D.btnShop.classList.replace('border-amber-800', 'border-gray-400');
+                
+                plots.forEach((p, idx) => {
+                    if (gameState.plots[idx] === null) {
+                        p.classList.add('placement-mode');
+                        p.dataset.preview = gameState.placementItem.emoji;
+                    }
+                });
+            } else {
+                D.placeGuide.classList.add('hide');
+                D.btnShop.innerHTML = '<i class="fas fa-store text-3xl mb-1"></i><span class="font-black text-lg">CỬA HÀNG</span>';
+                D.btnShop.classList.replace('from-gray-100', 'from-amber-400');
+                D.btnShop.classList.replace('to-gray-200', 'to-amber-600');
+                D.btnShop.classList.replace('border-gray-400', 'border-amber-800');
+                
+                plots.forEach(p => p.classList.remove('placement-mode'));
+            }
+        }
+
+        function handlePlotClick(idx, plotElement) {
+            if (!gameState.placementItem) {
+                if (gameState.plots[idx]) {
+                    audio.playClick();
+                    plotElement.classList.add('animate-shake');
+                    setTimeout(() => plotElement.classList.remove('animate-shake'), 400);
+                }
+                return;
+            }
+
+            if (gameState.plots[idx] !== null) return;
+
+            const item = gameState.placementItem;
+            gameState.coins -= item.coins;
+            gameState.mats -= item.mats;
+            
+            gameState.plots[idx] = item.id;
+            plotElement.innerHTML = `<div class="animate-pop-in drop-shadow-xl" style="filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.3));">${item.emoji}</div>`;
+            plotElement.classList.add('built');
+            plotElement.classList.remove('placement-mode');
+            
+            audio.playBuild();
+            gameState.placementItem = null;
+            togglePlacementMode(false);
+            updateHUD();
+        }
+
+        D.btnFin.addEventListener('click', () => {
+            audio.playClick();
+            audio.stopBGM();
+            audio.playWin();
+            
+            const builtCount = gameState.plots.filter(p => p !== null).length;
+            
+            D.eName.innerText = gameState.name;
+            D.eBlds.innerText = builtCount;
+            D.eLvl.innerText = gameState.level;
+            D.eCoins.innerText = gameState.totalEarnedCoins;
+            D.eMats.innerText = gameState.totalEarnedMats;
+            
+            D.endScn.classList.remove('hide');
+            startFireworks();
+        });
+
+        D.btnReplay.addEventListener('click', () => {
+            location.reload();
+        });
+
+        function startFireworks() {
+            D.fwCanvas.classList.remove('hide');
+            const ctx = D.fwCanvas.getContext('2d');
+            D.fwCanvas.width = window.innerWidth;
+            D.fwCanvas.height = window.innerHeight;
+            
+            const particles = [];
+            const colors = ['#FFD700', '#FF4500', '#00FF00', '#00BFFF', '#FF1493'];
+
+            function createExplosion(x, y) {
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                for (let i = 0; i < 50; i++) {
+                    particles.push({
+                        x: x, y: y,
+                        vx: (Math.random() - 0.5) * 10,
+                        vy: (Math.random() - 0.5) * 10,
+                        life: 1, color: color,
+                        size: Math.random() * 4 + 2
+                    });
+                }
+            }
+
+            let lastTime = 0;
+            function animate(timestamp) {
+                if(!lastTime) lastTime = timestamp;
+                const dt = timestamp - lastTime;
+                lastTime = timestamp;
+
+                ctx.clearRect(0, 0, D.fwCanvas.width, D.fwCanvas.height);
+                
+                if (Math.random() < 0.05) {
+                    createExplosion(
+                        Math.random() * D.fwCanvas.width,
+                        Math.random() * (D.fwCanvas.height/2)
+                    );
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.vy += 0.1;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 0.01;
+                    
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    if (p.life <= 0) particles.splice(i, 1);
+                }
+                
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .plot.placement-mode:hover::before {
+                content: attr(data-preview);
+                position: absolute;
+                opacity: 0.5;
+                filter: grayscale(50%);
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

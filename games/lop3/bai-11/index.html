@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tàu Hỏa Kiến Thức - Bài 11: Bài Trình Chiếu Của Em (Lớp 3)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', 'Inter', sans-serif;
+            user-select: none;
+        }
+        .track-bg {
+            background: linear-gradient(90deg, #1e293b 0%, #334155 100%);
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(59, 130, 246, 0.9); }
+        }
+        .train-glow {
+            animation: pulse-glow 1.5s infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        @keyframes drive-train {
+            0% { transform: translateX(0) scale(1); }
+            50% { transform: translateX(35px) scale(1.08); }
+            100% { transform: translateX(0) scale(1); }
+        }
+        .animate-drive {
+            animation: drive-train 0.6s ease-in-out;
+        }
+        @keyframes fireworks {
+            0% { transform: scale(0.1); opacity: 1; }
+            50% { opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .firework-particle {
+            position: absolute;
+            animation: fireworks 1s ease-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-sky-100 min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden">
+
+    <header class="bg-amber-500 shadow-md p-4 text-white flex justify-between items-center rounded-b-2xl mx-2 mt-2">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">🚂</span>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wide">TÀU HỎA KIẾN THỨC</h1>
+                <p class="text-xs text-amber-100">Tin Học Lớp 3 - Bài 11: Bài Trình Chiếu Của Em (SGK Kết Nối Tri Thức)</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="audio-toggle" onclick="toggleAudio()" class="bg-amber-600 hover:bg-amber-700 p-2 rounded-xl text-white shadow transition text-sm font-semibold flex items-center space-x-1">
+                <span>🎵</span> <span class="hidden md:inline" id="audio-text">Nhạc nền: Bật</span>
+            </button>
+            <button onclick="goHome()" class="bg-emerald-600 hover:bg-emerald-700 p-2 rounded-xl text-white shadow transition text-sm font-semibold flex items-center space-x-1">
+                <span>🏠</span> <span class="hidden md:inline">Trang chủ</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4">
+        
+        <!-- Home Screen -->
+        <div id="screen-home" class="bg-white rounded-3xl shadow-2xl p-6 md:p-10 max-w-2xl w-full text-center border-4 border-amber-400">
+            <div class="text-6xl md:text-8xl mb-4 animate-bounce">🚆✨</div>
+            <h2 class="text-3xl md:text-4xl font-extrabold text-amber-600 mb-2">HÀNH TRÌNH TÀU HỎA KIẾN THỨC</h2>
+            <p class="text-slate-600 mb-6 text-sm md:text-base">
+                Khám phá bí mật phần mềm Microsoft PowerPoint 2010 bám sát tuyệt đối nội dung SGK qua 4 Level và thử thách Boss cuối cùng!
+            </p>
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-left text-sm text-slate-700">
+                <p class="font-bold text-amber-800 mb-1">🎯 Hướng dẫn chơi:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Gạt cần chuyển ray (chọn đáp án, sắp xếp thứ tự hoặc ghép nối) để đưa tàu vào đúng nhà ga.</li>
+                    <li>Mỗi lần trả lời đúng, tàu sẽ tiến về phía trước một đoạn trên đường ray!</li>
+                    <li>Vào đúng ga tàu sẽ hú còi vui nhộn, cộng điểm và tăng Combo x2/x3!</li>
+                    <li>Hoàn thành game để chứng kiến pháo hoa ăn mừng rực rỡ tại đích đến!</li>
+                </ul>
+            </div>
+            <button onclick="startGame()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xl py-4 px-10 rounded-2xl shadow-lg transform hover:scale-105 transition duration-200">
+                🚀 BẮT ĐẦU HÀNH TRÌNH
+            </button>
+        </div>
+
+        <!-- Gameplay Screen -->
+        <div id="screen-game" class="hidden w-full max-w-5xl bg-white rounded-3xl shadow-2xl p-4 md:p-6 border-4 border-blue-400 flex flex-col">
+            <!-- HUD / Status Bar -->
+            <div class="flex flex-wrap justify-between items-center bg-slate-100 p-3 rounded-2xl mb-4 gap-2 text-sm md:text-base font-bold">
+                <div class="flex items-center space-x-2 bg-white px-3 py-1 rounded-xl shadow-sm">
+                    <span>🚩 Level: <span id="hud-level" class="text-blue-600">1</span>/4</span>
+                </div>
+                <div class="flex items-center space-x-2 bg-white px-3 py-1 rounded-xl shadow-sm">
+                    <span>⭐ Điểm: <span id="hud-score" class="text-amber-500">0</span></span>
+                </div>
+                <div class="flex items-center space-x-2 bg-white px-3 py-1 rounded-xl shadow-sm">
+                    <span>🔥 Combo: <span id="hud-combo" class="text-rose-500">x1</span></span>
+                </div>
+                <div class="flex items-center space-x-2 bg-white px-3 py-1 rounded-xl shadow-sm">
+                    <span>⏱️ Thời gian: <span id="hud-timer" class="text-red-500">30</span>s</span>
+                </div>
+            </div>
+
+            <!-- Mission Banner -->
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 rounded-2xl mb-4 shadow-md text-center">
+                <h3 id="mission-title" class="text-xs uppercase tracking-wider text-blue-200 font-semibold mb-1">Nhiệm Vụ Ngã Rẽ (SGK Bài 11)</h3>
+                <p id="mission-text" class="text-lg md:text-xl font-bold">Đang tải nhiệm vụ...</p>
+            </div>
+
+            <!-- Railway Simulation Canvas & Station Selection Area -->
+            <div class="relative bg-slate-900 rounded-2xl min-h-[280px] md:min-h-[320px] overflow-hidden flex flex-col justify-between p-4 track-bg shadow-inner mb-4">
+                <!-- Railway Tracks Background Graphic & Finish Line Flag -->
+                <div class="absolute inset-0 flex items-center justify-between px-12 opacity-30 pointer-events-none">
+                    <div class="w-full border-t-4 border-dashed border-amber-300"></div>
+                    <div class="absolute right-10 text-4xl">🏁</div>
+                </div>
+
+                <!-- Train Animation Object with Dynamic Progress -->
+                <div id="train-obj" class="absolute top-1/2 -translate-y-1/2 left-6 transition-all duration-700 text-5xl md:text-6xl z-10 train-glow">
+                    🚂
+                </div>
+
+                <!-- Status Feedback Message Popup -->
+                <div id="feedback-popup" class="absolute inset-0 bg-black/60 backdrop-blur-sm z-30 flex items-center justify-center hidden">
+                    <div id="feedback-content" class="bg-white p-6 rounded-3xl text-2xl md:text-3xl font-extrabold shadow-2xl animate-bounce text-center">
+                        VÀO ĐÚNG GA!
+                    </div>
+                </div>
+
+                <!-- Stations / Switches / Interactive Container -->
+                <div class="z-20 mt-auto pt-6" id="stations-container">
+                    <!-- Dynamic interactive options injected via JS -->
+                </div>
+            </div>
+
+            <!-- Powerups & Control Actions -->
+            <div class="flex flex-wrap justify-between items-center bg-slate-50 p-3 rounded-2xl gap-2">
+                <div class="flex items-center space-x-2">
+                    <button onclick="usePowerup('hint')" id="btn-hint" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-bold px-3 py-2 rounded-xl text-xs md:text-sm shadow transition flex items-center space-x-1">
+                        <span>💡 Gợi ý (3s)</span>
+                    </button>
+                    <button onclick="usePowerup('slow')" id="btn-slow" class="bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold px-3 py-2 rounded-xl text-xs md:text-sm shadow transition flex items-center space-x-1">
+                        <span>🐢 Làm chậm (+15s)</span>
+                    </button>
+                    <button onclick="usePowerup('gold')" id="btn-gold" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold px-3 py-2 rounded-xl text-xs md:text-sm shadow transition flex items-center space-x-1">
+                        <span>⭐ Ga Vàng (+50đ)</span>
+                    </button>
+                </div>
+                <div class="text-xs text-slate-500 font-medium">
+                    Checkpoint: <span id="checkpoint-text" class="font-bold text-slate-700">Level 1 - Xuất phát</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boss Stage Screen -->
+        <div id="screen-boss" class="hidden w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-6 border-4 border-rose-500 flex flex-col text-center">
+            <div class="text-6xl mb-2 animate-pulse">👹🚂</div>
+            <h2 class="text-2xl md:text-3xl font-extrabold text-rose-600 mb-1">BOSS - CHUYẾN TÀU CUỐI CÙNG</h2>
+            <p class="text-slate-600 mb-4 text-sm md:text-base">
+                Vượt qua chuỗi 5 nhà ga kiến thức trọng tâm bám sát SGK Tin Học 3 theo đúng thứ tự trước khi hết giờ!
+            </p>
+            <div class="bg-rose-50 p-4 rounded-2xl mb-4 border border-rose-200">
+                <p class="text-xs uppercase font-semibold text-rose-500">Mục tiêu cần hoàn thành:</p>
+                <p id="boss-task" class="text-lg md:text-xl font-bold text-slate-800 mt-1">Đang tải mục tiêu...</p>
+            </div>
+            <div class="flex justify-between items-center mb-4 px-2 font-bold text-slate-700">
+                <div>Tiến độ: <span id="boss-progress" class="text-rose-600">1</span>/5 ga</div>
+                <div>Thời gian Boss: <span id="boss-timer" class="text-red-600 text-xl">45</span>s</div>
+            </div>
+            <div id="boss-options" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                <!-- Boss option buttons injected here -->
+            </div>
+        </div>
+
+        <!-- Result Screen with Fireworks Effect Container -->
+        <div id="screen-result" class="hidden relative bg-white rounded-3xl shadow-2xl p-6 md:p-10 max-w-2xl w-full text-center border-4 border-emerald-400 overflow-hidden">
+            <!-- Fireworks container -->
+            <div id="fireworks-container" class="absolute inset-0 pointer-events-none z-0"></div>
+
+            <div class="relative z-10">
+                <div class="text-6xl md:text-8xl mb-3" id="result-emoji">🏆</div>
+                <h2 id="result-title" class="text-3xl md:text-4xl font-extrabold text-emerald-600 mb-2">CHINH PHỤC HÀNH TRÌNH KIẾN THỨC!</h2>
+                <p class="text-slate-600 mb-6 text-sm md:text-base">Chúc mừng em đã hoàn thành xuất sắc chuyến tàu học tập Bài 11 về PowerPoint!</p>
+                
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl mb-6 text-left border border-slate-200">
+                    <div class="font-semibold text-slate-700">✅ Ga đúng: <span id="res-correct" class="text-emerald-600 font-bold">0</span></div>
+                    <div class="font-semibold text-slate-700">❌ Nhầm đường: <span id="res-wrong" class="text-rose-600 font-bold">0</span></div>
+                    <div class="font-semibold text-slate-700">🔥 Combo cao nhất: <span id="res-combo" class="text-amber-500 font-bold">x1</span></div>
+                    <div class="font-semibold text-slate-700">⭐ Tổng điểm: <span id="res-score" class="text-blue-600 font-bold">0</span></div>
+                    <div class="col-span-2 font-semibold text-slate-700">⏱️ Tổng thời gian: <span id="res-time" class="text-indigo-600 font-bold">0s</span></div>
+                </div>
+
+                <!-- Detailed SGK Review Section -->
+                <div id="review-container" class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 text-left max-h-60 overflow-y-auto">
+                    <p class="font-bold text-amber-800 mb-2 flex items-center sticky top-0 bg-amber-50 py-1"><span>📚</span> <span class="ml-1">KIẾN THỨC CỐT LÕI BÀI 11 CẦN ÔN LẠI (CHUẨN SGK):</span></p>
+                    <ul id="review-list" class="list-disc pl-5 text-sm text-slate-700 space-y-2"></ul>
+                </div>
+
+                <div class="flex justify-center space-x-4">
+                    <button onclick="startGame()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-2xl shadow-lg transition">
+                        🔄 CHƠI LẠI
+                    </button>
+                    <button onclick="goHome()" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-2xl shadow-lg transition">
+                        🏠 TRANG CHỦ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-white text-center py-3 text-xs text-slate-500 border-t mx-2 rounded-t-2xl">
+        Bám sát SGK Tin Học Lớp 3 - Chủ đề 5 - Bài 11: Bài Trình Chiếu Của Em | Tàu Hỏa Kiến Thức v3.1
+    </footer>
+
+    <script>
+        const lessonData = {
+            level1: [
+                {
+                    type: "single",
+                    task: "Nhận biết biểu tượng phần mềm trình chiếu Microsoft PowerPoint 2010 trên màn hình nền:",
+                    stations: [
+                        { text: "Biểu tượng chữ P lớn trên nền cam đỏ", correct: true, review: "<b>Biểu tượng phần mềm:</b> Phần mềm trình chiếu Microsoft PowerPoint có biểu tượng chữ P đặc trưng và màu cam đỏ." },
+                        { text: "Biểu tượng bảng màu và cọ vẽ Paint", correct: false, review: "<b>Phân biệt phần mềm:</b> Paint là phần mềm dùng để vẽ tranh, không phải tạo trang chiếu." },
+                        { text: "Biểu tượng máy tính Calculator", correct: false, review: "<b>Phân biệt phần mềm:</b> Calculator là máy tính bỏ túi dùng cho các phép tính số học." }
+                    ]
+                },
+                {
+                    type: "single",
+                    task: "Thao tác chính xác để khởi động phần mềm trình chiếu từ màn hình nền là gì?",
+                    stations: [
+                        { text: "Nháy đúp chuột vào biểu tượng phần mềm", correct: true, review: "<b>Khởi động:</b> Nháy đúp chuột vào biểu tượng Microsoft PowerPoint trên màn hình nền để mở." },
+                        { text: "Nháy chuột phải chọn Delete", correct: false, review: "<b>Quản lý tệp:</b> Lệnh Delete dùng để xóa tệp hoặc thư mục." },
+                        { text: "Kéo thả biểu tượng vào Thùng rác", correct: false, review: "<b>Thùng rác:</b> Nơi chứa các mục đã bị xóa khỏi hệ thống." }
+                    ]
+                }
+            ],
+            level2: [
+                {
+                    type: "matching",
+                    task: "Ghép nối đúng các thành phần trên màn hình làm việc của phần mềm trình chiếu (Hình 62):",
+                    pairs: [
+                        { item: "Dải lệnh (Ribbon)", match: "Chứa các thẻ lệnh Home, Insert, Design..." },
+                        { item: "Trang chiếu thu nhỏ", match: "Hiển thị danh sách các slide (Thumbnail)" },
+                        { item: "Vùng soạn thảo", match: "Nơi hiển thị trang chiếu đang làm việc" }
+                    ],
+                    review: "<b>Màn hình làm việc PowerPoint:</b> Gồm Dải lệnh, Trang chiếu thu nhỏ, Vùng soạn thảo và các khung văn bản chứa nội dung."
+                },
+                {
+                    type: "sorting",
+                    task: "Sắp xếp đúng các bước để thêm một trang chiếu (slide) mới trong dải lệnh Home (Hình 64):",
+                    steps: [
+                        "1. Mở dải lệnh Home",
+                        "2. Nháy chuột vào nút lệnh New Slide",
+                        "3. Trang chiếu mới được tạo thêm"
+                    ],
+                    correctOrder: [0, 1, 2],
+                    review: "<b>Thêm trang chiếu mới:</b> Trong dải lệnh Home, nháy chuột chọn nút lệnh New Slide."
+                }
+            ],
+            level3: [
+                {
+                    type: "single",
+                    task: "Khi chèn hình ảnh minh họa vào trang chiếu (Hình 65), ta cần mở dải lệnh nào trước tiên?",
+                    stations: [
+                        { text: "Dải lệnh Insert, sau đó chọn Picture", correct: true, review: "<b>Chèn hình ảnh:</b> Vào dải lệnh Insert -> nháy nút Picture -> chọn tệp hình ảnh trong thư mục." },
+                        { text: "Dải lệnh Home, chọn New Slide", correct: false, review: "<b>Dải lệnh Home:</b> Nơi chứa nút New Slide để thêm trang chiếu mới." },
+                        { text: "Dải lệnh File, chọn Save", correct: false, review: "<b>Lệnh Save:</b> Dùng để lưu bài trình chiếu." },
+                        { text: "Ga nhiễu: Ga PowerPoint 9", correct: false, review: "<b>Lưu ý:</b> SGK sử dụng Microsoft PowerPoint 2010 làm chuẩn minh họa." }
+                    ]
+                },
+                {
+                    type: "single",
+                    task: "Khi chọn một hình ảnh trên trang chiếu, hình ảnh xuất hiện bao nhiêu nút tròn ở các góc và cạnh (Hình 66)?",
+                    stations: [
+                        { text: "8 nút tròn hỗ trợ phóng to hoặc thu nhỏ", correct: true, review: "<b>Điều chỉnh hình ảnh:</b> Hình ảnh được chọn hiển thị 8 nút tròn (4 góc và 4 cạnh) để co giãn kích thước." },
+                        { text: "4 nút tròn ở 4 góc", correct: false, review: "<b>Số lượng nút chuẩn:</b> Có tổng cộng 8 nút tròn để điều chỉnh chính xác." },
+                        { text: "Không có nút tròn nào", correct: false, review: "<b>Thao tác:</b> Cần nháy chuột vào hình ảnh để kích hoạt khung viền và các nút điều chỉnh." },
+                        { text: "Ga nhiễu: 12 nút vuông", correct: false, review: "<b>Sai quy chuẩn:</b> PowerPoint hiển thị 8 nút tròn điều chỉnh." }
+                    ]
+                }
+            ],
+            level4: [
+                {
+                    type: "sorting",
+                    task: "Sắp xếp đúng thứ tự các bước để lưu bài trình chiếu vào máy tính (Hình 68):",
+                    steps: [
+                        "1. Chọn bảng chọn File -> chọn Save",
+                        "2. Chọn thư mục lưu tệp trong máy tính",
+                        "3. Nhập tên tệp vào ô File name",
+                        "4. Nháy chuột vào nút Save"
+                    ],
+                    correctOrder: [0, 1, 2, 3],
+                    review: "<b>Lưu bài trình chiếu:</b> File -> Save -> Chọn thư mục -> Nhập tên tệp -> Nháy Save."
+                }
+            ],
+            boss: [
+                { task: "1. Biểu tượng và khởi động phần mềm:", options: ["Nháy đúp biểu tượng PowerPoint trên màn hình nền", "Nhấn phím F5 trình chiếu ngay", "Chọn New Slide trong dải lệnh Insert"], correct: 0 },
+                { task: "2. Thêm trang chiếu mới:", options: ["Nút lệnh Picture", "Nút lệnh New Slide trong dải lệnh Home", "Nút lệnh Save As"], correct: 1 },
+                { task: "3. Chèn hình ảnh minh họa:", options: ["Dải lệnh Insert -> Picture", "Dải lệnh Home -> Delete", "Phím Backspace xóa ký tự"], correct: 0 },
+                { task: "4. Điều chỉnh kích thước hình ảnh:", options: ["Kéo thả 8 nút tròn ở góc với con trỏ mũi tên hai chiều", "Gõ phím Enter xuống dòng", "Nhấn phím Esc tắt trình chiếu"], correct: 0 },
+                { task: "5. Trình chiếu toàn màn hình:", options: ["Nhấn phím F5 (hoặc nháy nút Slide Show)", "Nhấn phím Backspace", "Nhấn phím Spacebar"], correct: 0 }
+            ]
+        };
+
+        let gameState = {
+            level: 1,
+            questionIndex: 0,
+            score: 0,
+            combo: 1,
+            maxCombo: 1,
+            correctCount: 0,
+            wrongCount: 0,
+            timer: 30,
+            timerInterval: null,
+            audioEnabled: true,
+            bgmInterval: null,
+            checkpointText: "Level 1 - Xuất phát",
+            reviewItems: [],
+            isBoss: false,
+            bossIndex: 0,
+            bossTimer: 45,
+            bossInterval: null,
+            powerups: { hint: 1, slow: 1, gold: 1 },
+            trainPositionPct: 5 // starting percentage from left
+        };
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function startBackgroundMusic() {
+            if (gameState.bgmInterval) clearInterval(gameState.bgmInterval);
+            const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 440.00, 349.23, 293.66, 349.23, 392.00, 440.00, 392.00, 329.63, 293.66, 261.63];
+            let step = 0;
+            gameState.bgmInterval = setInterval(() => {
+                if (!gameState.audioEnabled) return;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(notes[step], audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                } catch(e) {}
+                step = (step + 1) % notes.length;
+            }, 300);
+        }
+
+        function stopBackgroundMusic() {
+            if (gameState.bgmInterval) {
+                clearInterval(gameState.bgmInterval);
+                gameState.bgmInterval = null;
+            }
+        }
+
+        function playSound(type) {
+            if (!gameState.audioEnabled) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            try {
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'train-whistle') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.setValueAtTime(880, now + 0.15);
+                    osc.frequency.linearRampToValueAtTime(783.99, now + 0.5);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(660, now + 0.1);
+                    osc.frequency.setValueAtTime(880, now + 0.2);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.setValueAtTime(120, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch(e) {}
+        }
+
+        function toggleAudio() {
+            gameState.audioEnabled = !gameState.audioEnabled;
+            const textEl = document.getElementById('audio-text');
+            if (gameState.audioEnabled) {
+                textEl.innerText = "Nhạc nền: Bật";
+                startBackgroundMusic();
+            } else {
+                textEl.innerText = "Nhạc nền: Tắt";
+                stopBackgroundMusic();
+            }
+        }
+
+        function goHome() {
+            clearInterval(gameState.timerInterval);
+            clearInterval(gameState.bossInterval);
+            stopBackgroundMusic();
+            document.getElementById('screen-home').classList.remove('hidden');
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-boss').classList.add('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+        }
+
+        function startGame() {
+            gameState.level = 1;
+            gameState.questionIndex = 0;
+            gameState.score = 0;
+            gameState.combo = 1;
+            gameState.maxCombo = 1;
+            gameState.correctCount = 0;
+            gameState.wrongCount = 0;
+            gameState.checkpointText = "Level 1 - Xuất phát";
+            gameState.reviewItems = [];
+            gameState.isBoss = false;
+            gameState.powerups = { hint: 1, slow: 1, gold: 1 };
+            gameState.trainPositionPct = 5;
+
+            updateTrainPosition();
+
+            document.getElementById('screen-home').classList.add('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('screen-boss').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+
+            if (gameState.audioEnabled) {
+                startBackgroundMusic();
+            }
+
+            loadQuestion();
+        }
+
+        function updateTrainPosition() {
+            const trainObj = document.getElementById('train-obj');
+            if (trainObj) {
+                trainObj.style.left = gameState.trainPositionPct + '%';
+            }
+        }
+
+        function loadQuestion() {
+            clearInterval(gameState.timerInterval);
+            gameState.timer = gameState.level === 3 ? 20 : (gameState.level === 4 ? 25 : 30);
+            document.getElementById('hud-level').innerText = gameState.level;
+            document.getElementById('hud-score').innerText = gameState.score;
+            document.getElementById('hud-combo').innerText = 'x' + gameState.combo;
+            document.getElementById('hud-timer').innerText = gameState.timer;
+            document.getElementById('checkpoint-text').innerText = gameState.checkpointText;
+
+            let questionsList = lessonData['level' + gameState.level];
+            if (!questionsList || gameState.questionIndex >= questionsList.length) {
+                if (gameState.level < 4) {
+                    gameState.level++;
+                    gameState.questionIndex = 0;
+                    gameState.checkpointText = `Level ${gameState.level} - Ga trung chuyển`;
+                    loadQuestion();
+                    return;
+                } else {
+                    startBoss();
+                    return;
+                }
+            }
+
+            let q = questionsList[gameState.questionIndex];
+            document.getElementById('mission-text').innerText = q.task;
+            document.getElementById('mission-title').innerText = `Nhiệm Vụ Ngã Rẽ (Level ${gameState.level} - Bài 11 SGK)`;
+
+            let container = document.getElementById('stations-container');
+            container.innerHTML = '';
+
+            if (q.type === 'single') {
+                renderSingleChoice(q, container);
+            } else if (q.type === 'matching') {
+                renderMatching(q, container);
+            } else if (q.type === 'sorting') {
+                renderSorting(q, container);
+            }
+
+            gameState.timerInterval = setInterval(() => {
+                gameState.timer--;
+                document.getElementById('hud-timer').innerText = gameState.timer;
+                if (gameState.timer <= 0) {
+                    clearInterval(gameState.timerInterval);
+                    handleAnswer(false, "<b>Hết thời gian quyết định ngã rẽ!</b> Cần tập trung ghi nhớ thao tác trong SGK.");
+                }
+            }, 1000);
+        }
+
+        function renderSingleChoice(q, container) {
+            let grid = document.createElement('div');
+            grid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+            let shuffledStations = [...q.stations].sort(() => Math.random() - 0.5);
+
+            shuffledStations.forEach((station, idx) => {
+                let btn = document.createElement('button');
+                btn.className = "bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl font-semibold border-2 border-slate-600 shadow-md text-left transition transform hover:scale-[1.01] flex items-center justify-between";
+                btn.innerHTML = `<span>🛤️ Ga ${idx + 1}: ${station.text}</span> <span class='text-xs bg-slate-700 px-2 py-1 rounded text-amber-300'>Gạt ray</span>`;
+                btn.onclick = () => handleAnswer(station.correct, station.review);
+                grid.appendChild(btn);
+            });
+            container.appendChild(grid);
+        }
+
+        function renderMatching(q, container) {
+            let wrapper = document.createElement('div');
+            wrapper.className = "space-y-3";
+            let instructions = document.createElement('p');
+            instructions.className = "text-amber-300 text-xs font-semibold mb-2";
+            instructions.innerText = "💡 Hãy chọn cặp đôi khớp nhau để chuyển ray:";
+            wrapper.appendChild(instructions);
+
+            let grid = document.createElement('div');
+            grid.className = "grid grid-cols-1 md:grid-cols-3 gap-3";
+
+            let selectedItem = null;
+            let matchedPairsCount = 0;
+
+            q.pairs.forEach((pair, pIdx) => {
+                let itemBtn = document.createElement('button');
+                itemBtn.className = "bg-slate-800 hover:bg-slate-700 text-amber-200 p-3 rounded-xl font-bold border-2 border-slate-600 shadow text-center transition";
+                itemBtn.innerText = pair.item;
+                itemBtn.onclick = () => {
+                    if (selectedItem) selectedItem.classList.remove('border-amber-400', 'bg-slate-700');
+                    selectedItem = itemBtn;
+                    itemBtn.classList.add('border-amber-400', 'bg-slate-700');
+                };
+                grid.appendChild(itemBtn);
+            });
+
+            let shuffledMatches = [...q.pairs].sort(() => Math.random() - 0.5);
+            shuffledMatches.forEach((pair, mIdx) => {
+                let matchBtn = document.createElement('button');
+                matchBtn.className = "bg-slate-800 hover:bg-slate-700 text-emerald-200 p-3 rounded-xl font-semibold border-2 border-slate-600 shadow text-center transition";
+                matchBtn.innerText = pair.match;
+                matchBtn.onclick = () => {
+                    if (!selectedItem) {
+                        alert("Vui lòng chọn thành phần bên trái trước!");
+                        return;
+                    }
+                    if (selectedItem.innerText === q.pairs.find(p => p.match === pair.match).item) {
+                        playSound('correct');
+                        selectedItem.style.opacity = '0.5';
+                        selectedItem.disabled = true;
+                        matchBtn.style.opacity = '0.5';
+                        matchBtn.disabled = true;
+                        selectedItem = null;
+                        matchedPairsCount++;
+                        if (matchedPairsCount === q.pairs.length) {
+                            handleAnswer(true, q.review);
+                        }
+                    } else {
+                        playSound('wrong');
+                        alert("Chưa khớp! Hãy thử lại.");
+                        selectedItem.classList.remove('border-amber-400', 'bg-slate-700');
+                        selectedItem = null;
+                    }
+                };
+                grid.appendChild(matchBtn);
+            });
+
+            wrapper.appendChild(grid);
+            container.appendChild(wrapper);
+        }
+
+        function renderSorting(q, container) {
+            let wrapper = document.createElement('div');
+            wrapper.className = "space-y-3";
+            let instructions = document.createElement('p');
+            instructions.className = "text-amber-300 text-xs font-semibold mb-2";
+            instructions.innerText = "💡 Nhấn vào các bước theo thứ tự đúng từ 1 đến hết để thông tuyến đường ray:";
+            wrapper.appendChild(instructions);
+
+            let currentStepIdx = 0;
+            let shuffledSteps = q.steps.map((step, originalIndex) => ({ step, originalIndex })).sort(() => Math.random() - 0.5);
+
+            let grid = document.createElement('div');
+            grid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+
+            shuffledSteps.forEach((obj) => {
+                let btn = document.createElement('button');
+                btn.className = "bg-slate-800 hover:bg-slate-700 text-white p-3 rounded-xl font-semibold border-2 border-slate-600 shadow text-left transition";
+                btn.innerText = obj.step;
+                btn.onclick = () => {
+                    if (obj.originalIndex === currentStepIdx) {
+                        playSound('train-whistle');
+                        btn.className = "bg-emerald-700 text-white p-3 rounded-xl font-semibold border-2 border-emerald-400 shadow text-left opacity-60";
+                        btn.disabled = true;
+                        currentStepIdx++;
+                        if (currentStepIdx === q.steps.length) {
+                            handleAnswer(true, q.review);
+                        }
+                    } else {
+                        playSound('wrong');
+                        alert("Chưa đúng thứ tự bước trong SGK! Hãy thử lại.");
+                    }
+                };
+                grid.appendChild(btn);
+            });
+
+            wrapper.appendChild(grid);
+            container.appendChild(wrapper);
+        }
+
+        function handleAnswer(isCorrect, reviewText) {
+            clearInterval(gameState.timerInterval);
+            
+            let trainObj = document.getElementById('train-obj');
+            trainObj.classList.add('animate-drive');
+            setTimeout(() => trainObj.classList.remove('animate-drive'), 600);
+
+            let popup = document.getElementById('feedback-popup');
+            let content = document.getElementById('feedback-content');
+            popup.classList.remove('hidden');
+
+            if (isCorrect) {
+                playSound('train-whistle');
+                content.className = "bg-emerald-500 text-white p-6 rounded-3xl text-2xl md:text-3xl font-extrabold shadow-2xl animate-bounce text-center";
+                content.innerText = "🚂✨ VÀO ĐÚNG GA! TÀU TIẾN VỀ ĐÍCH! ✨";
+                gameState.score += 10 * gameState.combo;
+                gameState.combo = Math.min(gameState.combo + 1, 5);
+                if (gameState.combo > gameState.maxCombo) gameState.maxCombo = gameState.combo;
+                gameState.correctCount++;
+                gameState.questionIndex++;
+
+                // Move train forward towards finish line (85% max)
+                gameState.trainPositionPct = Math.min(85, gameState.trainPositionPct + 12);
+                updateTrainPosition();
+            } else {
+                playSound('wrong');
+                content.className = "bg-rose-500 text-white p-6 rounded-3xl text-2xl md:text-3xl font-extrabold shadow-2xl animate-shake text-center";
+                content.innerText = "❌ NHẦM ĐƯỜNG RAY! TÀU VỀ CHECKPOINT! ❌";
+                gameState.combo = 1;
+                gameState.wrongCount++;
+                if (reviewText && !gameState.reviewItems.includes(reviewText)) {
+                    gameState.reviewItems.push(reviewText);
+                }
+                gameState.questionIndex = 0;
+                gameState.trainPositionPct = 5;
+                updateTrainPosition();
+            }
+
+            setTimeout(() => {
+                popup.classList.add('hidden');
+                loadQuestion();
+            }, 1400);
+        }
+
+        function startBoss() {
+            gameState.isBoss = true;
+            gameState.bossIndex = 0;
+            gameState.bossTimer = 45;
+
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-boss').classList.remove('hidden');
+
+            loadBossQuestion();
+
+            gameState.bossInterval = setInterval(() => {
+                gameState.bossTimer--;
+                document.getElementById('boss-timer').innerText = gameState.bossTimer;
+                if (gameState.bossTimer <= 0) {
+                    clearInterval(gameState.bossInterval);
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function loadBossQuestion() {
+            let bossList = lessonData.boss;
+            if (gameState.bossIndex >= bossList.length) {
+                clearInterval(gameState.bossInterval);
+                endGame(true);
+                return;
+            }
+
+            let bq = bossList[gameState.bossIndex];
+            document.getElementById('boss-task').innerText = bq.task;
+            document.getElementById('boss-progress').innerText = (gameState.bossIndex + 1);
+
+            let container = document.getElementById('boss-options');
+            container.innerHTML = '';
+            bq.options.forEach((opt, idx) => {
+                let btn = document.createElement('button');
+                btn.className = "bg-rose-100 hover:bg-rose-200 text-rose-900 font-bold p-4 rounded-2xl shadow border-2 border-rose-300 transition text-center";
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if (idx === bq.correct) {
+                        playSound('train-whistle');
+                        gameState.score += 20;
+                        gameState.correctCount++;
+                        gameState.bossIndex++;
+                        loadBossQuestion();
+                    } else {
+                        playSound('wrong');
+                        gameState.wrongCount++;
+                        gameState.score = Math.max(0, gameState.score - 10);
+                        let errNote = `<b>Trạm Boss ${gameState.bossIndex + 1}:</b> Đáp án chuẩn SGK là "${bq.options[bq.correct]}"`;
+                        if (!gameState.reviewItems.includes(errNote)) gameState.reviewItems.push(errNote);
+                        alert("Nhầm trạm Boss! Tàu phải thử lại chuỗi ga này.");
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function usePowerup(type) {
+            if (gameState.powerups[type] <= 0) {
+                alert("Bạn đã sử dụng hết vật phẩm này trong lượt chơi!");
+                return;
+            }
+            gameState.powerups[type]--;
+
+            if (type === 'hint') {
+                alert("💡 Gợi ý chuẩn SGK Bài 11: Nhớ kỹ biểu tượng chữ P PowerPoint, dải lệnh Home -> New Slide, Insert -> Picture, và phím F5 để trình chiếu.");
+            } else if (type === 'slow') {
+                gameState.timer += 15;
+                document.getElementById('hud-timer').innerText = gameState.timer;
+                alert("🐢 Đã làm chậm tàu! Thời gian được cộng thêm 15 giây.");
+            } else if (type === 'gold') {
+                gameState.score += 50;
+                document.getElementById('hud-score').innerText = gameState.score;
+                alert("⭐ Nhận thành công Ga Vàng! +50 điểm thưởng.");
+            }
+        }
+
+        function triggerFireworks() {
+            const container = document.getElementById('fireworks-container');
+            container.innerHTML = '';
+            const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6'];
+            
+            for (let i = 0; i < 25; i++) {
+                let p = document.createElement('div');
+                p.className = 'firework-particle w-3 h-3 rounded-full';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.left = (20 + Math.random() * 60) + '%';
+                p.style.top = (20 + Math.random() * 60) + '%';
+                p.style.animationDelay = (Math.random() * 0.8) + 's';
+                container.appendChild(p);
+            }
+        }
+
+        function endGame(isSuccess) {
+            clearInterval(gameState.timerInterval);
+            clearInterval(gameState.bossInterval);
+            stopBackgroundMusic();
+
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-boss').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            document.getElementById('res-correct').innerText = gameState.correctCount;
+            document.getElementById('res-wrong').innerText = gameState.wrongCount;
+            document.getElementById('res-combo').innerText = 'x' + gameState.maxCombo;
+            document.getElementById('res-score').innerText = gameState.score;
+            document.getElementById('res-time').innerText = (150 - gameState.timer) + "s";
+
+            if (isSuccess) {
+                document.getElementById('result-emoji').innerText = "🏆🎉";
+                document.getElementById('result-title').innerText = "CHINH PHỤC HÀNH TRÌNH KIẾN THỨC!";
+                playSound('train-whistle');
+                triggerFireworks();
+            } else {
+                document.getElementById('result-emoji').innerText = "⏰💥";
+                document.getElementById('result-title').innerText = "HẾT THỜI GIAN CHUYẾN TÀU!";
+            }
+
+            let reviewContainer = document.getElementById('review-container');
+            let reviewList = document.getElementById('review-list');
+            
+            let defaultReviewNotes = [
+                "<b>Biểu tượng và Khởi động:</b> Biểu tượng phần mềm trình chiếu Microsoft PowerPoint 2010 là chữ P trên nền cam đỏ. Nháy đúp chuột vào biểu tượng màn hình nền để khởi động.",
+                "<b>Màn hình làm việc:</b> Gồm Dải lệnh (Home, Insert...), Trang chiếu thu nhỏ (Slide Thumbnail), Vùng soạn thảo và Khung văn bản chứa nội dung.",
+                "<b>Thêm trang chiếu mới:</b> Trong dải lệnh Home, nháy chuột chọn nút lệnh <b>New Slide</b>.",
+                "<b>Chèn hình ảnh minh họa:</b> Vào dải lệnh Insert -> nháy nút lệnh <b>Picture</b> -> chọn tệp hình ảnh trong máy tính -> nháy Insert.",
+                "<b>Điều chỉnh hình ảnh:</b> Hình ảnh được chọn xuất hiện 8 nút tròn ở góc và cạnh. Kéo thả nút tròn góc với con trỏ mũi tên hai chiều để phóng to/thu nhỏ.",
+                "<b>Trình chiếu và Lưu bài:</b> Nhấn phím <b>F5</b> để trình chiếu toàn màn hình. Vào File -> Save để lưu tệp vào thư mục."
+            ];
+
+            let allNotes = [...new Set([...gameState.reviewItems, ...defaultReviewNotes])];
+            reviewContainer.classList.remove('hidden');
+            reviewList.innerHTML = '';
+            allNotes.forEach(item => {
+                let li = document.createElement('li');
+                li.innerHTML = item;
+                reviewList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>

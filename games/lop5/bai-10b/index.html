@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hành Trình Lập Trình - Bài 10: Cấu Trúc Tuần Tự</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-bg: #fffbeb; /* Amber 50 */
+            --grass-color: #f59e0b; /* Amber 500 */
+            --text-dark: #111827; 
+            --text-blue: #78350f; /* Amber 900 */
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fef3c7;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(251, 191, 36, 0.3) 10%, transparent 11%),
+                radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.2) 8%, transparent 9%);
+            background-size: 100vw 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            color: var(--text-dark);
+        }
+        
+        .title-font {
+            font-family: 'Baloo 2', cursive;
+        }
+        
+        .game-title {
+            text-shadow: 4px 4px 0px #f59e0b, 8px 8px 0px #d97706;
+            letter-spacing: 2px;
+        }
+
+        .btn-candy {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 0 var(--btn-shadow, #b45309);
+            border-radius: 1.5rem;
+            border: 4px solid white;
+            font-weight: 900;
+            color: var(--text-dark);
+        }
+        .btn-candy:active {
+            transform: translateY(8px);
+            box-shadow: 0 0px 0 var(--btn-shadow, #b45309);
+        }
+
+        .candy-input {
+            border: 4px solid #f59e0b;
+            border-radius: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .candy-input:focus {
+            outline: none;
+            border-color: #d97706;
+            background-color: #fffaf0;
+        }
+
+        .modal-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 6px solid #f59e0b;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+            border-radius: 2.5rem;
+        }
+
+        .track-container {
+            background-color: #451a03;
+            border-top: 15px solid #fbbf24;
+            border-bottom: 15px solid #fbbf24;
+            border-radius: 2rem;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.6), 0 10px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            height: 140px;
+        }
+
+        .track-center-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            border-top: 8px dashed rgba(255,255,255,0.7);
+            z-index: 1;
+        }
+        
+        .finish-line {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 40px;
+            background: repeating-linear-gradient(45deg, #fff 0, #fff 15px, #000 15px, #000 30px);
+            z-index: 5;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+            border-left: 4px solid #fbbf24;
+        }
+
+        .car-container {
+            position: absolute;
+            left: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: left 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .car-avatar {
+            font-size: 5rem;
+            filter: drop-shadow(4px 6px 5px rgba(0,0,0,0.5));
+        }
+
+        .obstacle {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3.5rem;
+            z-index: 15;
+            transition: all 0.5s;
+            filter: drop-shadow(2px 4px 3px rgba(0,0,0,0.4));
+        }
+
+        .obstacle-break {
+            animation: break-apart 0.6s forwards;
+        }
+
+        @keyframes break-apart {
+            0% { transform: translate(-50%, -50%) scale(1) rotate(0); opacity: 1; }
+            50% { transform: translate(-50%, -80%) scale(1.2) rotate(20deg); opacity: 0.8; }
+            100% { transform: translate(-50%, 50%) scale(0) rotate(90deg); opacity: 0; }
+        }
+
+        .engine-idle { animation: floating 1.5s infinite ease-in-out alternate; }
+        .moving-fast { animation: speed-bump 0.2s infinite; }
+
+        @keyframes floating {
+            0% { transform: translateY(-50%) rotate(-2deg); }
+            100% { transform: translateY(-52%) rotate(2deg); }
+        }
+        @keyframes speed-bump {
+            0% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-55%) scale(1.1); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+
+        .question-card {
+            background: white;
+            border: 8px solid #f59e0b;
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .question-text {
+            color: #78350f;
+            font-weight: 900;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
+        }
+
+        .btn-answer { --btn-shadow: #b45309; background-color: #f59e0b; color: white; }
+        .btn-answer:hover { background-color: #d97706; }
+        .btn-answer.correct { background-color: #16a34a !important; --btn-shadow: #15803d !important; color: white !important; }
+        .btn-answer.wrong { background-color: #dc2626 !important; --btn-shadow: #991b1b !important; opacity: 0.5; pointer-events: none; }
+        
+        .btn-tf-true { --btn-shadow: #15803d; background-color: #22c55e; color: white; }
+        .btn-tf-false { --btn-shadow: #991b1b; background-color: #ef4444; color: white; }
+
+        /* Sắp xếp khối lệnh / Sắp xếp bước */
+        .sortable-item {
+            background: #fffbeb;
+            border: 4px dashed #f59e0b;
+            border-radius: 1.2rem;
+            padding: 1rem;
+            font-weight: 900;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sortable-item:hover {
+            background: #fef3c7;
+            border-color: #d97706;
+            transform: scale(1.02);
+        }
+
+        .avatar-select {
+            transition: all 0.2s;
+            filter: grayscale(100%);
+            opacity: 0.5;
+            cursor: pointer;
+        }
+        .avatar-select.selected {
+            filter: grayscale(0%);
+            opacity: 1;
+            transform: scale(1.2);
+            background: #fef3c7;
+            border-radius: 1rem;
+            border: 4px solid #d97706;
+        }
+
+        #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 9999; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col">
+
+    <div id="setup-screen" class="absolute inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="modal-glass p-6 md:p-10 max-w-2xl w-full text-center relative">
+            <h2 class="title-font text-2xl md:text-4xl text-amber-600 font-black mb-2">TIN HỌC LỚP 5 - BÀI 10</h2>
+            <h1 class="title-font game-title text-4xl md:text-6xl text-white mb-6 font-black uppercase">Cấu Trúc Tuần Tự<br>Vượt Chướng Ngại Vật</h1>
+            
+            <div class="bg-amber-50 rounded-3xl p-6 border-4 border-amber-200 mb-6 shadow-inner">
+                <div class="flex flex-col gap-5">
+                    <div class="text-left">
+                        <label class="block text-xl font-black text-amber-700 mb-2"><i class="fa-solid fa-user-astronaut"></i> Tên Học Sinh:</label>
+                        <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" class="candy-input w-full text-2xl" maxlength="20">
+                    </div>
+                    <div class="text-left">
+                        <label class="block text-xl font-black text-amber-700 mb-2"><i class="fa-solid fa-school"></i> Lớp:</label>
+                        <input type="text" id="player-class" placeholder="VD: 5A..." class="candy-input w-full text-2xl" maxlength="10">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-2xl font-black text-gray-800 mb-4">Chọn Xe Đua Đồng Hành:</label>
+                <div class="flex justify-center gap-6 text-6xl" id="avatar-container">
+                    <div class="avatar-select selected p-2" data-avatar="🐱">🐱</div>
+                    <div class="avatar-select p-2" data-avatar="🏎️">🏎️</div>
+                    <div class="avatar-select p-2" data-avatar="🚀">🚀</div>
+                    <div class="avatar-select p-2" data-avatar="🚗">🚗</div>
+                </div>
+            </div>
+
+            <button id="btn-start" class="btn-candy w-full py-5 bg-amber-500 text-white font-black text-4xl uppercase tracking-wider title-font" style="--btn-shadow: #b45309;">
+                <i class="fa-solid fa-play ml-2"></i> BẮT ĐẦU CHƠI!
+            </button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="hidden flex-1 flex flex-col h-full max-w-6xl mx-auto w-full relative">
+        
+        <div class="bg-white/90 backdrop-blur px-6 py-3 flex justify-between items-center shadow-lg font-black text-xl z-10 border-b-4 border-amber-200 rounded-b-3xl mx-2">
+            <div class="text-amber-900"><i class="fa-solid fa-star text-amber-500"></i> Bài 10: Cấu trúc tuần tự (Tin học 5)</div>
+            <div id="display-player-info" class="text-amber-700 uppercase tracking-wide"></div>
+        </div>
+
+        <div class="flex-none p-4 pb-0 relative z-0 mt-4">
+            <div id="track-container" class="track-container">
+                <div class="track-center-line"></div>
+                <div class="finish-line"></div>
+                <div id="player-car" class="car-container engine-idle">
+                    <div id="car-avatar" class="car-avatar">🐱</div>
+                </div>
+            </div>
+            
+            <div class="absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-white px-8 py-2 rounded-full shadow-xl border-4 border-amber-400 font-black text-2xl flex items-center gap-3 z-30 title-font text-amber-900">
+                <i class="fa-solid fa-flag-checkered text-amber-600"></i> 
+                Câu hỏi: <span id="progress-text" class="text-amber-600">1/10</span>
+            </div>
+        </div>
+
+        <div class="flex-1 p-4 flex flex-col items-center justify-start relative z-20 mt-10">
+            <div class="w-full max-w-4xl question-card p-6 md:p-8 relative bg-white">
+                
+                <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-white rounded-full p-2 shadow-2xl border-4 border-amber-400">
+                    <div class="bg-amber-500 text-white rounded-full w-20 h-20 flex items-center justify-center text-4xl font-black title-font">
+                        <span id="timer">30</span>
+                    </div>
+                </div>
+
+                <div class="text-center mt-8">
+                    <h2 id="question-text" class="question-text text-2xl md:text-3xl mb-4 min-h-[90px] flex items-center justify-center leading-tight">
+                        Đang tải câu hỏi...
+                    </h2>
+                    
+                    <p id="hint-text" class="text-red-500 font-black text-xl italic h-8 mb-6 opacity-0 transition-opacity bg-red-50 p-2 rounded-lg inline-block border-2 border-red-200">
+                        Gợi ý: Hãy thử lại!
+                    </p>
+
+                    <div id="options-container" class="w-full">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="win-screen" class="hidden absolute inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-md p-4">
+        <canvas id="confetti-canvas"></canvas>
+        <div class="text-center z-10 p-8 modal-glass max-w-2xl w-full transform scale-0 transition-transform duration-500" id="win-modal">
+            <i class="fa-solid fa-trophy text-9xl text-amber-500 mb-4 drop-shadow-[0_0_30px_rgba(245,158,11,1)] animate-bounce"></i>
+            <h1 class="title-font text-6xl md:text-7xl font-black text-amber-600 mb-4 uppercase text-shadow-lg">VỀ ĐÍCH!</h1>
+            
+            <p id="win-player-msg" class="text-3xl font-black text-amber-900 mb-4 title-font"></p>
+            <p class="text-2xl font-bold text-gray-700 mb-8">Em đã nắm vững kiến thức về Cấu trúc tuần tự bài 10!</p>
+            
+            <button id="btn-restart" class="btn-candy w-full py-5 bg-amber-500 text-white font-black text-4xl uppercase tracking-widest title-font" style="--btn-shadow: #b45309;">
+                <i class="fa-solid fa-rotate-right mr-2"></i> Chơi Lại Từ Đầu
+            </button>
+        </div>
+    </div>
+
+    <div id="countdown-screen" class="hidden absolute inset-0 z-[70] flex items-center justify-center bg-amber-500">
+        <div id="countdown-number" class="text-[18rem] font-black text-white title-font drop-shadow-[0_15px_0_rgba(0,0,0,0.3)]">3</div>
+    </div>
+
+    <script>
+        // HOÀN TOÀN BÁM SÁT NGUỒN SGK TIN HỌC 5 - BÀI 10: CẤU TRÚC TUẦN TỰ
+        const ALL_QUESTIONS = [
+            {
+                type: 'mcq',
+                q: "Theo SGK Tin học 5, việc thực hiện lần lượt từng bước theo thứ tự như trong hướng dẫn định dạng văn bản được gọi là gì?",
+                options: ["Thực hiện ngẫu nhiên", "Thực hiện tuần tự", "Thực hiện lặp lại", "Thực hiện rẽ nhánh"],
+                ans: 1,
+                hint: "Xem lại phần Khởi động: Việc thực hiện lần lượt từng bước theo thứ tự như vậy còn được gọi là thực hiện tuần tự."
+            },
+            {
+                type: 'tf',
+                q: "ĐÚNG hay SAI: 'Trong cấu trúc tuần tự, các việc được thực hiện lần lượt theo thứ tự.'",
+                ans: 1, // Đúng
+                hint: "Xem lại kết luận mục 1: Trong cấu trúc tuần tự, các việc được thực hiện lần lượt theo thứ tự."
+            },
+            {
+                type: 'tf',
+                q: "ĐÚNG hay SAI: 'Trong chương trình có cấu trúc tuần tự, các lệnh được thực hiện theo thứ tự ngẫu nhiên.'",
+                ans: 0, // Sai (Phát biểu sai)
+                hint: "Xem lại câu hỏi chọn phát biểu sai trong SGK: Các lệnh được thực hiện lần lượt theo thứ tự, không phải ngẫu nhiên."
+            },
+            {
+                type: 'order',
+                q: "Hãy sắp xếp các bước định dạng phông chữ, cỡ chữ (Hình 72) theo thứ tự đúng:",
+                items: [
+                    "Chọn phần văn bản cần định dạng.",
+                    "Nháy chuột vào lệnh phông chữ để chọn phông Verdana.",
+                    "Nháy chuột vào lệnh cỡ chữ và chọn cỡ chữ 12."
+                ],
+                correctOrder: [0, 1, 2],
+                hint: "Các bước được thực hiện lần lượt từ Bước 1 đến Bước 3."
+            },
+            {
+                type: 'order',
+                q: "Hãy sắp xếp các lệnh trong chương trình 'Xin chào!' (Hình 73) theo thứ tự đúng:",
+                items: [
+                    "di chuyển 100 bước",
+                    "nói 'Xin chào!' trong 3 giây",
+                    "phát âm thanh Meow đến hết",
+                    "nói 'Rất vui được gặp các bạn.'"
+                ],
+                correctOrder: [0, 1, 2, 3],
+                hint: "Ý tưởng: Mèo xuất hiện, di chuyển 100 bước, nói Xin chào, kêu meo, rồi nói Rất vui được gặp các bạn."
+            },
+            {
+                type: 'mcq',
+                q: "Trong Nhiệm vụ 2 (Mèo di chuyển), lệnh nào được sử dụng để thay đổi động tác của nhân vật tạo hiệu ứng hoạt hình?",
+                options: ["trang phục kế tiếp", "di chuyển 10 bước", "đợi 1 giây", "nói Xin chào"],
+                ans: 0,
+                hint: "Xem lại lưu ý trong SGK: Khi thay đổi liên tiếp các trang phục của nhân vật thì tạo hiệu ứng hoạt hình bằng lệnh 'trang phục kế tiếp'."
+            },
+            {
+                type: 'order',
+                q: "Sắp xếp các hành động tuần tự trong Nhiệm vụ 2 của chương trình Mèo di chuyển:",
+                items: [
+                    "Di chuyển 10 bước -> Trang phục kế tiếp -> Đợi 1 giây",
+                    "Di chuyển 10 bước -> Trang phục kế tiếp -> Đợi 1 giây",
+                    "Di chuyển 10 bước -> Trang phục kế tiếp -> Đợi 1 giây"
+                ],
+                correctOrder: [0, 1, 2],
+                hint: "Lặp lại 3 lần các hành động di chuyển 10 bước, thay đổi trang phục và đợi 1 giây theo cấu trúc tuần tự."
+            },
+            {
+                type: 'mcq',
+                q: "Ở phần Luyện tập (Hình 75), chương trình điều khiển nhân vật mèo có cấu trúc gì?",
+                options: ["Cấu trúc tuần tự", "Cấu trúc rẽ nhánh", "Cấu trúc lặp", "Cấu trúc hỗn hợp không thứ tự"],
+                ans: 0,
+                hint: "Các lệnh được thực hiện lần lượt theo thứ tự từ trên xuống dưới."
+            },
+            {
+                type: 'mcq',
+                q: "Trong câu hỏi Vận dụng, em hãy mô tả ý tưởng chương trình để nhân vật nói 'Tạm biệt!' và 'Hẹn gặp lại!' thay cho câu gì?",
+                options: ["'Xin chào!' và 'Rất vui được gặp các bạn.'", "'Chào buổi sáng!'", "'Chúc bạn ngủ ngon!'", "'Tạm biệt nhé!'"],
+                ans: 0,
+                hint: "Yêu cầu Vận dụng 1: Nói 'Tạm biệt!' và 'Hẹn gặp lại!' thay cho 'Xin chào!' và 'Rất vui được gặp các bạn.' trong mục 1."
+            },
+            {
+                type: 'tf',
+                q: "ĐÚNG hay SAI: 'Trong chương trình có cấu trúc tuần tự, các lệnh hoặc khối lệnh được thực hiện lần lượt theo thứ tự.'",
+                ans: 1, // Đúng
+                hint: "Xem lại tóm tắt kiến thức cốt lõi Bài 10 SGK trang 53."
+            }
+        ];
+
+        let playerName = "";
+        let playerClass = "";
+        let playerAvatar = "🐱";
+        let currentStep = 0;
+        let totalSteps = 10;
+        let gameQuestions = [];
+        let currentQuestion = null;
+        let timerInterval;
+        let timeLeft = 30;
+        let audioInit = false;
+        const TRACK_START = 5;
+        const TRACK_END = 85; 
+
+        const synths = {};
+        
+        async function initAudio() {
+            if (audioInit) return;
+            await Tone.start();
+            
+            synths.ui = new Tone.PolySynth(Tone.Synth).toDestination();
+            synths.ui.volume.value = -5;
+            
+            synths.engine = new Tone.NoiseSynth({
+                noise: { type: 'pink' },
+                envelope: { attack: 0.1, decay: 1, sustain: 0.5, release: 1 }
+            }).toDestination();
+            synths.engine.volume.value = -10;
+            const filter = new Tone.Filter(800, "lowpass").toDestination();
+            synths.engine.disconnect().connect(filter);
+
+            synths.bgm = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "square" },
+                envelope: { attack: 0.02, decay: 0.2, sustain: 0.1, release: 0.5 }
+            }).toDestination();
+            synths.bgm.volume.value = -20; 
+
+            audioInit = true;
+        }
+
+        const sounds = {
+            playBGM: () => {
+                if(!audioInit) return;
+                Tone.Transport.cancel();
+                const melody = ["C5", "E5", "G5", "C6", "G5", "E5", "D5", "F5", "A5", "D6"];
+                let step = 0;
+                Tone.Transport.scheduleRepeat((time) => {
+                    synths.bgm.triggerAttackRelease(melody[step % melody.length], "16n", time);
+                    step++;
+                }, "8n");
+                Tone.Transport.bpm.value = 140;
+                Tone.Transport.start();
+            },
+            stopBGM: () => { Tone.Transport.stop(); },
+            beep: () => { if(audioInit) synths.ui.triggerAttackRelease("C5", "0.1s"); },
+            countdown321: () => { if(audioInit) synths.ui.triggerAttackRelease("G4", "0.2s"); },
+            countdownGo: () => { if(audioInit) synths.ui.triggerAttackRelease("C6", "0.5s"); },
+            correct: () => { 
+                if(!audioInit) return;
+                const now = Tone.now();
+                synths.ui.triggerAttackRelease(["C5", "E5", "G5"], "0.2s", now);
+                synths.ui.triggerAttackRelease(["E5", "G5", "C6"], "0.4s", now + 0.15);
+            },
+            wrong: () => {
+                if(!audioInit) return;
+                synths.ui.triggerAttackRelease("Eb3", "0.4s");
+            },
+            breakObstacle: () => {
+                if(!audioInit) return;
+                synths.engine.triggerAttackRelease("0.3s");
+            },
+            engineRev: () => {
+                if(!audioInit) return;
+                synths.engine.triggerAttackRelease("1s");
+            },
+            win: () => {
+                if(!audioInit) return;
+                const now = Tone.now();
+                synths.ui.triggerAttackRelease(["C5", "E5", "G5", "C6"], "0.4s", now);
+                synths.ui.triggerAttackRelease(["F5", "A5", "C6", "F6"], "0.4s", now + 0.4);
+                synths.ui.triggerAttackRelease(["G5", "B5", "D6", "G6"], "0.4s", now + 0.8);
+            }
+        };
+
+        const DOM = {
+            setupScreen: document.getElementById('setup-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            winScreen: document.getElementById('win-screen'),
+            countdownScreen: document.getElementById('countdown-screen'),
+            trackContainer: document.getElementById('track-container'),
+            questionText: document.getElementById('question-text'),
+            optionsContainer: document.getElementById('options-container'),
+            timerText: document.getElementById('timer'),
+            hintText: document.getElementById('hint-text'),
+            playerNameInfo: document.getElementById('display-player-info'),
+            progressText: document.getElementById('progress-text'),
+            playerCar: document.getElementById('player-car'),
+            carAvatar: document.getElementById('car-avatar'),
+            winModal: document.getElementById('win-modal')
+        };
+
+        document.querySelectorAll('.avatar-select').forEach(el => {
+            el.addEventListener('click', (e) => {
+                if(audioInit) sounds.beep();
+                document.querySelectorAll('.avatar-select').forEach(b => b.classList.remove('selected'));
+                e.currentTarget.classList.add('selected');
+                playerAvatar = e.currentTarget.dataset.avatar;
+            });
+        });
+
+        document.getElementById('btn-start').addEventListener('click', async () => {
+            await initAudio();
+            sounds.beep();
+            
+            playerName = document.getElementById('player-name').value.trim() || "Em Học Giỏi";
+            playerClass = document.getElementById('player-class').value.trim() || "";
+            let classStr = playerClass ? ` - Lớp ${playerClass}` : "";
+            DOM.playerNameInfo.innerHTML = `<i class="fa-solid fa-face-smile-wink mr-2"></i> ${playerName}${classStr}`;
+            DOM.carAvatar.textContent = playerAvatar;
+
+            DOM.setupScreen.classList.add('hidden');
+            
+            gameQuestions = [];
+            let pool = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
+            while(gameQuestions.length < totalSteps) {
+                gameQuestions = gameQuestions.concat(pool);
+            }
+            gameQuestions = gameQuestions.slice(0, totalSteps);
+
+            currentStep = 0;
+            setupTrackObstacles();
+            startCountdown();
+        });
+
+        function setupTrackObstacles() {
+            document.querySelectorAll('.obstacle').forEach(e => e.remove());
+            DOM.playerCar.style.left = `${TRACK_START}%`;
+            
+            for(let i = 1; i <= totalSteps; i++) {
+                let obs = document.createElement('div');
+                obs.className = 'obstacle';
+                obs.id = `obs-${i}`;
+                obs.textContent = '🚧';
+                
+                let segment = (TRACK_END - TRACK_START) / totalSteps;
+                let pos = TRACK_START + (i * segment) - (segment/2);
+                
+                obs.style.left = `${pos}%`;
+                DOM.trackContainer.appendChild(obs);
+            }
+        }
+
+        function startCountdown() {
+            DOM.countdownScreen.classList.remove('hidden');
+            const numEl = document.getElementById('countdown-number');
+            let count = 3;
+            numEl.textContent = count;
+            
+            const countInterval = setInterval(() => {
+                if (count > 0) {
+                    numEl.textContent = count;
+                    numEl.style.transform = 'scale(1.2)';
+                    setTimeout(() => numEl.style.transform = 'scale(1)', 200);
+                    sounds.countdown321();
+                    count--;
+                } else if (count === 0) {
+                    numEl.textContent = "CHẠY!";
+                    numEl.classList.add('text-amber-200');
+                    sounds.countdownGo();
+                    count--;
+                } else {
+                    clearInterval(countInterval);
+                    DOM.countdownScreen.classList.add('hidden');
+                    DOM.gameScreen.classList.remove('hidden');
+                    
+                    sounds.playBGM();
+                    loadNextQuestion();
+                }
+            }, 1000);
+        }
+
+        function loadNextQuestion() {
+            DOM.hintText.style.opacity = 0;
+            DOM.progressText.textContent = `${currentStep + 1}/${totalSteps}`;
+            
+            currentQuestion = gameQuestions[currentStep];
+            DOM.questionText.textContent = currentQuestion.q;
+            DOM.optionsContainer.innerHTML = '';
+            
+            if (currentQuestion.type === 'mcq') {
+                renderMCQ(currentQuestion);
+            } else if (currentQuestion.type === 'tf') {
+                renderTF(currentQuestion);
+            } else if (currentQuestion.type === 'order') {
+                renderOrder(currentQuestion);
+            }
+
+            startTimer(currentQuestion.type === 'order' ? 35 : 20);
+        }
+
+        function renderMCQ(q) {
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 w-full';
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-candy btn-answer w-full py-4 px-6 text-xl md:text-2xl flex items-center gap-4 text-left font-black';
+                btn.innerHTML = `<span class="bg-white/30 text-white rounded-full w-12 h-12 flex items-center justify-center flex-shrink-0 text-2xl">${String.fromCharCode(65+idx)}</span> <span class="leading-tight">${opt}</span>`;
+                btn.onclick = () => checkAnswer(idx === q.ans, btn, grid);
+                grid.appendChild(btn);
+            });
+            DOM.optionsContainer.appendChild(grid);
+        }
+
+        function renderTF(q) {
+            const flex = document.createElement('div');
+            flex.className = 'flex justify-center gap-8 w-full';
+            
+            const btnTrue = document.createElement('button');
+            btnTrue.className = 'btn-candy btn-tf-true w-48 py-8 text-3xl font-black rounded-3xl';
+            btnTrue.innerHTML = '<i class="fa-solid fa-check-circle text-5xl mb-3 block"></i> ĐÚNG';
+            btnTrue.onclick = () => checkAnswer(1 === q.ans, btnTrue, flex);
+            
+            const btnFalse = document.createElement('button');
+            btnFalse.className = 'btn-candy btn-tf-false w-48 py-8 text-3xl font-black rounded-3xl';
+            btnFalse.innerHTML = '<i class="fa-solid fa-xmark-circle text-5xl mb-3 block"></i> SAI';
+            btnFalse.onclick = () => checkAnswer(0 === q.ans, btnFalse, flex);
+            
+            flex.appendChild(btnTrue);
+            flex.appendChild(btnFalse);
+            DOM.optionsContainer.appendChild(flex);
+        }
+
+        function renderOrder(q) {
+            const container = document.createElement('div');
+            container.className = 'flex flex-col gap-3 w-full max-w-2xl mx-auto';
+            
+            let shuffled = q.items.map((text, origIndex) => ({ text, origIndex }))
+                                  .sort(() => Math.random() - 0.5);
+            
+            let userOrder = [];
+
+            const titleInfo = document.createElement('p');
+            titleInfo.className = 'text-amber-800 font-bold mb-2 text-lg text-center';
+            titleInfo.textContent = 'Chọn lần lượt các bước theo đúng thứ tự tuần tự:';
+            container.appendChild(titleInfo);
+
+            const listDiv = document.createElement('div');
+            listDiv.className = 'flex flex-col gap-3';
+
+            shuffled.forEach((item) => {
+                const btn = document.createElement('button');
+                btn.className = 'sortable-item';
+                btn.innerHTML = `<span><i class="fa-solid fa-bars text-amber-500 mr-3"></i> ${item.text}</span> <i class="fa-regular fa-circle text-2xl text-amber-400"></i>`;
+                
+                btn.onclick = () => {
+                    if (btn.classList.contains('selected')) return;
+                    sounds.beep();
+                    btn.classList.add('selected', 'bg-amber-100', 'border-amber-600');
+                    btn.querySelector('i.fa-regular').className = 'fa-solid fa-check-circle text-2xl text-green-600';
+                    userOrder.push(item.origIndex);
+
+                    if (userOrder.length === q.items.length) {
+                        let isCorrect = true;
+                        for(let i=0; i<userOrder.length; i++) {
+                            if(userOrder[i] !== q.correctOrder[i]) {
+                                isCorrect = false;
+                                break;
+                            }
+                        }
+                        setTimeout(() => checkAnswer(isCorrect, null, container, true), 500);
+                    }
+                };
+                listDiv.appendChild(btn);
+            });
+
+            container.appendChild(listDiv);
+            DOM.optionsContainer.appendChild(container);
+        }
+
+        function startTimer(seconds) {
+            clearInterval(timerInterval);
+            timeLeft = seconds;
+            DOM.timerText.textContent = timeLeft;
+            const ring = DOM.timerText.parentElement;
+            ring.className = "bg-amber-500 text-white rounded-full w-20 h-20 flex items-center justify-center text-4xl font-black title-font transition-colors";
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                DOM.timerText.textContent = timeLeft;
+                
+                if (timeLeft <= 5 && timeLeft > 0) {
+                    ring.classList.replace('bg-amber-500', 'bg-red-600');
+                    ring.classList.add('animate-pulse');
+                    sounds.beep();
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    checkAnswer(false, null, DOM.optionsContainer, false, true); 
+                }
+            }, 1000);
+        }
+
+        function checkAnswer(isCorrect, btnElement, container, isOrder = false, isTimeout = false) {
+            clearInterval(timerInterval);
+            
+            if (isCorrect) {
+                if (container) {
+                    const allBtns = container.querySelectorAll('button');
+                    allBtns.forEach(b => { b.disabled = true; b.style.pointerEvents = 'none'; });
+                }
+
+                if(btnElement) btnElement.classList.add('correct');
+                sounds.correct();
+                DOM.hintText.style.opacity = 0;
+
+                animateCarSuccess();
+
+            } else {
+                if(btnElement) btnElement.classList.add('wrong');
+                sounds.wrong();
+                
+                if (isTimeout) {
+                    DOM.hintText.textContent = `⏰ Hết giờ! Hãy thử lại nhé!`;
+                } else {
+                    DOM.hintText.textContent = `💡 Gợi ý: ${currentQuestion.hint}`;
+                }
+                DOM.hintText.style.opacity = 1;
+                
+                if(isOrder) {
+                   setTimeout(() => {
+                        DOM.optionsContainer.innerHTML = '';
+                        renderOrder(currentQuestion);
+                        startTimer(35);
+                   }, 1500);
+                } else {
+                    startTimer(10);
+                }
+            }
+        }
+
+        function animateCarSuccess() {
+            currentStep++;
+            
+            let currentObs = document.getElementById(`obs-${currentStep}`);
+            if(currentObs) {
+                sounds.breakObstacle();
+                currentObs.classList.add('obstacle-break');
+            }
+
+            setTimeout(() => {
+                sounds.engineRev();
+                DOM.playerCar.classList.remove('engine-idle');
+                DOM.playerCar.classList.add('moving-fast');
+                
+                let segment = (TRACK_END - TRACK_START) / totalSteps;
+                let newPos = currentStep === totalSteps ? TRACK_END + 5 : TRACK_START + (currentStep * segment);
+                
+                DOM.playerCar.style.left = `${newPos}%`;
+
+                setTimeout(() => {
+                    DOM.playerCar.classList.remove('moving-fast');
+                    DOM.playerCar.classList.add('engine-idle');
+                    
+                    if (currentStep >= totalSteps) {
+                        endGame();
+                    } else {
+                        loadNextQuestion();
+                    }
+                }, 1000);
+
+            }, 400);
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            sounds.stopBGM();
+            sounds.win();
+            
+            DOM.winScreen.classList.remove('hidden');
+            setTimeout(() => {
+                DOM.winModal.classList.remove('scale-0');
+                DOM.winModal.classList.add('scale-100');
+            }, 100);
+
+            document.getElementById('win-player-msg').innerHTML = `Chúc mừng <b>${playerName}</b>! <br> ${playerAvatar}`;
+            startConfetti();
+        }
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            stopConfetti();
+            if(audioInit) sounds.beep();
+            DOM.winModal.classList.remove('scale-100');
+            DOM.winModal.classList.add('scale-0');
+            setTimeout(() => {
+                DOM.winScreen.classList.add('hidden');
+                DOM.gameScreen.classList.add('hidden');
+                DOM.setupScreen.classList.remove('hidden');
+            }, 500);
+        });
+
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let confettiParticles = [];
+        let confettiAnimationId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Confetti {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height - canvas.height;
+                this.size = Math.random() * 15 + 8;
+                this.speedY = Math.random() * 5 + 3;
+                this.speedX = Math.random() * 4 - 2;
+                this.color = `hsl(${Math.random() * 60 + 30}, 100%, 50%)`; // Tông vàng cam
+                this.rotation = Math.random() * 360;
+                this.rotSpeed = Math.random() * 10 - 5;
+                this.shape = Math.random() > 0.5 ? 'rect' : 'circle';
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                this.rotation += this.rotSpeed;
+                if (this.y > canvas.height) {
+                    this.y = -10;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.fillStyle = this.color;
+                if(this.shape === 'rect') {
+                    ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function startConfetti() {
+            confettiParticles = [];
+            for (let i = 0; i < 250; i++) {
+                confettiParticles.push(new Confetti());
+            } ngânHinh();
+        }
+
+        function ngânHinh() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confettiParticles.forEach(p => { p.update(); p.draw(); });
+            confettiAnimationId = requestAnimationFrame(ngânHinh);
+        }
+
+        function stopConfetti() {
+            cancelAnimationFrame(confettiAnimationId);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+</html>

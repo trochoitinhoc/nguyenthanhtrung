@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thang Máy Kiến Thức</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&family=Quicksand:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FFB03B;
+            --bg-color: #E8F4F8;
+            --text-color: #333;
+            --white: #FFF;
+            --correct: #8BC34A;
+            --wrong: #FF5252;
+            --boss: #9C27B0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            background-image: radial-gradient(circle at 50% 50%, #ffffff 0%, #E8F4F8 100%);
+        }
+
+        h1, h2, h3, .boss-title {
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            height: 90vh;
+            background: var(--white);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Khởi đầu */
+        #start-screen {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .welcome-text {
+            color: #d81b60;
+            font-size: 1.2rem;
+            margin-bottom: 20px; /* Tăng khoảng cách khi bỏ tên trường */
+            font-weight: 700;
+        }
+
+        #start-screen h1 {
+            font-size: 3rem;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.5);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            outline: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(74,144,226,0.2);
+        }
+
+        .btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: bold;
+            box-shadow: 0 6px 0 #d6891a;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #d6891a;
+        }
+
+        /* Giao diện chính */
+        #main-game {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Thang máy & Cửa */
+        .elevator-doors {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .door {
+            width: 50%;
+            height: 100%;
+            background: #cbd5e1;
+            border: 4px solid #94a3b8;
+            transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .door-left { border-right: 2px solid #475569; transform: translateX(-100%); }
+        .door-right { border-left: 2px solid #475569; transform: translateX(100%); }
+
+        .doors-closed .door-left { transform: translateX(0); }
+        .doors-closed .door-right { transform: translateX(0); }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .player-info {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        .floor-display {
+            background: #1e293b;
+            color: #10b981;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .score-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        /* Tiến trình */
+        .progress-bar {
+            height: 15px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #6ee7b7);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Nội dung câu hỏi / Chọn đường */
+        .content-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .path-selection {
+            display: none;
+            width: 100%;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .path-card {
+            flex: 1;
+            padding: 30px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 4px solid transparent;
+        }
+
+        .path-card:hover {
+            transform: scale(1.05);
+        }
+
+        .path-safe {
+            background: #d1fae5;
+            border-color: #34d399;
+            color: #065f46;
+        }
+
+        .path-risky {
+            background: #ffe4e6;
+            border-color: #fb7185;
+            color: #9f1239;
+        }
+
+        .question-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+            width: 100%;
+            font-size: 1.3rem;
+            border-left: 8px solid var(--primary);
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .option-btn {
+            background: #f8fafc;
+            border: 2px solid #cbd5e1;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn:hover {
+            background: #e0f2fe;
+            border-color: #7dd3fc;
+        }
+
+        .option-btn.correct {
+            background: #dcfce7;
+            border-color: #4ade80;
+            color: #166534;
+        }
+
+        .option-btn.wrong {
+            background: #fee2e2;
+            border-color: #f87171;
+            color: #991b1b;
+        }
+
+        /* Gợi ý */
+        .hint-box {
+            display: none;
+            background: #fffbeb;
+            border: 2px dashed #fcd34d;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            width: 100%;
+            color: #b45309;
+            font-weight: 600;
+            animation: fadeIn 0.5s;
+        }
+
+        /* Boss */
+        .boss-mode .question-box {
+            border-color: var(--boss);
+            background: #faf5ff;
+        }
+        
+        .boss-mode .floor-display {
+            color: #e879f9;
+        }
+
+        /* Chiến thắng */
+        #win-screen {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 60;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #win-screen h1 {
+            font-size: 3rem;
+            color: #fbbf24;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 0px #b45309;
+        }
+
+        #win-screen p {
+            font-size: 1.5rem;
+            color: #4b5563;
+        }
+
+        #canvas-confetti {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Màn hình bắt đầu -->
+        <div id="start-screen">
+            <div class="welcome-text">Chào mừng năm học mới!</div>
+            <h1>🛗 THANG MÁY KIẾN THỨC</h1>
+            <div class="input-group">
+                <input type="text" id="playerName" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <input type="text" id="playerClass" placeholder="Nhập lớp của em..." autocomplete="off">
+            </div>
+            <button class="btn" onclick="startGame()">BẮT ĐẦU VÀO THANG MÁY</button>
+        </div>
+
+        <!-- Màn hình chính -->
+        <div id="main-game">
+            <div class="header">
+                <div class="player-info" id="display-player"></div>
+                <div class="floor-display">TẦNG <span id="display-floor">1</span></div>
+                <div class="score-display">Điểm: <span id="display-score">0</span></div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+
+            <!-- Cửa thang máy -->
+            <div class="elevator-doors doors-closed" id="elevator-doors">
+                <div class="door door-left"></div>
+                <div class="door door-right"></div>
+            </div>
+
+            <div class="content-area">
+                <!-- Màn hình chọn đường (Tầng 3-7) -->
+                <div class="path-selection" id="path-selection">
+                    <div class="path-card path-safe" onclick="selectPath('safe')">
+                        <h2>🟢 ĐƯỜNG AN TOÀN</h2>
+                        <p>Câu hỏi vừa sức<br>Điểm x1</p>
+                    </div>
+                    <div class="path-card path-risky" onclick="selectPath('risky')">
+                        <h2>🔴 ĐƯỜNG MẠO HIỂM</h2>
+                        <p>Câu hỏi thử thách<br>Điểm x2</p>
+                    </div>
+                </div>
+
+                <!-- Màn hình câu hỏi -->
+                <div id="question-container" style="width: 100%; display: none;">
+                    <div class="question-box" id="question-text"></div>
+                    <div class="options-grid" id="options-grid"></div>
+                    <div class="hint-box" id="hint-box">💡 Gợi ý: <span id="hint-text"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Màn hình chiến thắng -->
+        <div id="win-screen">
+            <h1>🏆 CHÚC MỪNG EM! 🏆</h1>
+            <p id="win-message"></p>
+            <h2 style="margin-top: 20px; color: var(--primary);">EM ĐÃ LÊN ĐỈNH KIẾN THỨC!</h2>
+        </div>
+
+        <canvas id="canvas-confetti"></canvas>
+    </div>
+
+    <script>
+        // Dữ liệu Game (Bám sát SGK Lớp 3 Bài 2: Xử lí thông tin)
+        const gameData = [
+            {
+                floor: 1, type: 'normal',
+                question: "Khi em hát theo video, tai và mắt của em làm nhiệm vụ gì?",
+                options: ["Thu nhận thông tin", "Xử lí thông tin", "Quyết định hành động", "Phát ra âm thanh"],
+                answer: 0,
+                hint: "Mắt để nhìn, tai để nghe. Đây là bước đầu tiên để nhận biết thế giới xung quanh.",
+                points: 10
+            },
+            {
+                floor: 2, type: 'normal',
+                question: "Bộ phận nào của con người làm nhiệm vụ xử lí thông tin, điều khiển suy nghĩ và hành động?",
+                options: ["Đôi mắt", "Đôi tai", "Bộ não", "Chân tay"],
+                answer: 2,
+                hint: "Cơ quan này nằm ở trong đầu của chúng ta, giúp chúng ta suy nghĩ.",
+                points: 10
+            },
+            {
+                floor: 3, type: 'choice',
+                safe: {
+                    question: "Chiếc quạt điện có điều khiển từ xa tiếp nhận thông tin từ chiếc điều khiển để làm gì?",
+                    options: ["Để phát sáng", "Để quyết định hành động (quay/dừng)", "Để ca hát", "Để làm nóng"],
+                    answer: 1,
+                    hint: "Sau khi nhận lệnh từ nút bấm, quạt sẽ đưa ra một quyết định hoạt động.",
+                    points: 10
+                },
+                risky: {
+                    question: "Khi thả diều, dây diều bị chùng, người thả quyết định chạy ngược chiều gió. Việc 'chạy ngược chiều gió' là kết quả của việc gì?",
+                    options: ["Thu nhận thông tin", "Xử lí thông tin", "Chơi đùa", "Gió thổi mạnh"],
+                    answer: 1,
+                    hint: "Bộ não đã nhận biết dây diều chùng và làm ra một bước tiếp theo để điều khiển đôi chân.",
+                    points: 20
+                }
+            },
+            {
+                floor: 4, type: 'choice',
+                safe: {
+                    question: "Khi em bấm phím số 3 trên điều khiển, thông tin ti vi nhận được là gì?",
+                    options: ["Số 1", "Kênh VTV3", "Số 3", "Âm thanh"],
+                    answer: 2,
+                    hint: "Ti vi nhận đúng phím mà em đã bấm trên chiếc điều khiển.",
+                    points: 10
+                },
+                risky: {
+                    question: "Hiện nay có ti vi được điều khiển bằng giọng nói. Khi đó, thông tin ti vi nhận được thuộc dạng gì?",
+                    options: ["Hình ảnh", "Âm thanh", "Văn bản", "Nhiệt độ"],
+                    answer: 1,
+                    hint: "Giọng nói được phát ra và truyền đi dưới dạng này.",
+                    points: 20
+                }
+            },
+            {
+                floor: 5, type: 'choice',
+                safe: {
+                    question: "Thiết bị nào sau đây có thể tiếp nhận thông tin để quyết định hành động?",
+                    options: ["Bàn, ghế học sinh", "Bếp từ, ti vi, máy giặt", "Cuốn sổ tay", "Cái kéo"],
+                    answer: 1,
+                    hint: "Đây là các thiết bị điện tử có các nút bấm điều khiển.",
+                    points: 10
+                },
+                risky: {
+                    question: "Minh chụp ảnh cánh đồng lúa bằng điện thoại thông minh. Khi đó, thông tin được điện thoại thu nhận thuộc dạng gì?",
+                    options: ["Âm thanh", "Văn bản", "Hình ảnh", "Khứu giác"],
+                    answer: 2,
+                    hint: "Chụp ảnh thì kết quả thu được sẽ là dạng thông tin này để ta nhìn thấy.",
+                    points: 20
+                }
+            },
+            {
+                floor: 6, type: 'choice',
+                safe: {
+                    question: "Bố vừa kể cho Minh nghe một câu chuyện hay. Vậy 'Câu chuyện hay' mà Minh được nghe là gì?",
+                    options: ["Kết quả xử lí thông tin", "Thông tin bộ não tiếp nhận", "Hành động của Minh", "Thông tin máy móc nhận được"],
+                    answer: 1,
+                    hint: "Đây là những gì tai Minh nghe được từ bên ngoài đưa vào.",
+                    points: 10
+                },
+                risky: {
+                    question: "Từ câu chuyện của bố, Minh nghĩ là sẽ kể lại cho An và Khoa. Việc 'quyết định sẽ kể lại' là gì?",
+                    options: ["Kết quả xử lí thông tin của bộ não", "Thông tin thu nhận bằng tai", "Thông tin thu nhận bằng mắt", "Hoạt động của máy móc"],
+                    answer: 0,
+                    hint: "Sau khi nghe xong, não của Minh đã làm việc để đưa ra dự định này.",
+                    points: 20
+                }
+            },
+            {
+                floor: 7, type: 'choice',
+                safe: {
+                    question: "Khi nhấn vào nút dấu cộng (+) của bếp từ, bếp từ quyết định hành động như thế nào?",
+                    options: ["Tắt bếp", "Mở tivi", "Tăng nhiệt độ nấu", "Giảm nhiệt độ nấu"],
+                    answer: 2,
+                    hint: "Dấu (+) thường mang ý nghĩa là làm tăng lên, cộng thêm vào.",
+                    points: 10
+                },
+                risky: {
+                    question: "Em hãy cho biết trình tự đúng của quá trình con người xử lí thông tin?",
+                    options: [
+                        "Quyết định → Xử lí thông tin → Thu nhận thông tin", 
+                        "Xử lí thông tin → Thu nhận thông tin → Quyết định", 
+                        "Thu nhận thông tin → Quyết định → Xử lí thông tin",
+                        "Thu nhận thông tin → Xử lí thông tin → Quyết định"
+                    ],
+                    answer: 3,
+                    hint: "Mình phải nhìn/nghe thấy trước, rồi đưa vào não suy nghĩ, cuối cùng mới hành động.",
+                    points: 20
+                }
+            },
+            {
+                floor: 8, type: 'boss',
+                question: "👑 TRÙM CUỐI: Điểm giống nhau của các máy móc tiếp nhận thông tin (như ti vi, quạt, bếp từ) là gì?",
+                options: [
+                    "Chúng đều tự biết suy nghĩ giống con người", 
+                    "Chúng đều tiếp nhận thông tin để quyết định hành động", 
+                    "Chúng đều thu nhận thông tin dạng âm thanh", 
+                    "Chúng đều không cần dùng điện"
+                ],
+                answer: 1,
+                hint: "Con người điều khiển thiết bị bằng cách cung cấp thông tin. Từ thông tin nhận được, thiết bị sẽ làm gì để thực hiện yêu cầu?",
+                points: 50
+            }
+        ];
+
+        // Biến trạng thái
+        let currentFloor = 1;
+        let score = 0;
+        let playerName = "";
+        let playerClass = "";
+        let currentQuestionObj = null;
+        let isProcessing = false;
+
+        // Âm thanh (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let bgmOscillator = null;
+        let bgmGainNode = null;
+        let isBGMPlaying = false;
+
+        function playBGM() {
+            if (isBGMPlaying) return;
+            isBGMPlaying = true;
+            
+            // Nhạc nền đơn giản, vui tươi, lặp lại
+            const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // C E G C G E
+            let noteIndex = 0;
+
+            function playNextNote() {
+                if(!isBGMPlaying) return;
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(notes[noteIndex], audioCtx.currentTime);
+                
+                // Volume to hơn một chút nhưng vẫn dễ chịu
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+                
+                noteIndex = (noteIndex + 1) % notes.length;
+                setTimeout(playNextNote, 350); // Tốc độ vui tươi
+            }
+            playNextNote();
+        }
+
+        function playSound(type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'ting') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'win') {
+                // Hợp âm chiến thắng
+                const freqs = [523.25, 659.25, 783.99, 1046.50];
+                freqs.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'triangle';
+                    o.frequency.value = f;
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    g.gain.setValueAtTime(0, audioCtx.currentTime);
+                    g.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1 + (i*0.1));
+                    g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2);
+                    o.start();
+                    o.stop(audioCtx.currentTime + 2);
+                });
+            }
+        }
+
+        // Logic Game
+        function startGame() {
+            playerName = document.getElementById('playerName').value.trim();
+            playerClass = document.getElementById('playerClass').value.trim();
+
+            if (!playerName || !playerClass) {
+                alert("Em vui lòng nhập đầy đủ Họ tên và Lớp nhé!");
+                return;
+            }
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            playBGM();
+
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('main-game').style.display = 'flex';
+            
+            document.getElementById('display-player').innerText = `${playerName} - Lớp ${playerClass}`;
+            
+            loadFloor();
+        }
+
+        function loadFloor() {
+            isProcessing = false;
+            document.getElementById('hint-box').style.display = 'none';
+            document.getElementById('display-floor').innerText = currentFloor;
+            document.getElementById('display-score').innerText = score;
+            
+            // Cập nhật thanh tiến trình (8 tầng)
+            const progress = ((currentFloor - 1) / 8) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+
+            const data = gameData[currentFloor - 1];
+
+            // Mở cửa
+            setTimeout(() => {
+                document.getElementById('elevator-doors').classList.remove('doors-closed');
+            }, 500);
+
+            if (data.type === 'choice') {
+                document.getElementById('path-selection').style.display = 'flex';
+                document.getElementById('question-container').style.display = 'none';
+                document.getElementById('main-game').classList.remove('boss-mode');
+            } else {
+                document.getElementById('path-selection').style.display = 'none';
+                document.getElementById('question-container').style.display = 'block';
+                if (data.type === 'boss') {
+                    document.getElementById('main-game').classList.add('boss-mode');
+                }
+                currentQuestionObj = data;
+                renderQuestion();
+            }
+        }
+
+        function selectPath(pathType) {
+            const data = gameData[currentFloor - 1];
+            currentQuestionObj = data[pathType];
+            
+            document.getElementById('path-selection').style.display = 'none';
+            document.getElementById('question-container').style.display = 'block';
+            
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            document.getElementById('question-text').innerText = currentQuestionObj.question;
+            const grid = document.getElementById('options-grid');
+            grid.innerHTML = '';
+
+            currentQuestionObj.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                // Đánh chữ A, B, C, D cho rõ ràng
+                const label = String.fromCharCode(65 + index); 
+                btn.innerHTML = `<strong>${label}.</strong>&nbsp; ${opt}`;
+                btn.onclick = () => checkAnswer(btn, index);
+                grid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(btn, index) {
+            if (isProcessing) return;
+            
+            if (index === currentQuestionObj.answer) {
+                isProcessing = true;
+                btn.classList.add('correct');
+                playSound('ting');
+                fireConfetti();
+                
+                score += currentQuestionObj.points;
+                document.getElementById('display-score').innerText = score;
+                document.getElementById('hint-box').style.display = 'none';
+
+                // Đóng cửa
+                setTimeout(() => {
+                    document.getElementById('elevator-doors').classList.add('doors-closed');
+                    
+                    setTimeout(() => {
+                        currentFloor++;
+                        if (currentFloor > 8) {
+                            showWinScreen();
+                        } else {
+                            loadFloor();
+                        }
+                    }, 1500);
+                }, 1000);
+
+            } else {
+                playSound('wrong');
+                btn.classList.add('wrong');
+                document.getElementById('hint-box').style.display = 'block';
+                document.getElementById('hint-text').innerText = currentQuestionObj.hint;
+                
+                // Hiệu ứng rung nhẹ
+                btn.style.transform = 'translateX(-5px)';
+                setTimeout(() => btn.style.transform = 'translateX(5px)', 100);
+                setTimeout(() => btn.style.transform = 'translateX(0)', 200);
+            }
+        }
+
+        function showWinScreen() {
+            document.getElementById('main-game').style.display = 'none';
+            document.getElementById('win-screen').style.display = 'flex';
+            document.getElementById('win-message').innerText = `${playerName} ơi, em đã xuất sắc vượt qua các thử thách và đạt được ${score} điểm!`;
+            playSound('win');
+            
+            // Bắn pháo hoa liên tục
+            const interval = setInterval(fireConfetti, 1000);
+            setTimeout(() => clearInterval(interval), 5000);
+        }
+
+        // --- Hệ thống Pháo hoa (Confetti) trực tiếp bằng Canvas ---
+        const canvas = document.getElementById('canvas-confetti');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+
+        function fireConfetti() {
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 + 100,
+                    r: Math.random() * 6 + 2,
+                    dx: Math.random() * 20 - 10,
+                    dy: Math.random() * -20 - 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.floor(Math.random() * 10) - 10,
+                    tiltAngleInc: (Math.random() * 0.07) + 0.05,
+                    tiltAngle: 0
+                });
+            }
+        }
+
+        function drawConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                ctx.beginPath();
+                ctx.lineWidth = p.r;
+                ctx.strokeStyle = p.color;
+                p.tiltAngle += p.tiltAngleInc;
+                ctx.moveTo(p.x + p.tilt + p.r, p.y);
+                ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                ctx.stroke();
+
+                p.x += p.dx;
+                p.y += p.dy;
+                p.dy += 0.5; // Gravity
+
+                // Xóa hạt rơi khỏi màn hình
+                if (p.y > canvas.height) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(drawConfetti);
+        }
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        drawConfetti(); // Bắt đầu vòng lặp vẽ canvas
+
+    </script>
+</body>
+</html>

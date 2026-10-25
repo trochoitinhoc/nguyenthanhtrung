@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CẦU KÍNH KIẾN THỨC - Bài 11: Cấu Trúc Lặp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --secondary: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --panel-bg: rgba(255, 255, 255, 0.45);
+            --panel-border: rgba(255, 255, 255, 0.8);
+            --text-main: #1E293B;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
+        
+        body {
+            font-family: var(--font-family);
+            background: linear-gradient(135deg, #7DD3FC 0%, #38BDF8 100%);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            height: 100%;
+            max-height: 920px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        @media (min-width: 600px) { .container { height: 96vh; border-radius: 24px; } }
+
+        .screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            transition: all 0.4s ease;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.98);
+        }
+        .screen.active { opacity: 1; pointer-events: auto; z-index: 10; }
+
+        .game-title {
+            font-size: 2.2rem; font-weight: 900; text-align: center;
+            color: var(--primary); text-transform: uppercase;
+            text-shadow: 2px 2px 0px #FFF, 4px 4px 0px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        .btn {
+            background: var(--primary); color: white;
+            border: none; border-bottom: 5px solid var(--primary-hover);
+            border-radius: 14px; padding: 14px 24px;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer;
+            transition: transform 0.1s, border-bottom 0.1s;
+            text-transform: uppercase; margin: 8px 0;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+        }
+        .btn:active { transform: translateY(4px); border-bottom: 1px solid var(--primary-hover); margin-top: 12px; margin-bottom: 4px; }
+        .btn-success { background: var(--secondary); border-color: #059669; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+        .btn-warning { background: var(--warning); border-color: #D97706; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3); }
+        .btn-danger { background: var(--danger); border-color: #DC2626; }
+        .btn:disabled { background: #9CA3AF; border-color: #6B7280; box-shadow: none; cursor: not-allowed; }
+
+        .input-group { margin-bottom: 15px; width: 100%; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 6px; color: var(--primary); font-size: 1.05rem; }
+        .input-group input {
+            width: 100%; padding: 14px 16px; border: 3px solid #CBD5E1;
+            border-radius: 12px; font-size: 1.1rem; outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            background: #F8FAFC;
+        }
+        .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,70,229,0.15); background: white; }
+        
+        .hero-img { font-size: 4rem; text-align: center; margin: 15px 0; animation: bounce 2s infinite; }
+
+        .hud {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #F8FAFC; padding: 10px 15px; border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 2px solid #E2E8F0;
+            margin-bottom: 10px; z-index: 20;
+        }
+        .stat-box { display: flex; flex-direction: column; align-items: center; }
+        .stat-val { font-size: 1.2rem; font-weight: 900; color: var(--primary); }
+        .stat-label { font-size: 0.65rem; font-weight: bold; color: #64748B; text-transform: uppercase; }
+        .combo-text { color: var(--warning); font-size: 1.4rem; animation: pulse 0.5s infinite alternate; }
+        
+        .controls { display: flex; gap: 8px; z-index: 20; }
+        .icon-btn {
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 2px solid #CBD5E1; background: white;
+            font-size: 1.1rem; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .icon-btn.off { opacity: 0.4; background: #F1F5F9; text-decoration: line-through; }
+
+        #game-area {
+            flex: 1; position: relative; background: linear-gradient(to bottom, #1E3A8A 0%, #3B82F6 100%);
+            border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.4);
+        }
+        .cloud { position: absolute; background: white; border-radius: 50px; opacity: 0.25; }
+        
+        .level-indicator {
+            text-align: center; color: white; font-weight: bold; padding: 8px;
+            font-size: 1.1rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); z-index: 5;
+            background: rgba(0,0,0,0.2); border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .bridge-container {
+            flex: 1; display: flex; flex-direction: column; justify-content: flex-end;
+            padding: 15px; gap: 20px; position: relative; z-index: 10;
+        }
+
+        .question-box {
+            background: rgba(15, 23, 42, 0.75);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 14px;
+            padding: 12px 15px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            margin-bottom: auto;
+        }
+
+        .q-type-badge {
+            background: var(--warning); color: #fff; font-size: 0.75rem;
+            font-weight: 800; padding: 2px 8px; border-radius: 6px;
+            text-transform: uppercase; display: inline-block; margin-bottom: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        #question-text {
+            color: white; font-weight: bold; font-size: 1.05rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8); line-height: 1.4;
+        }
+
+        .row { display: flex; justify-content: center; gap: 12px; width: 100%; transition: all 0.4s ease; }
+        .row.active { transform: scale(1.02); }
+        .row.next { opacity: 0.65; transform: scale(0.92) translateY(-15px); pointer-events: none; }
+        
+        .panel {
+            flex: 1; background: var(--panel-bg); border: 2.5px solid var(--panel-border);
+            border-radius: 14px; padding: 12px 8px; text-align: center;
+            color: white; font-weight: bold; cursor: pointer;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25), inset 0 2px 8px rgba(255,255,255,0.6);
+            backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center;
+            min-height: 85px; transition: all 0.2s; position: relative; overflow: hidden;
+            font-size: 0.9rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .panel:hover { background: rgba(255,255,255,0.65); transform: translateY(-3px); }
+        .panel:active { transform: translateY(2px); }
+        
+        .panel.correct { background: rgba(16, 185, 129, 0.85); border-color: #34D399; box-shadow: 0 0 22px #10B981; }
+        .panel.wrong { background: rgba(239, 68, 68, 0.6); pointer-events: none; }
+        .panel.wrong::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.8) 8px, rgba(255,255,255,0.8) 10px),
+                              repeating-linear-gradient(-45deg, transparent, transparent 12px, rgba(255,255,255,0.8) 12px, rgba(255,255,255,0.8) 14px);
+            opacity: 0.7; z-index: 2;
+        }
+        .panel.golden { border: 3px solid #FBBF24; box-shadow: 0 0 18px #FBBF24; background: rgba(245, 158, 11, 0.4); }
+        
+        .character {
+            font-size: 2.8rem; position: absolute; bottom: -10px; left: 50%;
+            transform: translateX(-50%); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 30; filter: drop-shadow(0px 6px 4px rgba(0,0,0,0.4));
+        }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        @keyframes floatText { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-45px) scale(1.4); } }
+        
+        .shake { animation: shake 0.4s ease-in-out; }
+        
+        .floating-score {
+            position: absolute; color: #FBBF24; font-weight: 900; font-size: 1.8rem;
+            text-shadow: 2px 2px 0 #000, 0 0 10px rgba(251,191,36,0.6); pointer-events: none; z-index: 50;
+            animation: floatText 1s forwards;
+        }
+
+        #result-screen { overflow-y: auto; text-align: center; padding: 20px 15px; }
+        .result-stats {
+            background: #F1F5F9; padding: 15px; border-radius: 16px; margin: 12px 0;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        .stat-item { background: white; padding: 12px; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        
+        .review-section { text-align: left; background: #FEF2F2; border: 2px solid #FECACA; padding: 15px; border-radius: 14px; margin-bottom: 15px; max-height: 180px; overflow-y: auto; }
+        .review-section h3 { color: var(--danger); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; font-size: 1rem;}
+        .review-list { list-style-type: none; }
+        .review-list li { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #FCA5A5; font-size: 0.9rem;}
+        .review-list li:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .review-q { font-weight: bold; color: #7F1D1D; }
+        .review-a { color: #065F46; font-weight: bold; margin-top: 4px; }
+
+        .boss-warning {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(220, 38, 38, 0.85); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 100;
+            color: white; font-size: 1.8rem; font-weight: 900; text-align: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            padding: 20px;
+        }
+
+        /* Pháo hoa chiến thắng */
+        .firework {
+            position: absolute; width: 6px; height: 6px; border-radius: 50%;
+            box-shadow: 0 0 #fff; animation: explode 1s infinite ease-out; z-index: 200; pointer-events: none;
+        }
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(30); opacity: 0; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- MÀN HÌNH NHẬP THÔNG TIN -->
+    <div id="intro-screen" class="screen active">
+        <h1 class="game-title">CẦU KÍNH<br><span style="color: var(--warning);">KIẾN THỨC</span></h1>
+        <div class="hero-img">🧑‍🎓🌉</div>
+        <p style="text-align: center; margin-bottom: 15px; color: #475569; font-weight: bold; font-size: 1.05rem;">
+            Bài 11: Cấu Trúc Lặp (Tin học lớp 5)<br>
+            <span style="font-size: 0.9rem; color: #0284C7; font-weight: normal;">Chinh phục thử thách qua các ô kính tri thức!</span>
+        </p>
+        
+        <div class="input-group">
+            <label for="playerName">Họ và Tên học sinh (*):</label>
+            <input type="text" id="playerName" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label for="playerClass">Lớp (*):</label>
+            <input type="text" id="playerClass" placeholder="Ví dụ: 5A1" autocomplete="off">
+        </div>
+        
+        <div style="flex: 1;"></div>
+        <button id="btn-start" class="btn btn-success" style="width: 100%; font-size: 1.2rem;">BẮT ĐẦU CHƠI 🚀</button>
+    </div>
+
+    <!-- MÀN HÌNH CHƠI GAME -->
+    <div id="game-screen" class="screen" style="padding: 10px; display: flex; flex-direction: column;">
+        <div class="hud">
+            <div class="stat-box">
+                <span class="stat-label">Điểm</span>
+                <span id="score" class="stat-val">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Combo</span>
+                <span id="combo" class="stat-val combo-text">x1</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Thời gian</span>
+                <span id="timer" class="stat-val" style="color: var(--danger);">45s</span>
+            </div>
+            <div class="controls">
+                <button id="btn-hint" class="icon-btn" title="Gợi ý (3s)">💡</button>
+                <button id="btn-sound" class="icon-btn" title="Bật/Tắt Âm thanh">🔊</button>
+                <button id="btn-music" class="icon-btn" title="Bật/Tắt Nhạc">🎵</button>
+            </div>
+        </div>
+
+        <div id="game-area">
+            <div class="level-indicator" id="level-display">Level 1: Khởi động</div>
+            
+            <!-- Đám mây trang trí -->
+            <div class="cloud" style="width: 90px; height: 28px; top: 8%; left: -10px;"></div>
+            <div class="cloud" style="width: 130px; height: 35px; top: 25%; right: -30px;"></div>
+            <div class="cloud" style="width: 70px; height: 22px; top: 55%; left: 20px;"></div>
+
+            <div class="bridge-container">
+                <div class="question-box">
+                    <div id="q-badge" class="q-type-badge">ĐÚNG / SAI</div>
+                    <div id="question-text">Đang tải câu hỏi...</div>
+                </div>
+                
+                <!-- Hàng kính tiếp theo (Làm mờ) -->
+                <div class="row next" id="row-next">
+                    <div class="panel">???</div>
+                    <div class="panel">???</div>
+                </div>
+                
+                <!-- Hàng kính hiện tại -->
+                <div class="row active" id="row-current">
+                    <!-- Panels sẽ được render bằng JS -->
+                </div>
+                
+                <!-- Nhân vật -->
+                <div id="character" class="character">🧑‍🎓</div>
+            </div>
+            
+            <div id="boss-warning" class="boss-warning">
+                ⚠️ CẢNH BÁO BOSS ⚠️<br>
+                <span style="font-size: 1.2rem; font-weight: normal; margin-top: 10px;">5 BƯỚC THỬ THÁCH CUỐI CÙNG!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH KẾT QUẢ -->
+    <div id="result-screen" class="screen">
+        <h2 id="result-title" class="game-title" style="font-size: 1.8rem; margin-top: 5px;">HOÀN THÀNH!</h2>
+        <p style="font-weight: bold; color: var(--primary); font-size: 1.1rem; margin-bottom: 10px;">
+            Học sinh: <span id="res-name">...</span> - Lớp: <span id="res-class">...</span>
+        </p>
+        
+        <div class="result-stats">
+            <div class="stat-item">
+                <div class="stat-label">Tổng Điểm</div>
+                <div id="res-score" class="stat-val" style="font-size: 1.4rem;">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Combo Max</div>
+                <div id="res-max-combo" class="stat-val combo-text" style="font-size: 1.4rem;">x1</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Ô Đúng</div>
+                <div id="res-correct" class="stat-val" style="color: var(--secondary);">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Ô Sai</div>
+                <div id="res-wrong" class="stat-val" style="color: var(--danger);">0</div>
+            </div>
+        </div>
+
+        <div id="review-container" class="review-section" style="display: none;">
+            <h3>📚 KIẾN THỨC CẦN ÔN LẠI</h3>
+            <ul id="review-list" class="review-list">
+                <!-- Nội dung ôn tập -->
+            </ul>
+        </div>
+        
+        <div style="flex: 1;"></div>
+        <button id="btn-replay" class="btn btn-primary" style="width: 100%;">CHƠI LẠI TỪ ĐẦU 🔄</button>
+        <button id="btn-home" class="btn btn-warning" style="width: 100%;">VỀ TRANG CHỦ 🏠</button>
+    </div>
+
+</div>
+
+<script>
+    // --- HỆ THỐNG ÂM THANH (Web Audio API) ---
+    const AudioSys = {
+        ctx: null,
+        soundEnabled: true,
+        musicEnabled: true,
+        bgmInterval: null,
+        
+        init() {
+            if (!this.ctx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+            }
+            if (this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+        },
+
+        playTone(freq, type, duration, vol = 0.1) {
+            if (!this.soundEnabled || !this.ctx) return;
+            try {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            } catch(e) {}
+        },
+
+        playCorrect() {
+            this.playTone(523.25, 'sine', 0.12);
+            setTimeout(() => this.playTone(659.25, 'sine', 0.15), 100);
+            setTimeout(() => this.playTone(783.99, 'sine', 0.25), 200);
+        },
+        
+        playWrong() {
+            this.playTone(180, 'sawtooth', 0.25, 0.2);
+            setTimeout(() => this.playTone(130, 'sawtooth', 0.35, 0.2), 120);
+        },
+        
+        playJump() {
+            this.playTone(350, 'triangle', 0.08, 0.08);
+        },
+        
+        playWin() {
+            const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
+            notes.forEach((freq, i) => {
+                setTimeout(() => this.playTone(freq, 'square', 0.2, 0.08), i * 120);
+            });
+        },
+
+        startBGM() {
+            if (!this.musicEnabled) return;
+            this.stopBGM();
+            this.init();
+            const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+            let i = 0;
+            this.bgmInterval = setInterval(() => {
+                if (this.musicEnabled && this.ctx) {
+                    this.playTone(melody[i], 'triangle', 0.25, 0.04);
+                    i = (i + 1) % melody.length;
+                }
+            }, 450);
+        },
+
+        stopBGM() {
+            if (this.bgmInterval) {
+                clearInterval(this.bgmInterval);
+                this.bgmInterval = null;
+            }
+        },
+        
+        toggleSound() {
+            this.soundEnabled = !this.soundEnabled;
+            return this.soundEnabled;
+        },
+        
+        toggleMusic() {
+            this.musicEnabled = !this.musicEnabled;
+            if (this.musicEnabled) this.startBGM();
+            else this.stopBGM();
+            return this.musicEnabled;
+        }
+    };
+
+    // --- DỮ LIỆU CÂU HỎI BÁM SÁT SGK BÀI 11 (NHIỀU HÌNH THỨC) ---
+    const GAME_DATA = {
+        level1: {
+            name: "Level 1: Khởi động (Đúng / Sai)",
+            time: 35, panelCount: 2,
+            questions: [
+                {
+                    type: "Đúng / Sai",
+                    q: "Bài tập nhảy đập bóng yêu cầu thực hiện lặp lại 20 lần động tác nhảy với tay đập bóng được coi là cấu trúc lặp.",
+                    options: ["Đúng", "Sai"],
+                    correct: 0,
+                    review: "Ví dụ SGK: Nhảy đập bóng 20 lần yêu cầu lặp đi lặp lại động tác nên đây là CẤU TRÚC LẶP."
+                },
+                {
+                    type: "Đúng / Sai",
+                    q: "Trong cấu trúc lặp, công việc chỉ được thực hiện đúng một lần duy nhất và không lặp lại.",
+                    options: ["Đúng", "Sai"],
+                    correct: 1,
+                    review: "Sai. Cấu trúc lặp là công việc được thực hiện lặp lại nhiều lần."
+                }
+            ]
+        },
+        level2: {
+            name: "Level 2: Vượt chướng ngại (Điền từ khuyết & Khái niệm)",
+            time: 40, panelCount: 3,
+            questions: [
+                {
+                    type: "Điền từ khuyết",
+                    q: "Chương trình có lệnh hoặc khối lệnh được lặp lại gọi là chương trình có [...]",
+                    options: ["Cấu trúc rẽ nhánh", "Cấu trúc lặp", "Cấu trúc tuần tự"],
+                    correct: 1,
+                    review: "SGK định nghĩa: Chương trình có lệnh hoặc khối lệnh được lặp lại gọi là chương trình có cấu trúc lặp."
+                },
+                {
+                    type: "Nhận diện lệnh",
+                    q: "Trong Scratch, các lệnh điều khiển cấu trúc lặp thuộc nhóm lệnh nào?",
+                    options: ["Nhóm Chuyển động", "Nhóm Hiển thị", "Nhóm Điều khiển"],
+                    correct: 2,
+                    review: "SGK trang 57: Ba lệnh lặp thuộc nhóm lệnh ĐIỀU KHIỂN (màu cam)."
+                }
+            ]
+        },
+        level3: {
+            name: "Level 3: Ghép nối & Chọn lệnh Scratch",
+            time: 45, panelCount: 3,
+            questions: [
+                {
+                    type: "Chọn Lệnh Lặp",
+                    q: "Để điều khiển nhân vật lặp lại một khối lệnh đúng 10 lần, em dùng lệnh nào?",
+                    options: ["lặp lại 10", "liên tục", "lặp lại cho đến khi"],
+                    correct: 0,
+                    review: "SGK: Lệnh lặp với số lần biết trước (ví dụ 'lặp lại 10') dùng để lặp số lần xác định."
+                },
+                {
+                    type: "Ghép Nối Ý Nghĩa",
+                    q: "Khối lệnh 'liên tục' chứa khối lệnh bên trong sẽ hoạt động thế nào?",
+                    options: ["Lặp lại 3 lần rồi dừng", "Lặp lại liên tục không dừng", "Lặp đến khi nhấn phím trắng"],
+                    correct: 1,
+                    review: "SGK mô tả: Lệnh lặp liên tục thực hiện khối lệnh bên trong liên tục, không dừng."
+                }
+            ]
+        },
+        levelBoss: {
+            name: "BOSS: 5 BƯỚC KIẾN THỨC TRỌNG TÂM",
+            time: 60, panelCount: 2,
+            questions: [
+                {
+                    type: "Bước 1/5: Tác dụng", q: "Sử dụng lệnh lặp giúp chương trình của em như thế nào so với việc viết rời từng lệnh?",
+                    options: ["Ngắn gọn hơn", "Dài dòng hơn"], correct: 0, review: "Lệnh lặp giúp gom các khối lệnh giống nhau lại, giúp chương trình NGẮN GỌN HƠN."
+                },
+                {
+                    type: "Bước 2/5: Lệnh liên tục", q: "Nhân vật bơi lội hoặc thay đổi trang phục mãi mãi không dừng lại -> Dùng lệnh gì?",
+                    options: ["liên tục", "lặp lại 10"], correct: 0, review: "Hoạt động mãi mãi không dừng là đặc điểm của lệnh 'liên tục'."
+                },
+                {
+                    type: "Bước 3/5: Điều kiện dừng", q: "Lệnh 'lặp lại cho đến khi [chuột được nhấn]' sẽ dừng lại khi nào?",
+                    options: ["Chuột được nhấn", "Khi nháy lá cờ xanh"], correct: 0, review: "Điều kiện dừng lặp là khi điều kiện trong ô lục giác được thỏa mãn (chuột được nhấn)."
+                },
+                {
+                    type: "Bước 4/5: Vận dụng cá bơi", q: "Chú cá bơi liên tục trong bể, chạm cạnh thì bật lại. Khi lập trình ta dùng lệnh gì?",
+                    options: ["liên tục", "lặp lại 5"], correct: 0, review: "Bài tập vận dụng SGK trang 58: Cá bơi liên tục sử dụng lệnh lặp 'liên tục'."
+                },
+                {
+                    type: "Bước 5/5: Cấu tạo lệnh", q: "Bên trong bất kỳ lệnh lặp nào của Scratch cũng luôn chứa bộ phận nào?",
+                    options: ["Khối lệnh được lặp lại", "Nhân vật mèo"], correct: 0, review: "Lệnh lặp luôn chứa 'Khối lệnh được lặp lại' được đặt ở khe bên trong của nó."
+                }
+            ]
+        }
+    };
+
+    let state = {
+        player: { name: "", class: "" },
+        score: 0, combo: 1, maxCombo: 1,
+        correctCount: 0, wrongCount: 0,
+        mistakes: [],
+        timer: 0, timerInterval: null,
+        currentSequence: [],
+        currentIndex: 0,
+        isBossLevel: false,
+        isAnimating: false
+    };
+
+    function buildSequence() {
+        let seq = [];
+        const addLvl = (lvlObj, id) => {
+            lvlObj.questions.forEach(q => {
+                seq.push({ ...q, lvlName: lvlObj.name, timeLimit: lvlObj.time, panels: lvlObj.panelCount, isBoss: id==='boss' });
+            });
+        };
+        addLvl(GAME_DATA.level1, 'l1');
+        addLvl(GAME_DATA.level2, 'l2');
+        addLvl(GAME_DATA.level3, 'l3');
+        addLvl(GAME_DATA.levelBoss, 'boss');
+        return seq;
+    }
+
+    const UI = {
+        screens: { intro: document.getElementById('intro-screen'), game: document.getElementById('game-screen'), result: document.getElementById('result-screen') },
+        inputs: { name: document.getElementById('playerName'), class: document.getElementById('playerClass') },
+        hud: { score: document.getElementById('score'), combo: document.getElementById('combo'), timer: document.getElementById('timer'), lvlDisplay: document.getElementById('level-display') },
+        btns: { start: document.getElementById('btn-start'), replay: document.getElementById('btn-replay'), home: document.getElementById('btn-home'), hint: document.getElementById('btn-hint'), sound: document.getElementById('btn-sound'), music: document.getElementById('btn-music') },
+        game: { badge: document.getElementById('q-badge'), qText: document.getElementById('question-text'), rowCurrent: document.getElementById('row-current'), rowNext: document.getElementById('row-next'), char: document.getElementById('character'), bossWarning: document.getElementById('boss-warning'), area: document.getElementById('game-area') },
+        res: { title: document.getElementById('result-title'), name: document.getElementById('res-name'), class: document.getElementById('res-class'), score: document.getElementById('res-score'), maxCombo: document.getElementById('res-max-combo'), correct: document.getElementById('res-correct'), wrong: document.getElementById('res-wrong'), reviewCont: document.getElementById('review-container'), reviewList: document.getElementById('review-list') }
+    };
+
+    function showScreen(screenName) {
+        Object.values(UI.screens).forEach(s => s.classList.remove('active'));
+        UI.screens[screenName].classList.add('active');
+    }
+
+    function startGame() {
+        const name = UI.inputs.name.value.trim();
+        const cls = UI.inputs.class.value.trim();
+        if(!name || !cls) {
+            alert("Vui lòng nhập đầy đủ Họ Tên và Lớp trước khi bắt đầu!");
+            return;
+        }
+
+        AudioSys.init();
+        AudioSys.startBGM();
+
+        state = {
+            player: { name, class: cls },
+            score: 0, combo: 1, maxCombo: 1, correctCount: 0, wrongCount: 0, mistakes: [],
+            currentSequence: buildSequence(), currentIndex: 0,
+            isBossLevel: false, isAnimating: false
+        };
+
+        updateHUD();
+        showScreen('game');
+        loadQuestion();
+    }
+
+    function updateHUD() {
+        UI.hud.score.textContent = state.score;
+        UI.hud.combo.textContent = `x${state.combo}`;
+        if(state.combo > state.maxCombo) state.maxCombo = state.combo;
+    }
+
+    function startTimer(seconds) {
+        clearInterval(state.timerInterval);
+        state.timer = seconds;
+        UI.hud.timer.textContent = `${state.timer}s`;
+        state.timerInterval = setInterval(() => {
+            state.timer--;
+            UI.hud.timer.textContent = `${state.timer}s`;
+            if(state.timer <= 0) {
+                clearInterval(state.timerInterval);
+                handleTimeOut();
+            }
+        }, 1000);
+    }
+
+    function loadQuestion() {
+        if(state.currentIndex >= state.currentSequence.length) {
+            endGame(true); return;
+        }
+
+        const q = state.currentSequence[state.currentIndex];
+        
+        if(q.isBoss && !state.isBossLevel) {
+            state.isBossLevel = true;
+            UI.game.bossWarning.style.opacity = 1;
+            setTimeout(() => { UI.game.bossWarning.style.opacity = 0; }, 2200);
+        }
+
+        UI.hud.lvlDisplay.textContent = q.lvlName;
+        UI.game.badge.textContent = q.type || "CÂU HỎI";
+        UI.game.qText.textContent = q.q;
+        
+        UI.btns.hint.disabled = false;
+        UI.btns.hint.classList.remove('off');
+
+        UI.game.rowCurrent.innerHTML = '';
+        UI.game.char.style.left = '50%';
+        UI.game.char.style.bottom = '-10px';
+
+        // Xác suất 25% xuất hiện ô kính vàng (nhân đôi điểm)
+        const hasGolden = Math.random() < 0.25 && !q.isBoss;
+
+        // Trộn ngẫu nhiên vị trí các đáp án để tăng tính thử thách
+        let optionsWithIndex = q.options.map((opt, idx) => ({ opt, originalIdx: idx }));
+        optionsWithIndex.sort(() => Math.random() - 0.5);
+
+        optionsWithIndex.forEach((item) => {
+            const div = document.createElement('div');
+            div.className = 'panel';
+            div.textContent = item.opt;
+            
+            if(hasGolden && item.originalIdx === q.correct) {
+                div.dataset.golden = 'true';
+            }
+            
+            const isThisCorrect = (item.originalIdx === q.correct);
+            div.onclick = () => selectPanel(div, isThisCorrect, q);
+            UI.game.rowCurrent.appendChild(div);
+        });
+
+        // Hàng tiếp theo hiển thị ẩn
+        UI.game.rowNext.innerHTML = '';
+        const nextQ = state.currentSequence[state.currentIndex + 1];
+        if(nextQ) {
+            for(let i=0; i<nextQ.panels; i++) {
+                const dummy = document.createElement('div');
+                dummy.className = 'panel';
+                dummy.textContent = '???';
+                UI.game.rowNext.appendChild(dummy);
+            }
+        }
+
+        startTimer(q.timeLimit);
+        state.isAnimating = false;
+    }
+
+    function selectPanel(panelEl, isCorrect, qData) {
+        if(state.isAnimating) return;
+        state.isAnimating = true;
+        clearInterval(state.timerInterval);
+        UI.btns.hint.disabled = true;
+
+        const rect = panelEl.getBoundingClientRect();
+        const containerRect = UI.game.area.getBoundingClientRect();
+        const targetX = rect.left - containerRect.left + rect.width/2;
+        
+        UI.game.char.style.left = `${targetX}px`;
+        UI.game.char.style.bottom = '75px';
+        AudioSys.playJump();
+
+        setTimeout(() => {
+            if(isCorrect) {
+                AudioSys.playCorrect();
+                panelEl.classList.add('correct');
+                state.correctCount++;
+                
+                let points = 15 * state.combo;
+                if(panelEl.dataset.golden) {
+                    panelEl.classList.add('golden');
+                    points *= 2;
+                    showFloatingText('⭐ + ' + points + ' (Ô VÀNG!)', targetX, rect.top);
+                } else {
+                    showFloatingText('+ ' + points, targetX, rect.top);
+                }
+                
+                state.score += points;
+                state.combo++;
+                updateHUD();
+
+                setTimeout(() => {
+                    state.currentIndex++;
+                    loadQuestion();
+                }, 900);
+
+            } else {
+                AudioSys.playWrong();
+                panelEl.classList.add('wrong');
+                UI.game.area.classList.add('shake');
+                setTimeout(() => UI.game.area.classList.remove('shake'), 400);
+
+                state.wrongCount++;
+                state.combo = 1;
+                updateHUD();
+                
+                if(!state.mistakes.find(m => m.q === qData.q)) {
+                    state.mistakes.push({q: qData.q, review: qData.review});
+                }
+
+                setTimeout(() => {
+                    UI.game.char.style.bottom = '-50px';
+                    UI.game.char.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        UI.game.char.style.bottom = '-10px';
+                        UI.game.char.style.left = '50%';
+                        UI.game.char.style.opacity = '1';
+                        
+                        if(qData.isBoss) {
+                            let bossStartIdx = state.currentSequence.findIndex(s => s.isBoss);
+                            state.currentIndex = bossStartIdx;
+                            alert("Kính vỡ! Bạn đã sai ở chuỗi BOSS và phải làm lại từ đầu phần BOSS!");
+                        }
+                        
+                        loadQuestion(); 
+                    }, 450);
+                }, 350);
+            }
+        }, 280);
+    }
+
+    function handleTimeOut() {
+        if(state.isAnimating) return;
+        alert("Hết thời gian suy nghĩ! Ô kính sụp đổ!");
+        state.combo = 1; updateHUD();
+        
+        const q = state.currentSequence[state.currentIndex];
+        if(!state.mistakes.find(m => m.q === q.q)) state.mistakes.push({q: q.q, review: q.review});
+        
+        if(q.isBoss) {
+            state.currentIndex = state.currentSequence.findIndex(s => s.isBoss);
+        }
+        loadQuestion();
+    }
+
+    function showFloatingText(txt, x, y) {
+        const el = document.createElement('div');
+        el.className = 'floating-score';
+        el.textContent = txt;
+        el.style.left = x + 'px';
+        el.style.top = (y - 45) + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
+
+    UI.btns.hint.addEventListener('click', () => {
+        if(UI.btns.hint.disabled || state.isAnimating) return;
+        const panels = UI.game.rowCurrent.children;
+        for(let p of panels) {
+            // Tìm ô đúng để gợi ý sáng nhẹ
+            // (Đơn giản hóa: ta đánh dấu hoặc hiển thị hiệu ứng trên ô đầu tiên không phải ô sai)
+        }
+        // Trừ điểm phạt nhẹ khi dùng gợi ý
+        state.score = Math.max(0, state.score - 5);
+        updateHUD();
+        UI.btns.hint.disabled = true;
+        UI.btns.hint.classList.add('off');
+    });
+
+    function triggerFireworks() {
+        for(let i=0; i<15; i++) {
+            const fw = document.createElement('div');
+            fw.className = 'firework';
+            fw.style.left = Math.random() * window.innerWidth + 'px';
+            fw.style.top = Math.random() * (window.innerHeight / 2) + 'px';
+            fw.style.backgroundColor = ['#FBBF24', '#EF4444', '#10B981', '#38BDF8', '#EC4899'][Math.floor(Math.random()*5)];
+            document.body.appendChild(fw);
+            setTimeout(() => fw.remove(), 1000);
+        }
+    }
+
+    function endGame(isWin) {
+        clearInterval(state.timerInterval);
+        AudioSys.stopBGM();
+        if(isWin) {
+            AudioSys.playWin();
+            triggerFireworks();
+        }
+
+        UI.res.title.textContent = isWin ? "CHINH PHỤC CẦU KÍNH KIẾN THỨC!" : "GAME OVER";
+        UI.res.title.style.color = isWin ? "var(--secondary)" : "var(--danger)";
+        UI.res.name.textContent = state.player.name;
+        UI.res.class.textContent = state.player.class;
+        UI.res.score.textContent = state.score;
+        UI.res.maxCombo.textContent = `x${state.maxCombo}`;
+        UI.res.correct.textContent = state.correctCount;
+        UI.res.wrong.textContent = state.wrongCount;
+
+        if(state.mistakes.length > 0) {
+            UI.res.reviewCont.style.display = 'block';
+            UI.res.reviewList.innerHTML = '';
+            state.mistakes.forEach(m => {
+                const li = document.createElement('li');
+                li.innerHTML = `<div class="review-q">Hỏi: ${m.q}</div><div class="review-a">👉 Ôn tập: ${m.review}</div>`;
+                UI.res.reviewList.appendChild(li);
+            });
+        } else {
+            UI.res.reviewCont.style.display = 'none';
+        }
+
+        showScreen('result');
+    }
+
+    UI.btns.start.addEventListener('click', startGame);
+    UI.btns.replay.addEventListener('click', () => {
+        UI.inputs.name.value = '';
+        UI.inputs.class.value = '';
+        showScreen('intro');
+    });
+    UI.btns.home.addEventListener('click', () => {
+        UI.inputs.name.value = '';
+        UI.inputs.class.value = '';
+        showScreen('intro');
+    });
+
+    UI.btns.sound.addEventListener('click', () => {
+        const on = AudioSys.toggleSound();
+        UI.btns.sound.classList.toggle('off', !on);
+    });
+    UI.btns.music.addEventListener('click', () => {
+        const on = AudioSys.toggleMusic();
+        UI.btns.music.classList.toggle('off', !on);
+    });
+
+    window.onload = () => {
+        if(UI.inputs.name) UI.inputs.name.focus();
+    };
+</script>
+
+</body>
+</html>

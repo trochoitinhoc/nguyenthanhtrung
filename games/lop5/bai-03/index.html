@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thợ Mỏ Kiến Thức - Đào Vàng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Baloo 2', cursive;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); /* Nền tổng thể sâu thẳm */
+            color: white;
+            user-select: none;
+            touch-action: manipulation; /* Tối ưu cảm ứng, chống zoom */
+            overflow: hidden; /* Cố định khung hình */
+        }
+        
+        /* Màu sắc các tầng rực rỡ và có chiều sâu */
+        .layer-0 { background: linear-gradient(180deg, #56ab2f, #28a745); } /* Mặt đất */
+        .layer-1 { background: linear-gradient(180deg, #7f8c8d, #34495e); } /* Tầng đá */
+        .layer-2 { background: linear-gradient(180deg, #8e2de2, #4a00e0); } /* Hang động */
+        .layer-3 { background: linear-gradient(180deg, #fceabb, #f8b500); } /* Mỏ vàng */
+        .layer-4 { background: linear-gradient(180deg, #00c6ff, #0072ff); } /* Kim cương */
+
+        /* Kiểu dáng ô lưới */
+        .cell {
+            position: relative;
+            background: rgba(10, 20, 50, 0.5);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            transition: transform 0.1s;
+        }
+        
+        .cell:active:not(.dug) { transform: scale(0.95); }
+
+        /* Lớp phủ (Đất/Đá chưa đào) */
+        .cover {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            border-radius: 10px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        
+        .layer-0 .cover { background: linear-gradient(to bottom, #e67e22, #d35400); border-top: 4px solid #2ecc71; box-shadow: 0 4px 0 #a04000; }
+        .layer-1 .cover { background: linear-gradient(to bottom, #95a5a6, #7f8c8d); border-top: 4px solid #bdc3c7; box-shadow: 0 4px 0 #2c3e50; }
+        .layer-2 .cover { background: linear-gradient(to bottom, #34495e, #2c3e50); border-top: 4px solid #8e44ad; box-shadow: 0 4px 0 #1a252f; }
+        .layer-3 .cover { background: linear-gradient(to bottom, #f39c12, #d35400); border-top: 4px solid #f1c40f; box-shadow: 0 4px 0 #a04000; }
+        .layer-4 .cover { background: linear-gradient(to bottom, #0097e6, #00a8ff); border-top: 4px solid #00c6ff; box-shadow: 0 4px 0 #0052cc; }
+
+        /* Hiệu ứng khi đào */
+        .digging-animation { animation: shake 0.3s ease-in-out; }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-1px, -2px) rotate(-5deg); }
+            40% { transform: translate(-3px, 0px) rotate(5deg); }
+            60% { transform: translate(3px, 2px) rotate(0deg); }
+            80% { transform: translate(1px, -1px) rotate(5deg); }
+            100% { transform: translate(0px, 0px) rotate(0deg); }
+        }
+
+        .cell.dug .cover { opacity: 0; pointer-events: none; }
+        .cell.dug { cursor: default; }
+
+        /* Vật phẩm xuất hiện pop-up */
+        .item-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            80% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Gợi ý bản đồ */
+        .cell.highlight .cover {
+            border-color: #ffeaa7;
+            box-shadow: 0 0 20px #ffeaa7, 0 4px 0 #a04000;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(1.5); }
+            100% { filter: brightness(1); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+
+        /* Toast Message */
+        #toastContainer { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+        .toast { background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; font-weight: 600; font-size: 1.1rem; animation: slideDown 0.3s ease-out forwards; border: 2px solid; }
+        .toast.success { border-color: #2ecc71; text-shadow: 0 0 5px #2ecc71; }
+        .toast.error { border-color: #e74c3c; text-shadow: 0 0 5px #e74c3c; }
+        .toast.info { border-color: #3498db; text-shadow: 0 0 5px #3498db; }
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .toast-fadeout { animation: fadeOut 0.5s forwards; }
+        @keyframes fadeOut { to { opacity: 0; transform: translateY(-20px); } }
+
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-center">
+
+    <div id="toastContainer"></div>
+
+    <div id="startScreen" class="flex flex-col items-center justify-center h-full w-full bg-black/50 p-6 backdrop-blur-sm z-50 absolute inset-0 text-center">
+        <h1 class="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 mb-2 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">THỢ MỎ KIẾN THỨC</h1>
+        <p class="text-xl text-yellow-100 mb-6 font-bold">Chủ đề 3: Tìm kiếm thông tin</p>
+        
+        <div class="bg-white/10 p-6 rounded-2xl border-2 border-white/20 w-full max-w-md shadow-2xl backdrop-blur-md">
+            <input type="text" id="playerName" placeholder="Biệt danh (không nhập tên thật)" class="w-full p-3 mb-3 rounded-xl bg-white/20 text-white placeholder-gray-300 border border-white/30 outline-none focus:ring-2 focus:ring-yellow-400 text-lg">
+            <input type="text" id="playerClass" placeholder="Nhập Lớp (VD: 5A)..." class="w-full p-3 mb-4 rounded-xl bg-white/20 text-white placeholder-gray-300 border border-white/30 outline-none focus:ring-2 focus:ring-yellow-400 text-lg">
+            
+            <div class="bg-black/40 rounded-xl p-4 mb-6 text-left text-sm text-gray-200">
+                <h3 class="text-yellow-400 font-bold text-lg mb-2 text-center">📜 HƯỚNG DẪN CHƠI</h3>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Trả lời đúng câu hỏi để nhận <b class="text-yellow-300">1 lượt đào (⛏️)</b>.</li>
+                    <li>Dùng cuốc đập ô đất để nhận Vàng, Kim Cương, hoặc Vật phẩm.</li>
+                    <li>Tìm <b>Cổng xuống tầng (🚪)</b> để đi sâu hơn.</li>
+                    <li>Tầng 5 chứa <b>Kim Cương Huyền Thoại (💎)</b>!</li>
+                </ul>
+            </div>
+            
+            <button onclick="startGame()" class="w-full py-4 bg-gradient-to-r from-green-500 to-green-700 hover:from-green-400 hover:to-green-600 rounded-xl text-2xl font-bold border-b-4 border-green-900 active:border-b-0 active:translate-y-1 shadow-lg transition-all text-white">BẮT ĐẦU ĐÀO VÀNG</button>
+        </div>
+    </div>
+
+    <div id="gameScreen" class="hidden flex-col h-full w-full relative max-w-3xl mx-auto shadow-2xl overflow-hidden bg-black/30">
+        <!-- Header -->
+        <div class="bg-gradient-to-b from-black/80 to-black/40 p-3 px-4 flex justify-between items-center shadow-md z-20">
+            <div class="flex flex-col">
+                <span class="text-sm text-gray-300 truncate w-32 md:w-48" id="displayPlayerName">Người chơi</span>
+                <span class="text-xl font-bold text-yellow-400 drop-shadow-md" id="layerName">🌱 Mặt Đất</span>
+            </div>
+            <div class="flex gap-3 md:gap-6 text-xl font-bold items-center">
+                <button id="bgmToggleBtn" onclick="toggleBGM()" class="text-xs px-2 py-1 bg-white/10 rounded-lg text-green-400 border border-white/30 active:scale-95 transition-transform flex flex-col items-center leading-tight"><span>🔊</span><span>Nhạc</span></button>
+                <div class="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full border border-white/20"><span class="text-2xl drop-shadow-md">⛏️</span> <span id="pickaxeCount" class="text-yellow-300">0</span></div>
+                <div class="flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full border border-white/20"><span class="text-2xl drop-shadow-md">🎯</span> <span id="scoreCount" class="text-green-300">0</span></div>
+            </div>
+        </div>
+
+        <!-- Board -->
+        <div id="layerContainer" class="flex-1 w-full flex flex-col p-4 transition-colors duration-500 layer-0 overflow-y-auto">
+            <!-- Khu vực lưới các ô -->
+            <div id="mineGrid" class="grid grid-cols-4 md:grid-cols-5 gap-2 md:gap-3 w-full h-auto mt-2">
+                <!-- Javascript will generate cells here -->
+            </div>
+            
+            <div class="mt-4 flex justify-center pb-4">
+                <button id="btnGetPickaxe" onclick="triggerQuiz('normal')" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 shadow-lg text-white flex items-center gap-2 animate-bounce">
+                    <span>📚 Trả lời câu hỏi kiếm Cuốc</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Câu hỏi -->
+    <div id="quizModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] hidden flex-col items-center justify-center p-4">
+        <div class="bg-gradient-to-br from-indigo-900 to-blue-900 w-full max-w-lg rounded-2xl p-6 border-4 border-yellow-400 shadow-[0_0_30px_rgba(255,215,0,0.3)] relative transform transition-transform scale-95 opacity-0" id="quizBox">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-white/20">
+                <span id="quizTitle" class="text-xl font-bold text-yellow-300 uppercase tracking-wider">❓ Câu hỏi Nhận Cuốc</span>
+                <button onclick="closeQuizModal()" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <!-- Content -->
+            <p id="questionText" class="text-xl mb-6 font-semibold leading-relaxed text-white"></p>
+            <div id="answersBox" class="flex flex-col gap-3">
+                <!-- Buttons will be injected here -->
+            </div>
+            
+            <!-- Result Alert within modal -->
+            <div id="quizResult" class="mt-4 hidden p-3 rounded-lg text-center font-bold text-lg animate-pulse"></div>
+        </div>
+    </div>
+
+    <!-- Màn hình Tổng kết -->
+    <div id="endScreen" class="hidden flex-col items-center justify-center h-full w-full bg-black/90 p-6 z-[200] absolute inset-0 overflow-y-auto">
+        <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-6 drop-shadow-[0_2px_2px_rgba(0,0,0,1)] uppercase text-center mt-10">TỔNG KẾT HÀNH TRÌNH</h1>
+        
+        <div class="bg-white/10 p-6 rounded-2xl border-2 border-white/20 w-full max-w-md shadow-2xl backdrop-blur-md flex flex-col gap-4 text-lg">
+            <div class="flex justify-between border-b border-white/10 pb-2">
+                <span class="text-gray-300">Thợ mỏ:</span>
+                <span id="endPlayerName" class="font-bold text-yellow-400">...</span>
+            </div>
+            <div class="flex justify-between border-b border-white/10 pb-2">
+                <span class="text-gray-300">Lớp:</span>
+                <span id="endPlayerClass" class="font-bold text-blue-300">...</span>
+            </div>
+            <div class="flex justify-between border-b border-white/10 pb-2">
+                <span class="text-gray-300">Tổng điểm:</span>
+                <span id="endScore" class="font-bold text-green-400 text-2xl">0</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 mt-2">
+                <div class="bg-black/40 p-3 rounded-xl flex flex-col items-center">
+                    <span class="text-2xl">⛏️</span><span class="text-sm text-gray-400">Đã dùng</span><span id="endPickaxes" class="font-bold">0</span>
+                </div>
+                <div class="bg-black/40 p-3 rounded-xl flex flex-col items-center">
+                    <span class="text-2xl">💎</span><span class="text-sm text-gray-400">Kim cương</span><span id="endDiamonds" class="font-bold">0</span>
+                </div>
+                <div class="bg-black/40 p-3 rounded-xl flex flex-col items-center">
+                    <span class="text-2xl">✅</span><span class="text-sm text-gray-400">Câu đúng</span><span id="endCorrect" class="font-bold text-green-400">0</span>
+                </div>
+                <div class="bg-black/40 p-3 rounded-xl flex flex-col items-center">
+                    <span class="text-2xl">❌</span><span class="text-sm text-gray-400">Câu sai</span><span id="endWrong" class="font-bold text-red-400">0</span>
+                </div>
+            </div>
+
+            <div class="mt-4 bg-yellow-900/50 p-4 rounded-xl border border-yellow-600">
+                <h4 class="text-yellow-400 font-bold mb-2">💡 KIẾN THỨC CẦN NHỚ:</h4>
+                <ul class="text-sm text-gray-200 list-disc pl-4 space-y-1">
+                    <li>Tìm kiếm thông tin giúp đưa ra quyết định đúng đắn.</li>
+                    <li>Làm việc nhóm cần phân công theo điểm mạnh.</li>
+                    <li>Sử dụng máy tìm kiếm (Internet) để thu thập thông tin nhanh chóng.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <button onclick="resetGame()" class="mt-6 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 rounded-xl text-2xl font-bold border-b-4 border-purple-900 active:border-b-0 active:translate-y-1 shadow-lg text-white mb-10">🔄 CHƠI LẠI TỪ ĐẦU</button>
+    </div>
+
+    <script>
+        // --- DATA BÀI HỌC ---
+        const questionBank = {
+            normal: [
+                { q: "Tại sao kì nghỉ hè ở Đà Lạt của Khoa không thành công?", a: ["Vì quên mang tiền", "Vì không tìm hiểu thời tiết nên bị lạnh", "Vì đi nhầm chuyến xe", "Vì trời quá nóng"], correct: 1, hint: "Đà Lạt nằm trên cao nguyên, thời tiết về đêm rất mát mẻ hoặc lạnh." },
+                { q: "Bạn An đi nghỉ mát ở Nha Trang cần mang theo gì?", a: ["Áo phao, đồ bơi, kem chống nắng", "Áo len dày, mũ len", "Sách vở đi học", "Đèn pin và lều"], correct: 0, hint: "Nha Trang là thành phố biển, thời tiết nóng." },
+                { q: "Để giải quyết một vấn đề, bước đầu tiên rất quan trọng là gì?", a: ["Ngủ một giấc", "Đợi người khác làm hộ", "Thu thập và tìm kiếm thông tin", "Bỏ qua vấn đề đó"], correct: 2, hint: "Có thông tin thì mới đưa ra quyết định đúng." },
+                { q: "Minh đi Úc vào mùa hè ở Việt Nam, lúc đó bên Úc là mùa gì?", a: ["Mùa Hè", "Mùa Xuân", "Mùa Đông", "Mùa Thu"], correct: 2, hint: "Úc nằm ở Nam bán cầu, nên các mùa sẽ ngược lại với Việt Nam." },
+                { q: "Khi làm việc nhóm, việc phân công nên dựa vào đâu?", a: ["Bốc thăm ngẫu nhiên", "Điểm mạnh của từng người", "Ai rảnh thì làm", "Bạn lớp trưởng tự làm hết"], correct: 1, hint: "Ai giỏi việc gì thì làm việc đó sẽ hiệu quả hơn." },
+                { q: "Trong làm việc nhóm, tinh thần nào là quan trọng nhất?", a: ["Tinh thần trách nhiệm và hợp tác", "Tinh thần tranh cãi", "Mặc kệ người khác", "Làm qua loa cho xong"], correct: 0, hint: "Hợp tác giúp đỡ nhau để cùng hoàn thành công việc chung." },
+                { q: "Có thể tìm kiếm thông tin về một địa điểm du lịch từ đâu?", a: ["Chỉ từ sách giáo khoa", "Chỉ từ ti vi", "Chỉ hỏi người quen", "Internet, ti vi, báo, mọi người xung quanh"], correct: 3, hint: "Nguồn thông tin rất đa dạng, đặc biệt là Internet." },
+                { q: "Gia đình có người già và trẻ em đi du lịch Sa Pa, KHÔNG nên chọn điểm nào?", a: ["Nhà thờ đá Sa Pa (gần trung tâm)", "Chợ đêm Sa Pa", "Thung lũng Mường Hoa (phải trèo đèo lội suối)", "Hồ Sa Pa"], correct: 2, hint: "Người già và trẻ em nên tránh những nơi đường đi vất vả." },
+                { q: "Để tìm kiếm thông tin trên Internet, em dùng công cụ nào?", a: ["Máy tính bỏ túi", "Máy tìm kiếm (như Google)", "Phần mềm Paint", "Phần mềm gõ chữ Word"], correct: 1, hint: "Google.com là một cỗ máy tìm kiếm phổ biến." },
+                { q: "Thiếu thông tin sẽ dẫn đến hậu quả gì?", a: ["Giải quyết vấn đề nhanh hơn", "Gặp khó khăn trong giải quyết vấn đề", "Được nhiều điểm cao", "Không có hậu quả gì"], correct: 1, hint: "Thiếu thông tin giống như đi trong sương mù vậy." }
+            ],
+            hard: [ // Cho Đá khổng lồ
+                { q: "[THỬ THÁCH ĐÁ KHỔNG LỒ] Việc lựa chọn điểm tham quan phụ thuộc vào yếu tố nào?", a: ["Sở thích của một người duy nhất", "Đặc điểm chuyến đi (số ngày, người tham gia, sức khoẻ...)", "Cứ thấy rẻ là đi", "Chỗ nào đông thì đi"], correct: 1, hint: "Cần phải tổng hợp nhiều thông tin để chọn chỗ phù hợp cho cả đoàn." },
+                { q: "[THỬ THÁCH ĐÁ KHỔNG LỒ] Sắp xếp đúng các bước tìm thông tin trên mạng: 1. Đọc và thu thập; 2. Chọn kết quả web; 3. Gõ từ khoá tìm kiếm", a: ["1 -> 2 -> 3", "2 -> 1 -> 3", "3 -> 2 -> 1", "3 -> 1 -> 2"], correct: 2, hint: "Gõ từ khóa trước, chọn trang web, rồi mới đọc." }
+            ],
+            boss: [ // Cho Kim Cương Huyền Thoại
+                { q: "[CÂU HỎI QUYẾT ĐỊNH] Theo bài học, vì sao nói 'Thu thập thông tin là cần thiết và quan trọng trong giải quyết vấn đề'?", a: ["Vì nó giúp tốn thời gian hơn.", "Vì nó giúp ta biết nhiều để kể cho bạn bè.", "Vì có đầy đủ thông tin sẽ giúp em đưa ra quyết định đúng đắn và giải quyết vấn đề tốt hơn.", "Vì giáo viên bắt buộc phải làm."], correct: 2, hint: "Thông tin là cơ sở để ra quyết định." }
+            ]
+        };
+
+        // --- CẤU TRÚC TẦNG ---
+        const layersConfig = [
+            { id: 0, name: "🌱 Mặt Đất", size: 16, reqAnswers: 0, items: { rock: 5, gold: 2, stairs: 1, chest: 1, map: 1, pickaxe: 1, empty: 5 } },
+            { id: 1, name: "🪨 Tầng Đá", size: 16, reqAnswers: 0, items: { rock: 7, gold: 2, diamond: 1, stairs: 1, giant: 1, empty: 4 } },
+            { id: 2, name: "🕳️ Hang Động", size: 20, reqAnswers: 0, items: { rock: 8, gold: 3, diamond: 1, chest: 1, stairs: 1, map: 1, empty: 5 } },
+            { id: 3, name: "🪙 Mỏ Vàng", size: 20, reqAnswers: 0, items: { rock: 6, gold: 5, diamond: 2, stairs: 1, giant: 1, pickaxe: 1, empty: 4 } },
+            { id: 4, name: "💎 Tầng Kim Cương", size: 24, reqAnswers: 0, items: { rock: 10, gold: 3, chest: 1, giant: 1, map: 1, bossDiamond: 1, empty: 7 } }
+        ];
+
+        // --- GAME STATE ---
+        let state = {
+            playerName: "", playerClass: "",
+            score: 0, pickaxes: 0, currentLayer: 0,
+            stats: { dug: 0, gold: 0, diamond: 0, correct: 0, wrong: 0, chests: 0 },
+            isDigging: false, currentQuizType: 'normal', currentCallback: null,
+            gridData: []
+        };
+
+        // --- AUDIO SYSTEM (OFFLINE) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let bgmInterval;
+        let isBgmOn = true;
+        // BGM 8-bit style Notes
+        const bgmNotes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; 
+        let noteIndex = 0;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playBGMNote() {
+            if (!isBgmOn || !audioCtx || audioCtx.state !== 'running') return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(bgmNotes[noteIndex] / 2, audioCtx.currentTime); 
+            
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.05); // Đã tăng âm lượng nhạc nền
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+            
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.35);
+            
+            noteIndex = (noteIndex + 1) % bgmNotes.length;
+        }
+
+        function toggleBGM() {
+            isBgmOn = !isBgmOn;
+            const btn = document.getElementById('bgmToggleBtn');
+            if (isBgmOn) {
+                btn.innerHTML = '<span>🔊</span><span>Nhạc</span>';
+                btn.classList.remove('text-gray-400');
+                btn.classList.add('text-green-400');
+                initAudio();
+                startBGM();
+            } else {
+                btn.innerHTML = '<span>🔇</span><span>Tắt</span>';
+                btn.classList.remove('text-green-400');
+                btn.classList.add('text-gray-400');
+                clearInterval(bgmInterval);
+            }
+        }
+
+        function startBGM() {
+            clearInterval(bgmInterval);
+            if(isBgmOn) {
+                bgmInterval = setInterval(playBGMNote, 400); 
+            }
+        }
+
+        function playSound(type) {
+            if(!audioCtx || !isBgmOn) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            let dur = 0.1;
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime); // Đã tăng âm lượng hiệu ứng âm thanh
+
+            switch(type) {
+                case 'dig':
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.1);
+                    break;
+                case 'coin':
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.05);
+                    dur = 0.2;
+                    break;
+                case 'diamond':
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(2000, audioCtx.currentTime + 0.3);
+                    dur = 0.3;
+                    break;
+                case 'wrong':
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                    dur = 0.3;
+                    break;
+                case 'correct':
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.2);
+                    dur = 0.3;
+                    break;
+                case 'win':
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(554, audioCtx.currentTime + 0.2);
+                    osc.frequency.setValueAtTime(659, audioCtx.currentTime + 0.4);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.6);
+                    dur = 1.0;
+                    break;
+            }
+            
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur); // Tránh tiếng click khi kết thúc
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + dur);
+        }
+
+        // --- UTILS ---
+        function showToast(msg, type='info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = msg;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('toast-fadeout');
+                setTimeout(() => toast.remove(), 500);
+            }, 2500);
+        }
+
+        function updateUI() {
+            document.getElementById('pickaxeCount').innerText = state.pickaxes;
+            document.getElementById('scoreCount').innerText = state.score;
+        }
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // --- GAME LOGIC ---
+        function startGame() {
+            initAudio(); // Initialize audio context on user gesture
+            const pName = document.getElementById('playerName').value.trim();
+            const pClass = document.getElementById('playerClass').value.trim();
+            if(!pName) {
+                showToast('⚠️ Vui lòng nhập Họ Tên của bạn!', 'error');
+                return;
+            }
+            
+            state.playerName = pName;
+            state.playerClass = pClass;
+            document.getElementById('displayPlayerName').innerText = `${pName} ${pClass ? '- '+pClass : ''}`;
+            
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'flex';
+            
+            startBGM();
+            buildLayer(0);
+            
+            // Tự động mở câu hỏi đầu tiên lấy vốn
+            setTimeout(() => triggerQuiz('normal'), 500);
+        }
+
+        function buildLayer(layerIndex) {
+            state.currentLayer = layerIndex;
+            const config = layersConfig[layerIndex];
+            
+            // Cập nhật UI Layer
+            document.getElementById('layerName').innerText = config.name;
+            const container = document.getElementById('layerContainer');
+            container.className = `flex-1 w-full flex flex-col p-4 transition-colors duration-500 overflow-y-auto layer-${layerIndex}`;
+            
+            // Tạo danh sách vật phẩm
+            let itemsArr = [];
+            for(let key in config.items) {
+                for(let i=0; i<config.items[key]; i++) {
+                    itemsArr.push(key);
+                }
+            }
+            // Điền thêm đất trống nếu thiếu
+            while(itemsArr.length < config.size) itemsArr.push('empty');
+            itemsArr = shuffleArray(itemsArr);
+            state.gridData = itemsArr.map((type, idx) => ({ id: idx, type: type, dug: false }));
+            
+            renderGrid();
+            showToast(`Chào mừng đến với ${config.name}`, 'info');
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('mineGrid');
+            grid.innerHTML = '';
+            
+            state.gridData.forEach(cell => {
+                const div = document.createElement('div');
+                div.className = `cell ${cell.dug ? 'dug' : ''} ${cell.highlight ? 'highlight' : ''}`;
+                div.id = `cell-${cell.id}`;
+                div.style.aspectRatio = '1/1';
+                
+                // Nội dung bên dưới
+                let icon = '';
+                switch(cell.type) {
+                    case 'rock': icon = '🪨'; break;
+                    case 'gold': icon = '🪙'; break;
+                    case 'diamond': icon = '💎'; break;
+                    case 'bossDiamond': icon = '💎✨'; break;
+                    case 'chest': icon = '📦'; break;
+                    case 'stairs': icon = '🚪'; break;
+                    case 'giant': icon = '🗿'; break;
+                    case 'map': icon = '🗺️'; break;
+                    case 'pickaxe': icon = '⚡'; break;
+                    default: icon = ''; break; // empty
+                }
+                div.innerHTML = `<span class="item-icon ${cell.dug ? 'item-pop' : ''}">${icon}</span><div class="cover"></div>`;
+                
+                // Event click
+                div.onclick = () => handleDig(cell.id);
+                grid.appendChild(div);
+            });
+        }
+
+        function handleDig(id) {
+            const cellData = state.gridData[id];
+            
+            // KHOÁ BẢO VỆ
+            if(cellData.dug || state.isDigging) return; 
+            if(state.pickaxes <= 0) {
+                showToast("Bạn đã hết cuốc! Hãy trả lời câu hỏi để kiếm thêm.", "error");
+                triggerQuiz('normal');
+                return;
+            }
+
+            // Bắt đầu đào
+            state.isDigging = true;
+            state.pickaxes--;
+            state.stats.dug++;
+            updateUI();
+            
+            const cellEl = document.getElementById(`cell-${id}`);
+            cellEl.classList.add('digging-animation');
+            playSound('dig');
+
+            // Timeout chờ animation đập búa
+            setTimeout(() => {
+                cellEl.classList.remove('digging-animation');
+                cellEl.classList.add('dug');
+                cellData.dug = true;
+                cellData.highlight = false; // Xóa hiệu ứng gợi ý nếu có
+                
+                // Xử lý logic vật phẩm
+                resolveItem(cellData.type, cellEl);
+                
+                // Mở khóa đào tiếp
+                state.isDigging = false;
+            }, 400); // 400ms tương ứng thời gian CSS animation
+        }
+
+        function resolveItem(type, cellEl) {
+            cellEl.querySelector('.item-icon').classList.add('item-pop');
+            switch(type) {
+                case 'rock':
+                    state.score += 5;
+                    showToast("+5 Điểm (Đá)", 'info');
+                    break;
+                case 'gold':
+                    state.score += 20;
+                    state.stats.gold++;
+                    playSound('coin');
+                    showToast("+20 Điểm (Vàng)", 'success');
+                    break;
+                case 'diamond':
+                    state.score += 50;
+                    state.stats.diamond++;
+                    playSound('diamond');
+                    showToast("💎 Tuyệt vời! +50 Điểm", 'success');
+                    break;
+                case 'chest':
+                    state.stats.chests++;
+                    playSound('coin');
+                    showToast("Mở được Rương Bí Mật! Trả lời câu hỏi thưởng...", 'info');
+                    setTimeout(() => triggerQuiz('chest'), 800);
+                    break;
+                case 'giant':
+                    playSound('wrong');
+                    showToast("Đụng trúng Đá Khổng Lồ! Cần kiến thức mạnh để phá...", 'error');
+                    setTimeout(() => triggerQuiz('hard'), 800);
+                    break;
+                case 'map':
+                    playSound('coin');
+                    revealMap();
+                    break;
+                case 'pickaxe':
+                    state.pickaxes++;
+                    playSound('correct');
+                    showToast("⚡ Cuốc Vàng! Nhận thêm 1 lượt đào", 'success');
+                    break;
+                case 'stairs':
+                    playSound('win');
+                    if(state.currentLayer < 4) {
+                        showToast("🚪 Tìm thấy Cửa xuống tầng! Đang chuyển xuống...", 'success');
+                        setTimeout(() => buildLayer(state.currentLayer + 1), 1500);
+                    }
+                    break;
+                case 'bossDiamond':
+                    playSound('diamond');
+                    showToast("💎 KIM CƯƠNG HUYỀN THOẠI! Vượt qua thử thách cuối cùng...", 'info');
+                    setTimeout(() => triggerQuiz('boss'), 1500);
+                    break;
+                default:
+                    // Đất trống
+                    break;
+            }
+            updateUI();
+        }
+
+        function revealMap() {
+            // Tìm ô vàng/kim cương chưa đào
+            const targets = state.gridData.filter(c => !c.dug && (c.type === 'gold' || c.type === 'diamond' || c.type === 'bossDiamond'));
+            if(targets.length > 0) {
+                const target = targets[Math.floor(Math.random() * targets.length)];
+                target.highlight = true;
+                renderGrid(); // Re-render to show highlight
+                showToast("🗺️ Bản đồ đã chỉ điểm một khu vực có giá trị!", 'success');
+            } else {
+                showToast("🗺️ Tầng này đã cạn kiệt kho báu quý giá.", 'info');
+            }
+        }
+
+        // --- QUIZ LOGIC ---
+        function triggerQuiz(type) {
+            state.currentQuizType = type;
+            let pool = [];
+            let title = "";
+            if(type === 'normal') { pool = questionBank.normal; title = "❓ KIẾM CUỐC ĐÀO VÀNG"; }
+            else if(type === 'chest') { pool = questionBank.normal; title = "📦 RƯƠNG BÍ MẬT"; }
+            else if(type === 'hard') { pool = questionBank.hard; title = "🗿 THỬ THÁCH ĐÁ KHỔNG LỒ"; }
+            else if(type === 'boss') { pool = questionBank.boss; title = "💎 THỬ THÁCH KIM CƯƠNG HUYỀN THOẠI"; }
+            
+            const qData = pool[Math.floor(Math.random() * pool.length)];
+            
+            document.getElementById('quizTitle').innerText = title;
+            document.getElementById('questionText').innerText = qData.q;
+            document.getElementById('quizResult').style.display = 'none';
+            
+            const ansBox = document.getElementById('answersBox');
+            ansBox.innerHTML = '';
+            
+            // Xáo trộn đáp án nhưng vẫn giữ index đúng
+            let answersWithIndex = qData.a.map((txt, idx) => ({ txt, idx }));
+            answersWithIndex = shuffleArray(answersWithIndex);
+            
+            answersWithIndex.forEach(ans => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-3 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 transition-all font-semibold text-white active:scale-95";
+                btn.innerText = ans.txt;
+                btn.onclick = () => handleAnswer(ans.idx === qData.correct, qData.hint, btn);
+                ansBox.appendChild(btn);
+            });
+            
+            const modal = document.getElementById('quizModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Animation pop-in
+            setTimeout(() => {
+                document.getElementById('quizBox').classList.remove('scale-95', 'opacity-0');
+                document.getElementById('quizBox').classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeQuizModal() {
+            document.getElementById('quizBox').classList.remove('scale-100', 'opacity-100');
+            document.getElementById('quizBox').classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                document.getElementById('quizModal').classList.add('hidden');
+                document.getElementById('quizModal').classList.remove('flex');
+            }, 200); // Wait for transition
+        }
+
+        function handleAnswer(isCorrect, hint, btnEl) {
+            // Disable all buttons to prevent multiple clicks
+            const btns = document.getElementById('answersBox').querySelectorAll('button');
+            btns.forEach(b => b.disabled = true);
+            
+            const resBox = document.getElementById('quizResult');
+            resBox.style.display = 'block';
+            
+            if(isCorrect) {
+                state.stats.correct++;
+                btnEl.classList.replace('bg-white/10', 'bg-green-500');
+                btnEl.classList.replace('hover:bg-white/20', 'hover:bg-green-600');
+                resBox.className = "mt-4 p-3 rounded-lg text-center font-bold text-lg bg-green-500/20 text-green-300 border border-green-500";
+                resBox.innerText = "🎉 CHÍNH XÁC!";
+                playSound('correct');
+                
+                // Reward based on type
+                if(state.currentQuizType === 'normal') {
+                    state.pickaxes++;
+                    resBox.innerText += " (+1 Lượt đào)";
+                } else if(state.currentQuizType === 'chest') {
+                    state.score += 30; state.pickaxes++;
+                    resBox.innerText += " (+30 Điểm, +1 Lượt đào)";
+                } else if(state.currentQuizType === 'hard') {
+                    state.score += 50;
+                    resBox.innerText += " Đã phá tan Đá Khổng Lồ! (+50 Điểm)";
+                } else if(state.currentQuizType === 'boss') {
+                    state.score += 500;
+                    state.stats.diamond++;
+                    resBox.innerText = "🏆 CHÍNH XÁC! BẠN ĐÃ LẤY ĐƯỢC KIM CƯƠNG HUYỀN THOẠI!";
+                    setTimeout(() => { closeQuizModal(); showWinScreen(); }, 2000);
+                    return; // Prevent normal close
+                }
+                
+                updateUI();
+                setTimeout(() => closeQuizModal(), 1500);
+                
+            } else {
+                state.stats.wrong++;
+                btnEl.classList.replace('bg-white/10', 'bg-red-500');
+                btnEl.classList.replace('hover:bg-white/20', 'hover:bg-red-600');
+                resBox.className = "mt-4 p-3 rounded-lg text-center font-bold text-lg bg-red-500/20 text-red-300 border border-red-500";
+                resBox.innerHTML = `❌ CHƯA CHÍNH XÁC - HÃY THỬ LẠI<br><span class="text-sm text-gray-300 font-normal mt-1 block">💡 Gợi ý: ${hint}</span>`;
+                playSound('wrong');
+                
+                // Xử lý phạt
+                if(state.currentQuizType === 'boss' || state.currentQuizType === 'hard') {
+                    // Fail boss/hard -> Just close, they didn't break the block essentially, 
+                    // but since the cell is already marked 'dug', they just don't get the reward.
+                    setTimeout(() => closeQuizModal(), 3000);
+                } else {
+                    // Normal -> Let them read hint, then close
+                    setTimeout(() => closeQuizModal(), 3000);
+                }
+            }
+        }
+
+        // --- END GAME ---
+        function showWinScreen() {
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('endScreen').style.display = 'flex';
+            
+            clearInterval(bgmInterval);
+            playSound('win');
+            
+            document.getElementById('endPlayerName').innerText = state.playerName;
+            document.getElementById('endPlayerClass').innerText = state.playerClass || "Không có";
+            document.getElementById('endScore').innerText = state.score;
+            document.getElementById('endPickaxes').innerText = state.stats.dug;
+            document.getElementById('endDiamonds').innerText = state.stats.diamond;
+            document.getElementById('endCorrect').innerText = state.stats.correct;
+            document.getElementById('endWrong').innerText = state.stats.wrong;
+        }
+
+        function resetGame() {
+            state = {
+                playerName: "", playerClass: "",
+                score: 0, pickaxes: 0, currentLayer: 0,
+                stats: { dug: 0, gold: 0, diamond: 0, correct: 0, wrong: 0, chests: 0 },
+                isDigging: false, currentQuizType: 'normal',
+                gridData: []
+            };
+            updateUI();
+            document.getElementById('playerName').value = '';
+            document.getElementById('playerClass').value = '';
+            
+            document.getElementById('endScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>

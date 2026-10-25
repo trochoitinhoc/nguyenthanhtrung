@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ĐÈN PIN SĂN KIẾN THỨC - TIN HỌC LỚP 4 BÀI 15</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --secondary: #EC4899;
+            --dark: #0F172A;
+            --light: #F8FAFC;
+            --flash-x: 50%;
+            --flash-y: 50%;
+            --flash-radius: 150px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark);
+            color: var(--light);
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .flashlight-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #1E293B;
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 20px 20px;
+            -webkit-mask-image: radial-gradient(circle var(--flash-radius) at var(--flash-x) var(--flash-y), black 60%, rgba(0,0,0,0.5) 85%, transparent 100%);
+            mask-image: radial-gradient(circle var(--flash-radius) at var(--flash-x) var(--flash-y), black 60%, rgba(0,0,0,0.5) 85%, transparent 100%);
+            z-index: 10;
+        }
+
+        .darkness-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000;
+            z-index: 5;
+        }
+
+        .card {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            transition: all 0.2s ease-out;
+            cursor: crosshair;
+        }
+        
+        .card:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.8);
+            border-color: #EC4899;
+        }
+
+        .card.locked {
+            pointer-events: none;
+            animation: pulse-green 1s infinite;
+            border-color: #10B981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        @keyframes popup {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+
+        .animate-shake { animation: shake 0.5s; }
+        .animate-popup { animation: popup 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        .floating-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.5rem;
+            pointer-events: none;
+            z-index: 100;
+            animation: float-up 1s forwards;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex justify-center items-center">
+
+    <div id="intro-screen" class="absolute inset-0 z-50 flex flex-col justify-center items-center bg-gradient-to-br from-indigo-900 to-slate-900 p-4">
+        <div class="glass-panel p-8 rounded-3xl shadow-2xl max-w-md w-full text-center animate-popup border-t-4 border-t-pink-500">
+            <h1 class="text-3xl md:text-4xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-indigo-400 drop-shadow-lg">
+                ĐÈN PIN SĂN KIẾN THỨC
+            </h1>
+            <p class="text-slate-300 mb-6 font-semibold">Tin học Lớp 4 - Bài 15: Tạo chương trình máy tính để diễn tả ý tưởng</p>
+            
+            <div class="flex flex-col gap-4 mb-6 text-left">
+                <div>
+                    <label class="block text-sm font-bold text-slate-400 mb-1">HỌ VÀ TÊN HỌC SINH</label>
+                    <input type="text" id="player-name" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-white focus:outline-none focus:border-pink-500 transition-colors" placeholder="Biệt danh (không nhập tên thật)">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-400 mb-1">LỚP</label>
+                    <input type="text" id="player-class" class="w-full bg-slate-800 border border-slate-600 rounded-xl p-3 text-white focus:outline-none focus:border-pink-500 transition-colors" placeholder="Ví dụ: 4A1">
+                </div>
+            </div>
+            
+            <button id="btn-start" class="w-full bg-gradient-to-r from-pink-500 to-indigo-600 hover:from-pink-400 hover:to-indigo-500 text-white font-bold py-4 rounded-xl shadow-lg transform transition active:scale-95 text-xl flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                BẮT ĐẦU SĂN KIẾN THỨC
+            </button>
+        </div>
+    </div>
+
+    <div id="hud" class="absolute top-0 left-0 w-full p-4 z-40 hidden flex-col md:flex-row justify-between items-start md:items-center pointer-events-none gap-2">
+        <div class="glass-panel px-4 py-2 rounded-2xl flex items-center gap-4 pointer-events-auto">
+            <div>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Học sinh</p>
+                <p id="hud-name" class="font-bold text-pink-400">Player</p>
+            </div>
+            <div class="h-8 w-px bg-slate-700"></div>
+            <div>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Điểm</p>
+                <p id="hud-score" class="font-black text-2xl text-white">0</p>
+            </div>
+            <div class="h-8 w-px bg-slate-700"></div>
+            <div>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Combo</p>
+                <p id="hud-combo" class="font-black text-2xl text-yellow-400">x1</p>
+            </div>
+        </div>
+
+        <div class="glass-panel px-6 py-3 rounded-2xl flex-1 max-w-2xl mx-auto border-pink-500 border-2">
+            <p id="hud-instruction" class="font-bold text-center text-sm md:text-base text-white">Nhiệm vụ sẽ hiện ở đây...</p>
+        </div>
+
+        <div class="flex gap-2 pointer-events-auto mt-2 md:mt-0 self-end md:self-auto">
+            <div id="timer-container" class="glass-panel px-4 py-2 rounded-2xl hidden items-center gap-2 text-red-400 border border-red-500/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" /></svg>
+                <span id="hud-time" class="font-black text-xl">30s</span>
+            </div>
+            <button id="btn-music" class="glass-panel p-3 rounded-xl hover:bg-slate-700 transition" title="Bật/Tắt Nhạc Nền">🎵</button>
+            <button id="btn-sfx" class="glass-panel p-3 rounded-xl hover:bg-slate-700 transition" title="Bật/Tắt Âm Thanh">🔊</button>
+        </div>
+    </div>
+
+    <!-- LEVEL TRANSITION ALERT -->
+    <div id="overlay-msg" class="absolute inset-0 z-50 hidden flex-col justify-center items-center bg-black/80 backdrop-blur-sm">
+        <h2 id="msg-title" class="text-5xl md:text-7xl font-black mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 animate-popup drop-shadow-[0_0_15px_rgba(74,222,128,0.8)]">LEVEL 1</h2>
+        <p id="msg-sub" class="text-xl md:text-2xl text-white font-bold text-center max-w-2xl px-4">Chuẩn bị...</p>
+    </div>
+
+    <!-- GAME AREA -->
+    <div id="game-area" class="relative w-full h-full hidden overflow-hidden cursor-crosshair">
+        <div class="darkness-overlay"></div>
+        <div id="flashlight-mask" class="flashlight-container">
+            <div id="cards-container" class="relative w-full h-full pointer-events-auto">
+                <!-- Cards injected here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="result-screen" class="absolute inset-0 z-50 hidden flex-col justify-center items-center bg-gradient-to-br from-indigo-900 to-slate-900 p-4">
+        <div class="glass-panel p-6 md:p-10 rounded-3xl shadow-2xl max-w-2xl w-full text-center animate-popup border-t-4 border-t-green-500 overflow-y-auto max-h-screen">
+            <h1 class="text-4xl md:text-5xl font-black mb-2 text-green-400 drop-shadow-lg">HOÀN THÀNH BÀI 15!</h1>
+            <p class="text-slate-300 mb-6 font-semibold">Báo cáo kết quả săn kiến thức Tin học Lớp 4</p>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-600">
+                    <p class="text-xs text-slate-400 font-bold">ĐIỂM TỔNG</p>
+                    <p id="res-score" class="text-3xl font-black text-white">0</p>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-600">
+                    <p class="text-xs text-slate-400 font-bold">COMBO MAX</p>
+                    <p id="res-combo" class="text-3xl font-black text-yellow-400">x1</p>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-600">
+                    <p class="text-xs text-slate-400 font-bold">MỤC TIÊU ĐÚNG</p>
+                    <p id="res-correct" class="text-3xl font-black text-green-400">0</p>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-600">
+                    <p class="text-xs text-slate-400 font-bold">TÍN HIỆU NHIỄU</p>
+                    <p id="res-wrong" class="text-3xl font-black text-red-400">0</p>
+                </div>
+            </div>
+
+            <div class="text-left mb-8 bg-slate-800/80 p-5 rounded-2xl border border-pink-500/30">
+                <h3 class="text-xl font-bold text-pink-400 mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    KIẾN THỨC CẦN ÔN LẠI (SGK BÀI 15)
+                </h3>
+                <ul id="res-review" class="list-disc list-inside text-sm md:text-base text-slate-300 space-y-2">
+                    <!-- Review points injected here -->
+                </ul>
+            </div>
+            
+            <div class="flex gap-4 justify-center">
+                <button id="btn-restart" class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-bold py-3 rounded-xl shadow-lg transform transition active:scale-95 text-lg">
+                    CHƠI LẠI
+                </button>
+                <button id="btn-home" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl shadow-lg transform transition active:scale-95 text-lg">
+                    TRANG CHỦ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- STREAMING_CHUNK:Defining precise textbook data for Tin 4 Bài 15 ---
+        const LEVEL_DATA = [
+            {
+                id: 1,
+                name: "LEVEL 1: Ý TƯỞNG CÂU CHUYỆN",
+                instruction: "Nhiệm vụ: Tìm 3 thành phần chính để tạo chương trình 'Chú chó đáng yêu' theo ý tưởng bạn An.",
+                radius: 170,
+                timeLimit: 0,
+                isSequence: false,
+                targets: [
+                    { id: "t1_1", text: "Nhân vật: Chú chó (Dog1)", desc: "Đúng! Nhân vật chính là chú chó Lu đáng yêu." },
+                    { id: "t1_2", text: "Sân khấu: Khu vườn (Garden-rock)", desc: "Đúng! Phông nền sân khấu là khu vườn có tảng đá." },
+                    { id: "t1_3", text: "Ý tưởng: Chú chó vừa chạy vừa sủa", desc: "Đúng! Mô tả hoạt động chú chó trong khu vườn." }
+                ],
+                decoys: [
+                    { text: "Nhân vật mặc định mèo", review: "Sai. Ta phải xoá nhân vật mèo mặc định (Sprite 1) để chọn chú chó." },
+                    { text: "Phông nền màu trắng", review: "Sai. Cần thay đổi phông nền thành khu vườn (Garden-rock)." },
+                    { text: "Nhân vật cá mập", review: "Sai. Cá mập dùng cho bài bể cá cảnh, không phải chương trình chú chó." },
+                    { text: "Soạn thảo văn bản", review: "Sai. Đây là chương trình Scratch diễn tả câu chuyện, không phải phần mềm soạn thảo." }
+                ]
+            },
+            {
+                id: 2,
+                name: "LEVEL 2: BẢNG 5 - CÁC LỆNH SCRATCH",
+                instruction: "Nhiệm vụ: Tìm 3 LỆNH quan trọng được dùng cho chương trình 'Chú chó đáng yêu' (Bảng 5).",
+                radius: 140,
+                timeLimit: 0,
+                isSequence: false,
+                targets: [
+                    { id: "t2_1", text: "đi tới vị trí ngẫu nhiên", desc: "Đúng! Giúp nhân vật di chuyển đến vị trí ngẫu nhiên trên sân khấu." },
+                    { id: "t2_2", text: "bật lại nếu chạm cạnh", desc: "Đúng! Giúp nhân vật không di chuyển ra ngoài sân khấu." },
+                    { id: "t2_3", text: "phát âm thanh dog1 đến hết", desc: "Đúng! Phát âm thanh tiếng chó sủa." }
+                ],
+                decoys: [
+                    { text: "di chuyển 10 bước", review: "Sai. Lệnh 'di chuyển 10 bước' dùng cho bài bể cá cảnh, chương trình chú chó dùng 'đi tới vị trí ngẫu nhiên'." },
+                    { text: "phát âm thanh Water drop", review: "Sai. 'Water drop' là âm thanh giọt nước dùng cho bể cá cảnh, chú chó dùng 'dog1'." },
+                    { text: "xoay 15 độ", review: "Sai. Lệnh xoay không có trong tập lệnh cơ bản của bài chú chó." },
+                    { text: "nói Xin chào!", review: "Sai. Chương trình yêu cầu phát âm thanh sủa chứ không dùng lệnh nói." }
+                ]
+            },
+            {
+                id: 3,
+                name: "LEVEL 3: THỨ TỰ LỆNH CHƯƠNG TRÌNH",
+                instruction: "Nhiệm vụ: Tìm đúng trình tự các khối lệnh trong chương trình 'Chú chó đáng yêu' (Hình 72) theo thứ tự từ trên xuống dưới!",
+                radius: 130,
+                timeLimit: 0,
+                isSequence: true, // Requires strict order
+                targets: [
+                    { id: "t3_1", text: "1. Khối sự kiện: Khi bấm vào lá cờ xanh", desc: "Bước 1: Khởi chạy chương trình bằng lá cờ." },
+                    { id: "t3_2", text: "2. Khối chuyển động: đi tới vị trí ngẫu nhiên", desc: "Bước 2: Di chuyển ngẫu nhiên trong vườn." },
+                    { id: "t3_3", text: "3. Khối âm thanh: phát âm thanh dog1 đến hết", desc: "Bước 3: Phát tiếng sủa khi di chuyển." }
+                ],
+                decoys: [
+                    { text: "Bật lại nếu chạm cạnh ở trên cùng", review: "Sai. Lệnh 'bật lại nếu chạm cạnh' nằm ở giữa, không nằm trên cùng." },
+                    { text: "Phát âm thanh đầu tiên", review: "Sai. Sự kiện 'Khi bấm vào lá cờ xanh' luôn phải đặt ở trên cùng để bắt đầu chương trình." },
+                    { text: "Lệnh di chuyển 10 bước", review: "Sai. Chương trình chú chó trong SGK không dùng lệnh di chuyển 10 bước." }
+                ]
+            },
+            {
+                id: 4,
+                name: "LEVEL 4: BỂ CÁ CẢNH (CÂU HỎI 2 SGK)",
+                instruction: "Nhiệm vụ: Tìm đúng ý tưởng và khối lệnh của bạn Minh trong bài tập 'Bể cá cảnh' (Có giới hạn thời gian!).",
+                radius: 140,
+                timeLimit: 30,
+                isSequence: false,
+                targets: [
+                    { id: "t4_1", text: "di chuyển 10 bước", desc: "Đúng! Giúp chú cá bơi tung tăng." },
+                    { id: "t4_2", text: "bật lại nếu chạm cạnh", desc: "Đúng! Chạm cạnh bể thì quay trở lại." },
+                    { id: "t4_3", text: "phát âm thanh Water drop đến hết", desc: "Đúng! Âm thanh nước phù hợp với bể cá cảnh." }
+                ],
+                decoys: [
+                    { text: "đi tới vị trí ngẫu nhiên", review: "Sai. Bể cá cảnh dùng lệnh 'di chuyển 10 bước' để cá bơi mượt mà, không dùng 'đi tới vị trí ngẫu nhiên'." },
+                    { text: "phát âm thanh dog1", review: "Sai. Âm thanh sủa của chó không dùng cho bể cá cảnh." },
+                    { text: "nhân vật chú chó", review: "Sai. Bể cá cảnh có nhân vật chú cá, không phải chú chó." },
+                    { text: "Lưu tệp tên ChuCho", review: "Sai. 'ChuCho' là tên tệp của bài chú chó, không phải bể cá." }
+                ]
+            },
+            {
+                id: 5,
+                name: "PHÒNG TỐI: THAO TÁC THỰC HÀNH SCRATCH",
+                instruction: "BOSS: Tìm nhanh các thao tác và quy tắc chuẩn trong phần mềm Scratch theo SGK Bài 15! Cẩn thận nhiễu!",
+                radius: 160,
+                timeLimit: 40,
+                isSequence: false,
+                isBoss: true,
+                targets: [
+                    { id: "t5_1", text: "Xoá nhân vật Sprite 1 bằng thùng rác", desc: "Chính xác! Thao tác xoá nhân vật mặc định." },
+                    { id: "t5_2", text: "Chọn nhân vật Dog1 từ thư viện", desc: "Chính xác! Thêm nhân vật chú chó." },
+                    { id: "t5_3", text: "Chọn phông nền Garden-rock", desc: "Chính xác! Thêm phông nền khu vườn." },
+                    { id: "t5_4", text: "Lưu tệp với tên ChuCho", desc: "Chính xác! Lưu bài thực hành về máy tính." },
+                    { id: "t5_5", text: "Nháy nhiều lần vào lá cờ xanh để chạy", desc: "Chính xác! Giúp chú chó di chuyển liên tục." }
+                ],
+                decoys: [
+                    { text: "Xoá sân khấu", review: "Sai. Sân khấu không thể xoá, chỉ có thể thay đổi phông nền." },
+                    { text: "Lưu tệp tên BeCaCanh cho bài chú chó", review: "Sai. Tệp bài chú chó phải đặt tên là ChuCho." },
+                    { text: "Dùng lệnh Water drop cho chú chó", review: "Sai. Chú chó dùng âm thanh dog1, giọt nước dùng cho bể cá." },
+                    { text: "Nhân vật mèo mặc định", review: "Sai. Ta phải xoá nhân vật mèo đi để thay bằng chú chó." },
+                    { text: "Không cần bấm lá cờ xanh", review: "Sai. Phải bấm lá cờ xanh để chạy chương trình." },
+                    { text: "Tạo bảng tính Excel", review: "Sai. Đây là phần mềm Scratch, không phải Excel." }
+                ]
+            }
+        ];
+
+        // --- STREAMING_CHUNK:Setting up Web Audio API engine... ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.isMusicOn = true;
+                this.isSfxOn = true;
+                this.bgmOscs = [];
+                this.bgmGain = null;
+                this.isPlayingBgm = false;
+                this.chords = [
+                    [261.63, 329.63, 392.00],
+                    [220.00, 261.63, 329.63],
+                    [174.61, 220.00, 261.63],
+                    [196.00, 246.94, 293.66]
+                ];
+                this.chordIndex = 0;
+                this.bgmInterval = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playTone(freq, type, duration, vol = 0.1) {
+                if (!this.isSfxOn || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            }
+
+            playHover() { this.playTone(600, 'sine', 0.1, 0.05); }
+            
+            playLock() { 
+                if(!this.isSfxOn) return;
+                this.playTone(440, 'square', 0.1, 0.05);
+                setTimeout(() => this.playTone(880, 'square', 0.15, 0.05), 100);
+            }
+
+            playCorrect() {
+                if(!this.isSfxOn) return;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    setTimeout(() => this.playTone(freq, 'sine', 0.2, 0.1), i * 100);
+                });
+            }
+
+            playWrong() {
+                if(!this.isSfxOn) return;
+                this.playTone(150, 'sawtooth', 0.4, 0.1);
+                setTimeout(() => this.playTone(130, 'sawtooth', 0.4, 0.1), 150);
+            }
+
+            playWin() {
+                if(!this.isSfxOn) return;
+                [261.63, 329.63, 392.00, 523.25].forEach(f => this.playTone(f, 'sine', 1, 0.2));
+            }
+
+            startBgm(isBoss = false) {
+                if (!this.ctx) this.init();
+                if (this.isPlayingBgm) this.stopBgm();
+                if (!this.isMusicOn) return;
+
+                this.isPlayingBgm = true;
+                this.bgmGain = this.ctx.createGain();
+                this.bgmGain.gain.value = 0.03;
+                this.bgmGain.connect(this.ctx.destination);
+
+                const speed = isBoss ? 400 : 1000;
+
+                const playChord = () => {
+                    if (!this.isPlayingBgm || !this.isMusicOn) return;
+                    const chord = this.chords[this.chordIndex];
+                    this.bgmOscs = chord.map(freq => {
+                        const osc = this.ctx.createOscillator();
+                        osc.type = isBoss ? 'triangle' : 'sine';
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                        osc.connect(this.bgmGain);
+                        osc.start();
+                        osc.stop(this.ctx.currentTime + (speed/1000) - 0.1);
+                        return osc;
+                    });
+                    this.chordIndex = (this.chordIndex + 1) % this.chords.length;
+                };
+
+                playChord();
+                this.bgmInterval = setInterval(playChord, speed);
+            }
+
+            stopBgm() {
+                this.isPlayingBgm = false;
+                if (this.bgmInterval) clearInterval(this.bgmInterval);
+                try {
+                    this.bgmOscs.forEach(o => o.stop());
+                } catch(e){}
+                this.bgmOscs = [];
+            }
+
+            toggleMusic() {
+                this.isMusicOn = !this.isMusicOn;
+                if (this.isMusicOn) {
+                    if(this.ctx && this.ctx.state !== 'suspended') this.startBgm(window.gameState.levelIndex === LEVEL_DATA.length - 1);
+                } else {
+                    this.stopBgm();
+                }
+                return this.isMusicOn;
+            }
+
+            toggleSfx() {
+                this.isSfxOn = !this.isSfxOn;
+                return this.isSfxOn;
+            }
+        }
+
+        // --- STREAMING_CHUNK:Implementing game state management logic... ---
+        const gameState = {
+            player: { name: "", class: "" },
+            score: 0,
+            combo: 1,
+            maxCombo: 1,
+            correctCount: 0,
+            wrongCount: 0,
+            reviewNotes: new Set(),
+            levelIndex: 0,
+            foundTargets: 0,
+            sequenceStep: 0,
+            timer: 0,
+            timerInterval: null,
+            isPlaying: false
+        };
+
+        const audio = new AudioEngine();
+
+        const screens = {
+            intro: document.getElementById('intro-screen'),
+            game: document.getElementById('game-area'),
+            result: document.getElementById('result-screen'),
+            msg: document.getElementById('overlay-msg')
+        };
+        const hud = {
+            container: document.getElementById('hud'),
+            name: document.getElementById('hud-name'),
+            score: document.getElementById('hud-score'),
+            combo: document.getElementById('hud-combo'),
+            inst: document.getElementById('hud-instruction'),
+            timer: document.getElementById('hud-time'),
+            timerContainer: document.getElementById('timer-container')
+        };
+        const cardsContainer = document.getElementById('cards-container');
+        const flashlight = document.getElementById('flashlight-mask');
+
+        function updateFlashlight(e) {
+            if(!gameState.isPlaying) return;
+            let x, y;
+            if (e.type.includes('touch')) {
+                x = e.touches[0].clientX;
+                y = e.touches[0].clientY;
+            } else {
+                x = e.clientX;
+                y = e.clientY;
+            }
+            flashlight.style.setProperty('--flash-x', `${x}px`);
+            flashlight.style.setProperty('--flash-y', `${y}px`);
+        }
+        
+        document.addEventListener('mousemove', updateFlashlight);
+        document.addEventListener('touchmove', updateFlashlight, {passive: false});
+
+        document.getElementById('btn-start').addEventListener('click', () => {
+            const name = document.getElementById('player-name').value.trim();
+            const cls = document.getElementById('player-class').value.trim();
+            if (!name || !cls) {
+                const btn = document.getElementById('btn-start');
+                btn.classList.add('animate-shake', 'bg-red-500');
+                setTimeout(() => btn.classList.remove('animate-shake', 'bg-red-500'), 500);
+                return;
+            }
+            
+            audio.init();
+            audio.playLock();
+            
+            gameState.player = { name, class: cls };
+            resetGameState();
+            
+            screens.intro.classList.add('hidden');
+            screens.game.classList.remove('hidden');
+            hud.container.classList.remove('hidden');
+            hud.container.classList.add('flex');
+            
+            updateHUD();
+            startLevel(0);
+        });
+
+        function startLevel(index) {
+            gameState.levelIndex = index;
+            gameState.foundTargets = 0;
+            gameState.sequenceStep = 0;
+            gameState.isPlaying = false;
+            cardsContainer.innerHTML = '';
+            clearInterval(gameState.timerInterval);
+
+            const level = LEVEL_DATA[index];
+            
+            screens.msg.classList.remove('hidden');
+            screens.msg.classList.add('flex');
+            document.getElementById('msg-title').innerText = level.name;
+            document.getElementById('msg-title').className = `text-4xl md:text-6xl font-black mb-4 text-center text-transparent bg-clip-text animate-popup drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] ${level.isBoss ? 'bg-gradient-to-r from-red-500 to-yellow-500' : 'bg-gradient-to-r from-green-400 to-blue-500'}`;
+            document.getElementById('msg-sub').innerText = level.instruction;
+
+            audio.stopBgm();
+            if(level.isBoss) audio.playTone(300, 'sawtooth', 1, 0.2);
+
+            setTimeout(() => {
+                screens.msg.classList.remove('flex');
+                screens.msg.classList.add('hidden');
+                
+                flashlight.style.setProperty('--flash-radius', `${level.radius}px`);
+                hud.inst.innerText = level.instruction;
+                
+                spawnCards(level);
+                
+                gameState.isPlaying = true;
+                audio.startBgm(level.isBoss);
+
+                if (level.timeLimit > 0) {
+                    gameState.timer = level.timeLimit;
+                    hud.timerContainer.classList.remove('hidden');
+                    hud.timerContainer.classList.add('flex');
+                    hud.timer.innerText = `${gameState.timer}s`;
+                    gameState.timerInterval = setInterval(() => {
+                        gameState.timer--;
+                        hud.timer.innerText = `${gameState.timer}s`;
+                        if(gameState.timer <= 10) hud.timer.classList.add('animate-pulse', 'text-red-500');
+                        else hud.timer.classList.remove('animate-pulse', 'text-red-500');
+
+                        if (gameState.timer <= 0) {
+                            handleTimeOut();
+                        }
+                    }, 1000);
+                } else {
+                    hud.timerContainer.classList.remove('flex');
+                    hud.timerContainer.classList.add('hidden');
+                }
+
+            }, 3000);
+        }
+
+        function spawnCards(level) {
+            const allCards = [];
+            
+            level.targets.forEach(t => allCards.push({ ...t, isTarget: true }));
+            level.decoys.forEach(d => allCards.push({ ...d, isTarget: false }));
+            
+            allCards.sort(() => Math.random() - 0.5);
+
+            const usedPositions = [];
+            const margin = 12;
+
+            allCards.forEach((cardData, idx) => {
+                const card = document.createElement('div');
+                card.className = 'card bg-slate-800 border-2 border-slate-600 rounded-xl p-3 shadow-lg flex flex-col justify-center items-center text-center';
+                card.style.width = '180px';
+                card.style.height = '110px';
+                
+                let top, left, overlapping;
+                let attempts = 0;
+                do {
+                    top = margin + Math.random() * (100 - 2 * margin);
+                    left = margin + Math.random() * (100 - 2 * margin);
+                    overlapping = usedPositions.some(p => Math.abs(p.t - top) < 18 && Math.abs(p.l - left) < 18);
+                    attempts++;
+                } while (overlapping && attempts < 50);
+                
+                usedPositions.push({t: top, l: left});
+                
+                card.style.top = `${top}%`;
+                card.style.left = `${left}%`;
+
+                card.innerHTML = `
+                    <span class="font-bold text-xs md:text-sm pointer-events-none text-slate-100">${cardData.text}</span>
+                    <button class="mt-2 text-xs bg-pink-600 px-3 py-1 rounded-full font-bold shadow opacity-0 group-hover:opacity-100 transition pointer-events-none">KHÓA</button>
+                `;
+
+                card.classList.add('group');
+                card.addEventListener('mouseenter', () => audio.playHover());
+                card.addEventListener('click', (e) => handleCardClick(e, card, cardData, level));
+
+                cardsContainer.appendChild(card);
+            });
+        }
+
+        function handleCardClick(e, cardEl, cardData, level) {
+            if (!gameState.isPlaying || cardEl.classList.contains('locked')) return;
+
+            const fxStr = flashlight.style.getPropertyValue('--flash-x');
+            const fyStr = flashlight.style.getPropertyValue('--flash-y');
+            const frStr = flashlight.style.getPropertyValue('--flash-radius');
+            if(fxStr && fyStr && frStr) {
+                const fx = parseFloat(fxStr);
+                const fy = parseFloat(fyStr);
+                const fr = parseFloat(frStr);
+                const rect = cardEl.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                const dist = Math.sqrt(Math.pow(fx - cx, 2) + Math.pow(fy - cy, 2));
+                
+                if(dist > fr + 20) return;
+            }
+
+            let isCorrect = false;
+
+            if (level.isSequence) {
+                if (cardData.isTarget && cardData.id === level.targets[gameState.sequenceStep].id) {
+                    isCorrect = true;
+                    gameState.sequenceStep++;
+                }
+            } else {
+                if (cardData.isTarget) {
+                    isCorrect = true;
+                }
+            }
+
+            if (isCorrect) {
+                audio.playLock();
+                cardEl.classList.add('locked');
+                cardEl.querySelector('button').innerText = 'ĐÃ KHÓA';
+                cardEl.querySelector('button').className = 'mt-2 text-xs bg-green-500 text-white px-3 py-1 rounded-full font-bold shadow';
+                
+                showFloatingText("+100", e.clientX, e.clientY, "text-green-400");
+                
+                gameState.score += 100 * gameState.combo;
+                gameState.combo++;
+                if (gameState.combo > gameState.maxCombo) gameState.maxCombo = gameState.combo;
+                gameState.correctCount++;
+                gameState.foundTargets++;
+
+                updateHUD();
+
+                if (gameState.foundTargets === level.targets.length) {
+                    levelComplete(level);
+                }
+            } else {
+                audio.playWrong();
+                cardEl.classList.add('animate-shake', 'border-red-500');
+                setTimeout(() => cardEl.classList.remove('animate-shake', 'border-red-500'), 500);
+                
+                showFloatingText("TÍN HIỆU NHIỄU!", e.clientX, e.clientY, "text-red-500");
+                
+                gameState.combo = 1;
+                gameState.wrongCount++;
+                if(cardData.review) gameState.reviewNotes.add(cardData.review);
+                
+                gameState.score = Math.max(0, gameState.score - 20);
+                
+                if (level.isSequence && cardData.isTarget) {
+                    showFloatingText("SAI THỨ TỰ!", e.clientX, e.clientY + 30, "text-yellow-400");
+                }
+                
+                updateHUD();
+            }
+        }
+
+        function showFloatingText(text, x, y, colorClass) {
+            const el = document.createElement('div');
+            el.className = `floating-text ${colorClass}`;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            el.innerText = text;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function updateHUD() {
+            hud.name.innerText = `${gameState.player.name} (${gameState.player.class})`;
+            hud.score.innerText = gameState.score;
+            hud.combo.innerText = `x${gameState.combo}`;
+            if(gameState.combo > 1) {
+                hud.combo.classList.add('animate-popup');
+                setTimeout(() => hud.combo.classList.remove('animate-popup'), 300);
+            }
+        }
+
+        function handleTimeOut() {
+            gameState.isPlaying = false;
+            audio.playWrong();
+            clearInterval(gameState.timerInterval);
+            
+            screens.msg.classList.remove('hidden');
+            screens.msg.classList.add('flex');
+            document.getElementById('msg-title').innerText = "HẾT GIỜ!";
+            document.getElementById('msg-title').className = "text-5xl md:text-7xl font-black mb-4 text-center text-red-500 animate-shake";
+            document.getElementById('msg-sub').innerText = "Mục tiêu đã trốn thoát...";
+
+            setTimeout(() => {
+                screens.msg.classList.add('hidden');
+                endGame();
+            }, 2000);
+        }
+
+        function levelComplete(level) {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timerInterval);
+            audio.playCorrect();
+            
+            if(gameState.timer > 0) {
+                const bonus = gameState.timer * 10;
+                gameState.score += bonus;
+                showFloatingText(`Thưởng thời gian: +${bonus}`, window.innerWidth/2, window.innerHeight/2, "text-yellow-400");
+                updateHUD();
+            }
+
+            setTimeout(() => {
+                if (gameState.levelIndex < LEVEL_DATA.length - 1) {
+                    startLevel(gameState.levelIndex + 1);
+                } else {
+                    endGame(true);
+                }
+            }, 1500);
+        }
+
+        function endGame(isWin = false) {
+            gameState.isPlaying = false;
+            clearInterval(gameState.timerInterval);
+            audio.stopBgm();
+            
+            if(isWin) audio.playWin();
+            
+            screens.game.classList.add('hidden');
+            hud.container.classList.remove('flex');
+            hud.container.classList.add('hidden');
+            
+            screens.result.classList.remove('hidden');
+            screens.result.classList.add('flex');
+            
+            document.getElementById('res-score').innerText = gameState.score;
+            document.getElementById('res-combo').innerText = `x${gameState.maxCombo}`;
+            document.getElementById('res-correct').innerText = gameState.correctCount;
+            document.getElementById('res-wrong').innerText = gameState.wrongCount;
+            
+            const reviewList = document.getElementById('res-review');
+            reviewList.innerHTML = '';
+            
+            if (gameState.reviewNotes.size > 0) {
+                gameState.reviewNotes.forEach(note => {
+                    const li = document.createElement('li');
+                    li.innerText = note;
+                    reviewList.appendChild(li);
+                });
+            } else {
+                reviewList.innerHTML = '<li class="text-green-400">Xuất sắc! Em đã nắm rất vững kiến thức Tin học Lớp 4 Bài 15!</li>';
+            }
+        }
+
+        function resetGameState() {
+            gameState.score = 0;
+            gameState.combo = 1;
+            gameState.maxCombo = 1;
+            gameState.correctCount = 0;
+            gameState.wrongCount = 0;
+            gameState.reviewNotes.clear();
+        }
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            audio.playLock();
+            screens.result.classList.remove('flex');
+            screens.result.classList.add('hidden');
+            screens.game.classList.remove('hidden');
+            hud.container.classList.remove('hidden');
+            hud.container.classList.add('flex');
+            resetGameState();
+            updateHUD();
+            startLevel(0);
+        });
+
+        document.getElementById('btn-home').addEventListener('click', () => {
+            audio.playLock();
+            screens.result.classList.remove('flex');
+            screens.result.classList.add('hidden');
+            screens.intro.classList.remove('hidden');
+            screens.intro.classList.add('flex');
+            document.getElementById('player-name').value = '';
+            document.getElementById('player-class').value = '';
+        });
+
+        document.getElementById('btn-music').addEventListener('click', (e) => {
+            const isOn = audio.toggleMusic();
+            e.target.innerText = isOn ? '🎵' : '🔇';
+            e.target.classList.toggle('bg-slate-700', isOn);
+            e.target.classList.toggle('bg-red-900/50', !isOn);
+        });
+
+        document.getElementById('btn-sfx').addEventListener('click', (e) => {
+            const isOn = audio.toggleSfx();
+            e.target.innerText = isOn ? '🔊' : '🔈';
+            e.target.classList.toggle('bg-slate-700', isOn);
+            e.target.classList.toggle('bg-red-900/50', !isOn);
+        });
+
+    </script>
+</body>
+</html>

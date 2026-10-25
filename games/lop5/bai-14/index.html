@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trò Chơi Đập Túi Mù - Tin Học Lớp 5 Bài 14</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #38bdf8 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-4px, 0px) rotate(-4deg); }
+            40% { transform: translate(2px, -2px) rotate(3deg); }
+            60% { transform: translate(-4px, 2px) rotate(0deg); }
+            80% { transform: translate(2px, -2px) rotate(2deg); }
+            100% { transform: translate(0px, 0px) rotate(0deg); }
+        }
+        @keyframes pulse-zoom {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .animate-shake { animation: shake 0.35s ease-in-out infinite; }
+        .animate-explode { animation: pulse-zoom 0.5s ease-out forwards; }
+        .bag-card {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .bag-card:hover:not(.opened) { transform: translateY(-8px) scale(1.03); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #0ea5e9; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col items-center justify-start p-3 sm:p-6">
+
+    <header class="w-full max-w-5xl bg-white/95 backdrop-blur-md rounded-3xl shadow-xl p-4 mb-4 flex flex-col sm:flex-row items-center justify-between border-4 border-sky-300 gap-3">
+        <div class="flex items-center space-x-3 text-center sm:text-left">
+            <span class="bg-sky-500 text-white p-3 rounded-2xl shadow-md text-2xl animate-bounce">📦</span>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-extrabold text-sky-600 tracking-wide">TIN HỌC LỚP 5 - BÀI 14</h1>
+                <p class="text-xs sm:text-sm font-bold text-slate-500">Sử Dụng Biến Trong Chương Trình (Scratch)</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3 flex-wrap justify-center">
+            <button id="bg-music-btn" onclick="toggleBackgroundMusic()" class="bg-sky-100 hover:bg-sky-200 text-sky-700 px-3 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition flex items-center space-x-2 border-2 border-sky-300 shadow-sm">
+                <i id="music-icon" class="fa-solid fa-volume-xmark"></i>
+                <span id="music-text">Bật Nhạc Nền</span>
+            </button>
+
+            <div id="game-stats" class="hidden items-center space-x-3 bg-sky-50 px-3 py-1.5 rounded-2xl border-2 border-sky-200">
+                <div class="text-center">
+                    <span class="text-[10px] text-slate-500 block">Lượt</span>
+                    <span id="stat-turn-name" class="font-extrabold text-sky-600 text-xs sm:text-sm">Đội 1</span>
+                </div>
+                <div class="h-6 w-px bg-sky-300"></div>
+                <div class="text-center">
+                    <span class="text-[10px] text-slate-500 block">Điểm</span>
+                    <span id="stat-score" class="font-extrabold text-emerald-600 text-base">0</span>
+                </div>
+                <button onclick="backToSetup()" class="bg-rose-100 hover:bg-rose-200 text-rose-700 p-2 rounded-xl text-xs font-bold transition ml-2" title="Trang Chủ">
+                    <i class="fa-solid fa-house"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="setup-screen" class="w-full max-w-xl bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border-4 border-sky-300 text-center">
+        <div class="inline-block bg-sky-100 text-sky-600 px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold mb-3">
+            ✨ ÔN TẬP KIẾN THỨC BÀI 14 ✨
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-700 mb-2">Nhập Thông Tin Người Chơi</h2>
+        <p class="text-slate-500 mb-5 text-xs sm:text-sm">Chọn chế độ chơi và nhập tên các đội hoặc cá nhân tham gia đập túi mù ôn tập Scratch!</p>
+
+        <div class="mb-5 text-left">
+            <label class="block font-bold text-slate-700 mb-2 text-sm">Chế độ chơi:</label>
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button" onclick="setMode('solo')" id="mode-solo-btn" class="p-3 rounded-2xl border-2 border-sky-500 bg-sky-500 text-white font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm">
+                    <i class="fa-solid fa-user"></i> <span>Cá Nhân</span>
+                </button>
+                <button type="button" onclick="setMode('team')" id="mode-team-btn" class="p-3 rounded-2xl border-2 border-sky-200 bg-white text-sky-600 font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm">
+                    <i class="fa-solid fa-users"></i> <span>Theo Đội (2-4)</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="team-inputs-container" class="mb-6 text-left">
+            <label class="block font-bold text-slate-700 mb-2 text-sm">Tên Học Sinh / Tên Đội:</label>
+            <div id="inputs-list" class="space-y-3">
+                <input type="text" class="team-name-input w-full p-3 rounded-2xl border-2 border-sky-200 focus:outline-none focus:border-sky-500 font-medium text-sm" placeholder="Nhập tên Người chơi / Đội 1" value="Đội 1">
+                <input type="text" class="team-name-input w-full p-3 rounded-2xl border-2 border-sky-200 focus:outline-none focus:border-sky-500 font-medium text-sm" placeholder="Nhập tên Người chơi / Đội 2" value="Đội 2">
+            </div>
+            <button type="button" onclick="addTeamInput()" id="add-team-btn" class="hidden mt-2 text-xs text-sky-600 font-extrabold hover:underline">
+                <i class="fa-solid fa-plus mr-1"></i> Thêm đội (Tối đa 4)
+            </button>
+        </div>
+
+        <button onclick="startGame()" class="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold py-3.5 sm:py-4 rounded-2xl shadow-lg transform active:scale-95 transition text-base sm:text-lg">
+            <i class="fa-solid fa-gamepad mr-2"></i> BẮT ĐẦU ĐẬP TÚI MÙ! 🎒
+        </button>
+    </div>
+
+    <div id="game-board-screen" class="w-full max-w-5xl hidden flex-col items-center">
+        <div class="w-full bg-white/95 backdrop-blur-sm rounded-2xl p-3 sm:p-4 mb-4 shadow-md border-2 border-sky-300 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="flex items-center space-x-3 text-center sm:text-left">
+                <div id="current-turn-badge" class="bg-sky-500 text-white font-extrabold px-4 py-2 rounded-xl text-xs sm:text-sm shadow">
+                    Lượt của: Đội 1
+                </div>
+                <p class="text-xs sm:text-sm font-bold text-slate-600">Chọn 1 túi mù để mở câu hỏi Bài 14 Scratch!</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-xs font-bold text-slate-500">Túi còn lại: <span id="bags-left" class="text-sky-600 font-extrabold text-base">12</span>/12</span>
+            </div>
+        </div>
+
+        <div id="bags-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 w-full mb-6">
+            <!-- Dynamically populated via JS -->
+        </div>
+    </div>
+
+    <div id="challenge-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-8 shadow-2xl border-4 border-sky-300 relative transform transition-all max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3 pb-3 border-b-2 border-sky-100">
+                <div class="flex items-center space-x-2">
+                    <span id="modal-bag-icon" class="text-2xl">🎒</span>
+                    <h3 id="modal-title" class="text-lg sm:text-xl font-extrabold text-sky-600">Thử Thách Túi Mù</h3>
+                </div>
+                <div class="flex items-center space-x-2 bg-amber-100 text-amber-700 px-3 py-1 rounded-xl text-xs sm:text-sm font-bold">
+                    <i class="fa-solid fa-clock"></i>
+                    <span id="timer-display">30</span>s
+                </div>
+            </div>
+
+            <div id="modal-body" class="mb-4 text-sm sm:text-base">
+                <!-- Dynamically populated question content -->
+            </div>
+
+            <div id="feedback-area" class="hidden mb-4 p-3 rounded-2xl text-center font-bold text-sm"></div>
+
+            <div id="modal-actions" class="flex justify-end space-x-3">
+                <button id="submit-answer-btn" onclick="checkAnswer()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-extrabold px-6 py-3 rounded-2xl shadow-md transition text-base">
+                    Xác Nhận Đáp Án
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="victory-screen" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border-4 border-sky-400 text-center relative max-h-[90vh] overflow-y-auto">
+            <div class="text-5xl sm:text-6xl mb-3 animate-bounce">🏆</div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-sky-600 mb-1">KẾT QUẢ CHUNG CUỘC</h2>
+            <p id="winner-announcement" class="text-lg sm:text-xl font-extrabold text-slate-700 mb-5">Đội chiến thắng là Đội 1!</p>
+
+            <div id="final-scoreboard" class="bg-sky-50 rounded-2xl p-4 mb-6 space-y-2 border-2 border-sky-200 text-left">
+                <!-- Final scores list -->
+            </div>
+
+            <div class="flex space-x-3">
+                <button onclick="resetGame()" class="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold py-3.5 rounded-2xl shadow-lg transition text-base">
+                    <i class="fa-solid fa-rotate-right mr-2"></i> Chơi Lại Từ Đầu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const AudioFX = {
+            ctx: null,
+            bgMusicInterval: null,
+            isBgMusicPlaying: false,
+            bgStep: 0,
+            
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            
+            playTone(freq, type, duration, gainVal = 0.5, delay = 0) {
+                this.init();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                setTimeout(() => {
+                    try {
+                        let osc = this.ctx.createOscillator();
+                        let gain = this.ctx.createGain();
+                        osc.type = type;
+                        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                        
+                        gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                        
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start();
+                        osc.stop(this.ctx.currentTime + duration);
+                    } catch(e) {}
+                }, delay * 1000);
+            },
+
+            playShake() {
+                this.init();
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                try {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(320, this.ctx.currentTime + 0.35);
+                    gain.gain.setValueAtTime(0.6, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.35);
+                } catch(e){}
+            },
+
+            playExplode() {
+                this.init();
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                try {
+                    let bufferSize = this.ctx.sampleRate * 0.45;
+                    let buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    let data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    let noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+                    let filter = this.ctx.createBiquadFilter();
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
+                    filter.frequency.exponentialRampToValueAtTime(90, this.ctx.currentTime + 0.45);
+                    
+                    let gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.45);
+                    
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    noise.start();
+                } catch(e){}
+            },
+
+            playReward() {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, index) => {
+                    this.playTone(freq, 'sine', 0.25, 0.5, index * 0.08);
+                });
+            },
+
+            playCorrect() {
+                const melody = [587.33, 587.33, 587.33, 783.99, 880.00, 1046.50];
+                const times = [0, 0.12, 0.24, 0.4, 0.6, 0.75];
+                const lengths = [0.1, 0.1, 0.15, 0.18, 0.3, 0.45];
+                melody.forEach((freq, idx) => {
+                    this.playTone(freq, 'triangle', lengths[idx], 0.6, times[idx]);
+                });
+            },
+
+            playWrong() {
+                this.init();
+                if(this.ctx.state === 'suspended') this.ctx.resume();
+                try {
+                    let osc = this.ctx.createOscillator();
+                    let gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, this.ctx.currentTime);
+                    osc.frequency.setValueAtTime(150, this.ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.35);
+                } catch(e){}
+            },
+
+            playTick() {
+                this.playTone(880, 'sine', 0.06, 0.3, 0);
+            },
+
+            playVictory() {
+                const melody = [523.25, 523.25, 523.25, 659.25, 783.99, 659.25, 783.99, 1046.50];
+                const times = [0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5];
+                const lengths = [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.25, 0.7];
+                melody.forEach((freq, idx) => {
+                    this.playTone(freq, 'triangle', lengths[idx], 0.6, times[idx]);
+                });
+            },
+
+            toggleBgMusic() {
+                this.init();
+                if (this.isBgMusicPlaying) {
+                    this.stopBgMusic();
+                } else {
+                    this.startBgMusic();
+                }
+            },
+
+            startBgMusic() {
+                this.isBgMusicPlaying = true;
+                const btn = document.getElementById('bg-music-btn');
+                const icon = document.getElementById('music-icon');
+                const text = document.getElementById('music-text');
+                btn.className = "bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition flex items-center space-x-2 border-2 border-emerald-300 shadow-sm animate-pulse";
+                icon.className = "fa-solid fa-volume-high";
+                text.innerText = "Tắt Nhạc Nền";
+
+                const tune = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 293.66, 349.23, 440.00, 523.25, 440.00, 349.23];
+                this.bgStep = 0;
+                
+                if (this.bgMusicInterval) clearInterval(this.bgMusicInterval);
+                this.bgMusicInterval = setInterval(() => {
+                    if (!this.isBgMusicPlaying) return;
+                    let freq = tune[this.bgStep % tune.length];
+                    this.playTone(freq, 'sine', 0.25, 0.18, 0);
+                    this.bgStep++;
+                }, 350);
+            },
+
+            stopBgMusic() {
+                this.isBgMusicPlaying = false;
+                if (this.bgMusicInterval) clearInterval(this.bgMusicInterval);
+                const btn = document.getElementById('bg-music-btn');
+                const icon = document.getElementById('music-icon');
+                const text = document.getElementById('music-text');
+                btn.className = "bg-sky-100 hover:bg-sky-200 text-sky-700 px-3 py-2 rounded-2xl text-xs sm:text-sm font-extrabold transition flex items-center space-x-2 border-2 border-sky-300 shadow-sm";
+                icon.className = "fa-solid fa-volume-xmark";
+                text.innerText = "Bật Nhạc Nền";
+            }
+        };
+
+        function toggleBackgroundMusic() {
+            AudioFX.toggleBgMusic();
+        }
+
+        const questionsPool = [
+            {
+                type: "mcq",
+                title: "Trắc nghiệm: Biến trả lời",
+                question: "Trong Scratch, biến 'trả lời' (answer) thuộc nhóm lệnh nào?",
+                options: ["A. Các biến số", "B. Cảm biến", "C. Các phép toán", "D. Hiển thị"],
+                correct: 1,
+                reward: 10,
+                explanation: "Chính xác! Biến 'trả lời' là biến có sẵn của Scratch, nằm trong nhóm lệnh 'Cảm biến'."
+            },
+            {
+                type: "mcq",
+                title: "Trắc nghiệm: Nhóm lệnh tạo biến mới",
+                question: "Để tự tạo một biến mới theo tên tự đặt trong Scratch, em sử dụng các lệnh thuộc nhóm nào?",
+                options: ["A. Cảm biến", "B. Các phép toán", "C. Các biến số", "D. Điều khiển"],
+                correct: 2,
+                reward: 10,
+                explanation: "Chính xác! Các lệnh về tạo và quản lý biến tự đặt nằm trong nhóm lệnh 'Các biến số'."
+            },
+            {
+                type: "fill_blank",
+                title: "Điền từ vào chỗ trống: Lệnh nhập dữ liệu",
+                question: "Điền từ thích hợp vào câu: 'Sử dụng lệnh [ ... ] để hỏi và chờ người sử dụng nhập thông tin từ bàn phím.'",
+                blanks: [
+                    { label: "Lệnh hỏi và đợi", options: ["hỏi ... và đợi", "nói ... trong 2 giây", "đặt ... thành 0"], correct: "hỏi ... và đợi" }
+                ],
+                reward: 15,
+                explanation: "Chính xác! Lệnh 'hỏi ... và đợi' dùng để nhập thông tin từ bàn phím vào biến 'trả lời'."
+            },
+            {
+                type: "matching",
+                title: "Ghép nối: Lệnh Scratch và Chức năng",
+                question: "Hãy ghép đúng khối lệnh với chức năng tương ứng trong Bài 14:",
+                pairs: [
+                    { id: 1, term: "đặt Tuổi thành 0", match: "Đặt giá trị ban đầu cho biến" },
+                    { id: 2, term: "thay đổi Tuổi một lượng 1", match: "Tăng hoặc giảm giá trị của biến" },
+                    { id: 3, term: "trả lời", match: "Lưu giữ thông tin vừa nhập từ bàn phím" },
+                    { id: 4, term: "kết hợp ... ...", match: "Nối chuỗi văn bản và giá trị biến" }
+                ],
+                reward: 20,
+                explanation: "Xuất sắc! Các em đã nắm rất vững ý nghĩa từng khối lệnh xử lý biến."
+            },
+            {
+                type: "mcq",
+                title: "Trắc nghiệm: Kết quả khối lệnh tính toán biến",
+                question: "Sau khi thực hiện khối lệnh 'đặt a thành 4' tiếp theo là 'thay đổi a một lượng 2', giá trị của biến a bằng bao nhiêu?",
+                options: ["A. 2", "B. 4", "C. 5", "D. 6"],
+                correct: 3,
+                reward: 15,
+                explanation: "Chính xác! Ban đầu a = 4, thay đổi một lượng 2 thì giá trị mới của a là 4 + 2 = 6."
+            },
+            {
+                type: "open_ended",
+                title: "Tự luận ngắn: Hiển thị biến trên sân khấu",
+                question: "Để hiển thị giá trị của biến (ví dụ biến Tuổi) trực tiếp lên sân khấu (Stage) trong Scratch, em cần nháy chuột chọn gì ngay trước tên biến?",
+                correctKeywords: ["hộp kiểm", "checkbox", "dấu tích", "tick"],
+                reward: 20,
+                explanation: "Tuyệt vời! Em nháy chuột chọn hộp kiểm ngay trước tên biến để hiển thị giá trị của biến trên sân khấu."
+            },
+            {
+                type: "mcq",
+                title: "Trắc nghiệm: Tên tệp thực hành Bài 14",
+                question: "Theo phần Hướng dẫn Thực hành (Nhiệm vụ 2 - HoiTuoi) của Bài 14, tệp chương trình được yêu cầu lưu với tên là gì?",
+                options: ["A. ChaoHoi", "B. Hoi Tuoi", "C. Bai14", "D. SuDungBien"],
+                correct: 1,
+                reward: 15,
+                explanation: "Chính xác! Tệp chương trình thông báo tuổi được lưu với tên 'Hoi Tuoi'."
+            },
+            {
+                type: "lucky",
+                title: "🎁 TÚI MÙ MAY MẮN ĐẶC BIỆT!",
+                question: "Chúc mừng bạn đã mở được Túi May Mắn! Nhận ngay phần thưởng nóng hổi từ hệ thống lập trình!",
+                isLucky: true,
+                reward: 20,
+                explanation: "Bạn nhận được +20 điểm thưởng bất ngờ từ thần tài Scratch!"
+            },
+            {
+                type: "lucky_double",
+                title: "⭐ NGÔI SAO MAY MẮN",
+                question: "Ôi thật tuyệt vời! Bạn nhận được đặc quyền NHÂN ĐÔI điểm số của lượt này!",
+                isDouble: true,
+                reward: 15,
+                explanation: "Điểm thưởng của đội được nhân đôi!"
+            },
+            {
+                type: "mcq",
+                title: "Trắc nghiệm: Kết hợp thông báo và biến",
+                question: "Để nhân vật nói câu 'Tuổi của bạn An là 10' (với 10 là giá trị lưu trong biến Tuổi), nhóm lệnh nào được kết hợp cùng lệnh 'nói'?",
+                options: ["A. Nhóm Hiển thị kết hợp Sự kiện", "B. Nhóm Các phép toán với lệnh 'kết hợp ... ...'", "C. Nhóm Cảm biến với lệnh 'trả lời'", "D. Nhóm Điều khiển"],
+                correct: 1,
+                reward: 15,
+                explanation: "Chính xác! Ta dùng lệnh 'kết hợp' trong nhóm Các phép toán để ghép chuỗi chữ và biến số."
+            },
+            {
+                type: "open_ended",
+                title: "Tự luận: Phần Vận dụng Bài 14",
+                question: "Trong phần Vận dụng Bài 14, chương trình yêu cầu đưa ra câu hỏi 'Bạn là học sinh lớp ...?'. Sau khi nhập câu trả lời (ví dụ 5A), nhân vật sẽ chào 'Xin chào bạn học sinh lớp ...'. Từ khóa nhóm lệnh nào dùng để lấy giá trị vừa nhập?",
+                correctKeywords: ["trả lời", "answer"],
+                reward: 20,
+                explanation: "Chính xác! Giá trị vừa nhập từ bàn phím luôn được lưu trữ tự động trong biến 'trả lời'."
+            },
+            {
+                type: "mcq",
+                title: "Trắc nghiệm ôn tập chung Bài 14",
+                question: "Phát biểu nào sau đây là ĐÚNG khi nói về Biến trong chương trình Scratch?",
+                options: ["A. Biến chỉ lưu được số, không lưu được chữ", "B. Biến dùng để lưu trữ dữ liệu và giá trị của biến có thể thay đổi trong quá trình thực hiện chương trình", "C. Không thể đổi tên biến đã tạo", "D. Tất cả các biến đều phải tự tạo thủ công"],
+                correct: 1,
+                reward: 15,
+                explanation: "Chính xác! Biến dùng để lưu trữ dữ liệu (số hoặc chữ) và giá trị của nó có thể thay đổi linh hoạt."
+            }
+        ];
+
+        let gameMode = 'solo';
+        let teams = [{name: 'Đội 1', score: 0}, {name: 'Đội 2', score: 0}];
+        let currentTurnIndex = 0;
+        let bags = [];
+        let openedBagsCount = 0;
+        let currentActiveBagIndex = null;
+        let currentTimer = null;
+        let timeLeft = 30;
+
+        function setMode(mode) {
+            gameMode = mode;
+            const soloBtn = document.getElementById('mode-solo-btn');
+            const teamBtn = document.getElementById('mode-team-btn');
+            const addBtn = document.getElementById('add-team-btn');
+            const inputsList = document.getElementById('inputs-list');
+
+            if (mode === 'solo') {
+                soloBtn.className = "p-3 rounded-2xl border-2 border-sky-500 bg-sky-500 text-white font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm";
+                teamBtn.className = "p-3 rounded-2xl border-2 border-sky-200 bg-white text-sky-600 font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm";
+                addBtn.classList.add('hidden');
+                inputsList.innerHTML = `<input type="text" class="team-name-input w-full p-3 rounded-2xl border-2 border-sky-200 focus:outline-none focus:border-sky-500 font-medium text-sm" placeholder="Biệt danh (không nhập tên thật)" value="Học sinh 1">`;
+            } else {
+                teamBtn.className = "p-3 rounded-2xl border-2 border-sky-500 bg-sky-500 text-white font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm";
+                soloBtn.className = "p-3 rounded-2xl border-2 border-sky-200 bg-white text-sky-600 font-bold transition flex items-center justify-center space-x-2 text-sm shadow-sm";
+                addBtn.classList.remove('hidden');
+                inputsList.innerHTML = `
+                    <input type="text" class="team-name-input w-full p-3 rounded-2xl border-2 border-sky-200 focus:outline-none focus:border-sky-500 font-medium text-sm" placeholder="Tên Đội 1" value="Đội 1">
+                    <input type="text" class="team-name-input w-full p-3 rounded-2xl border-2 border-sky-200 focus:outline-none focus:border-sky-500 font-medium text-sm" placeholder="Tên Đội 2" value="Đội 2">
+                `;
+            }
+        }
+
+        function addTeamInput() {
+            const inputsList = document.getElementById('inputs-list');
+            const count = inputsList.children.length;
+            if (count < 4) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'team-name-input w-full p-3 rounded-2xl border-2 border-sky-200 focus:outline-none focus:border-sky-500 font-medium text-sm';
+                input.placeholder = `Tên Đội ${count + 1}`;
+                input.value = `Đội ${count + 1}`;
+                inputsList.appendChild(input);
+                if (count + 1 >= 4) {
+                    document.getElementById('add-team-btn').classList.add('hidden');
+                }
+            }
+        }
+
+        function startGame() {
+            const nameInputs = document.querySelectorAll('.team-name-input');
+            teams = [];
+            nameInputs.forEach((input, index) => {
+                const name = input.value.trim() || `Đội ${index + 1}`;
+                teams.push({ name: name, score: 0 });
+            });
+
+            currentTurnIndex = 0;
+            openedBagsCount = 0;
+
+            let shuffledQuestions = [...questionsPool].sort(() => Math.random() - 0.5);
+            bags = [];
+            const bagColors = [
+                'bg-sky-400 border-sky-500', 'bg-blue-400 border-blue-500', 
+                'bg-indigo-400 border-indigo-500', 'bg-cyan-400 border-cyan-500',
+                'bg-teal-400 border-teal-500', 'bg-emerald-400 border-emerald-500',
+                'bg-sky-500 border-sky-600', 'bg-blue-500 border-blue-600',
+                'bg-indigo-500 border-indigo-600', 'bg-cyan-500 border-cyan-600',
+                'bg-teal-500 border-teal-600', 'bg-sky-600 border-sky-700'
+            ];
+            const bagIcons = ['📦', '⭐', '🎒', '💻', '🎮', '🚀', '👑', '🧸', '💡', '🔥', '🎯', '✨'];
+
+            for (let i = 0; i < 12; i++) {
+                bags.push({
+                    id: i + 1,
+                    color: bagColors[i % bagColors.length],
+                    icon: bagIcons[i % bagIcons.length],
+                    opened: false,
+                    questionData: shuffledQuestions[i % shuffledQuestions.length]
+                });
+            }
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-board-screen').classList.remove('hidden');
+            document.getElementById('game-stats').classList.remove('hidden');
+            document.getElementById('game-stats').classList.add('flex');
+
+            renderBags();
+            updateTurnDisplay();
+        }
+
+        function backToSetup() {
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('game-board-screen').classList.add('hidden');
+            document.getElementById('game-stats').classList.add('hidden');
+            document.getElementById('game-stats').classList.remove('flex');
+            if (currentTimer) clearInterval(currentTimer);
+        }
+
+        function updateTurnDisplay() {
+            const badge = document.getElementById('current-turn-badge');
+            const turnNameStat = document.getElementById('stat-turn-name');
+            const scoreStat = document.getElementById('stat-score');
+            const currentTeam = teams[currentTurnIndex];
+            badge.innerText = `Lượt của: ${currentTeam.name}`;
+            turnNameStat.innerText = `${currentTeam.name}`;
+            scoreStat.innerText = `${currentTeam.score}`;
+            document.getElementById('bags-left').innerText = (12 - openedBagsCount);
+        }
+
+        function renderBags() {
+            const grid = document.getElementById('bags-grid');
+            grid.innerHTML = '';
+            bags.forEach((bag, idx) => {
+                const card = document.createElement('div');
+                if (bag.opened) {
+                    card.className = `bag-card opened bg-slate-200 border-4 border-slate-300 rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center opacity-50 cursor-not-allowed h-36 sm:h-44 shadow-inner`;
+                    card.innerHTML = `
+                        <span class="text-2xl sm:text-3xl mb-1">📦</span>
+                        <span class="font-extrabold text-slate-400 text-xs sm:text-sm">Túi #${bag.id}</span>
+                        <span class="text-[10px] sm:text-xs text-slate-400 mt-1">Đã mở</span>
+                    `;
+                } else {
+                    card.className = `bag-card ${bag.color} text-white rounded-3xl p-4 sm:p-6 flex flex-col items-center justify-center cursor-pointer shadow-lg transform hover:scale-105 transition h-36 sm:h-44 border-b-8`;
+                    card.innerHTML = `
+                        <span class="text-3xl sm:text-4xl mb-1 sm:mb-2 animate-pulse">${bag.icon}</span>
+                        <span class="font-extrabold text-base sm:text-lg">TÚI MÙ #${bag.id}</span>
+                        <span class="text-[10px] sm:text-xs bg-white/30 px-2.5 py-0.5 sm:py-1 rounded-full mt-1 sm:mt-2 font-bold">Bấm để đập! 💥</span>
+                    `;
+                    card.onclick = () => triggerBagAnimation(idx, card);
+                    card.ontouchend = (e) => {
+                        e.preventDefault();
+                        triggerBagAnimation(idx, card);
+                    };
+                }
+                grid.appendChild(card);
+            });
+            document.getElementById('bags-left').innerText = (12 - openedBagsCount);
+        }
+
+        function triggerBagAnimation(index, element) {
+            if (bags[index].opened) return;
+            currentActiveBagIndex = index;
+
+            AudioFX.playShake();
+            element.classList.add('animate-shake');
+
+            setTimeout(() => {
+                AudioFX.playExplode();
+                element.classList.remove('animate-shake');
+                element.classList.add('animate-explode');
+
+                setTimeout(() => {
+                    bags[index].opened = true;
+                    openedBagsCount++;
+                    renderBags();
+                    openChallengeModal(bags[index].questionData, bags[index].id);
+                }, 400);
+            }, 500);
+        }
+
+        function openChallengeModal(qData, bagId) {
+            const modal = document.getElementById('challenge-modal');
+            const titleEl = document.getElementById('modal-title');
+            const iconEl = document.getElementById('modal-bag-icon');
+            const bodyEl = document.getElementById('modal-body');
+            const feedbackEl = document.getElementById('feedback-area');
+            const actionsEl = document.getElementById('modal-actions');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            titleEl.innerText = `${qData.title} (Túi #${bagId})`;
+            iconEl.innerText = qData.isLucky ? '🎁' : (qData.isDouble ? '⭐' : '❓');
+            feedbackEl.classList.add('hidden');
+            feedbackEl.innerText = '';
+
+            let bodyHtml = `<p class="text-base sm:text-lg font-bold text-slate-700 mb-3">${qData.question}</p>`;
+
+            if (qData.isLucky || qData.isDouble) {
+                bodyHtml += `
+                    <div class="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl text-center my-3">
+                        <p class="text-amber-700 font-extrabold text-lg sm:text-xl mb-1">🎉 PHẦN THƯỞNG BẤT NGỜ!</p>
+                        <p class="text-slate-600 font-medium text-sm sm:text-base">${qData.explanation}</p>
+                    </div>
+                `;
+                actionsEl.innerHTML = `
+                    <button onclick="claimLuckyReward(${qData.reward}, ${qData.isDouble || false})" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Nhận Thưởng & Tiếp Tục 🎉
+                    </button>
+                `;
+            } else if (qData.type === 'matching') {
+                bodyHtml += `<div class="space-y-3 my-2" id="matching-container">`;
+                qData.pairs.forEach((p, idx) => {
+                    bodyHtml += `
+                        <div class="flex flex-col sm:flex-row items-center justify-between bg-sky-50 p-2.5 rounded-2xl border-2 border-sky-200 gap-2">
+                            <span class="font-extrabold text-sky-700 text-sm">${p.term}</span>
+                            <i class="fa-solid fa-arrow-right text-sky-400 hidden sm:inline"></i>
+                            <select class="match-select p-2 rounded-xl border-2 border-sky-300 font-medium text-xs sm:text-sm bg-white" data-index="${idx}">
+                                <option value="">-- Chọn chức năng phù hợp --</option>
+                                <option value="Đặt giá trị ban đầu cho biến">Đặt giá trị ban đầu cho biến</option>
+                                <option value="Tăng hoặc giảm giá trị của biến">Tăng hoặc giảm giá trị của biến</option>
+                                <option value="Lưu giữ thông tin vừa nhập từ bàn phím">Lưu giữ thông tin vừa nhập từ bàn phím</option>
+                                <option value="Nối chuỗi văn bản và giá trị biến">Nối chuỗi văn bản và giá trị biến</option>
+                            </select>
+                        </div>
+                    `;
+                });
+                bodyHtml += `</div>`;
+                actionsEl.innerHTML = `
+                    <button onclick="checkMatchingAnswer()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Xác Nhận Ghép Nối
+                    </button>
+                `;
+            } else if (qData.type === 'fill_blank') {
+                bodyHtml += `<div class="space-y-3 my-2" id="fill-blank-container">`;
+                qData.blanks.forEach((b, idx) => {
+                    bodyHtml += `
+                        <div class="flex flex-col sm:flex-row items-center justify-between bg-sky-50 p-3 rounded-2xl border-2 border-sky-200 gap-2">
+                            <span class="font-extrabold text-sky-700 text-sm">${b.label}:</span>
+                            <select class="blank-select p-2 rounded-xl border-2 border-sky-300 font-medium text-sm bg-white w-full sm:w-64" data-index="${idx}">
+                                <option value="">-- Chọn từ thích hợp --</option>
+                                ${b.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                });
+                bodyHtml += `</div>`;
+                actionsEl.innerHTML = `
+                    <button onclick="checkFillBlankAnswer()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Xác Nhận Điền Từ
+                    </button>
+                `;
+            } else if (qData.type === 'open_ended') {
+                bodyHtml += `
+                    <div class="my-3">
+                        <textarea id="open-ended-input" class="w-full p-3 rounded-2xl border-2 border-sky-300 focus:outline-none focus:border-sky-500 font-medium text-sm" rows="3" placeholder="Nhập câu trả lời của em bằng chữ..."></textarea>
+                    </div>
+                `;
+                actionsEl.innerHTML = `
+                    <button onclick="checkOpenEndedAnswer()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Xác Nhận Tự Luận
+                    </button>
+                `;
+            } else {
+                bodyHtml += `<div class="space-y-2" id="options-container">`;
+                qData.options.forEach((opt, idx) => {
+                    bodyHtml += `
+                        <label class="flex items-center space-x-3 p-3 rounded-2xl border-2 border-sky-100 hover:bg-sky-50 cursor-pointer font-medium text-slate-700 text-sm sm:text-base transition">
+                            <input type="radio" name="quiz-option" value="${idx}" class="w-5 h-5 text-sky-600 focus:ring-sky-500">
+                            <span>${opt}</span>
+                        </label>
+                    `;
+                });
+                bodyHtml += `</div>`;
+
+                actionsEl.innerHTML = `
+                    <button id="submit-answer-btn" onclick="checkAnswer()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                        Xác Nhận Đáp Án
+                    </button>
+                `;
+            }
+
+            bodyEl.innerHTML = bodyHtml;
+
+            timeLeft = 30;
+            document.getElementById('timer-display').innerText = timeLeft;
+            if (currentTimer) clearInterval(currentTimer);
+            currentTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer-display').innerText = timeLeft;
+                if (timeLeft <= 5 && timeLeft > 0) {
+                    AudioFX.playTick();
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(currentTimer);
+                    handleTimeOut(qData);
+                }
+            }, 1000);
+        }
+
+        function checkAnswer() {
+            if (currentTimer) clearInterval(currentTimer);
+            const selected = document.querySelector('input[name="quiz-option"]:checked');
+            const feedbackEl = document.getElementById('feedback-area');
+            const currentBag = bags[currentActiveBagIndex].questionData;
+
+            if (!selected) {
+                feedbackEl.classList.remove('hidden');
+                feedbackEl.className = "mb-4 p-3 rounded-2xl text-center font-bold bg-amber-100 text-amber-700 text-sm";
+                feedbackEl.innerText = "⚠️ Vui lòng chọn một đáp án trước khi xác nhận!";
+                return;
+            }
+
+            let isCorrect = false;
+            const selectedVal = parseInt(selected.value);
+            if (selectedVal === currentBag.correct) {
+                isCorrect = true;
+            }
+
+            processResult(isCorrect, currentBag);
+        }
+
+        function checkMatchingAnswer() {
+            if (currentTimer) clearInterval(currentTimer);
+            const selects = document.querySelectorAll('.match-select');
+            const currentBag = bags[currentActiveBagIndex].questionData;
+
+            let allCorrect = true;
+            selects.forEach((sel, idx) => {
+                if (sel.value !== currentBag.pairs[idx].match) {
+                    allCorrect = false;
+                }
+            });
+
+            processResult(allCorrect, currentBag);
+        }
+
+        function checkFillBlankAnswer() {
+            if (currentTimer) clearInterval(currentTimer);
+            const selects = document.querySelectorAll('.blank-select');
+            const currentBag = bags[currentActiveBagIndex].questionData;
+
+            let allCorrect = true;
+            selects.forEach((sel, idx) => {
+                if (sel.value !== currentBag.blanks[idx].correct) {
+                    allCorrect = false;
+                }
+            });
+
+            processResult(allCorrect, currentBag);
+        }
+
+        function checkOpenEndedAnswer() {
+            if (currentTimer) clearInterval(currentTimer);
+            const inputVal = document.getElementById('open-ended-input').value.trim().toLowerCase();
+            const currentBag = bags[currentActiveBagIndex].questionData;
+
+            let isCorrect = false;
+            if (inputVal.length > 0) {
+                isCorrect = currentBag.correctKeywords.some(kw => inputVal.includes(kw));
+            }
+
+            processResult(isCorrect, currentBag);
+        }
+
+        function processResult(isCorrect, currentBag) {
+            const feedbackEl = document.getElementById('feedback-area');
+            const actionsEl = document.getElementById('modal-actions');
+
+            feedbackEl.classList.remove('hidden');
+            if (isCorrect) {
+                AudioFX.playCorrect();
+                AudioFX.playReward();
+                
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.5 }
+                });
+
+                feedbackEl.className = "mb-4 p-3 rounded-2xl text-center font-bold bg-emerald-100 text-emerald-700 text-sm sm:text-base";
+                feedbackEl.innerText = `✅ CHÍNH XÁC! ${currentBag.explanation}`;
+                
+                let earned = currentBag.reward || 10;
+                teams[currentTurnIndex].score += earned;
+            } else {
+                AudioFX.playWrong();
+                feedbackEl.className = "mb-4 p-3 rounded-2xl text-center font-bold bg-rose-100 text-rose-700 text-sm sm:text-base";
+                feedbackEl.innerText = `❌ CHƯA ĐÚNG! ${currentBag.explanation}`;
+            }
+
+            actionsEl.innerHTML = `
+                <button onclick="closeModalAndNext()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                    Tiếp Tục Chơi ➔
+                </button>
+            `;
+        }
+
+        function claimLuckyReward(rewardVal, isDouble) {
+            if (currentTimer) clearInterval(currentTimer);
+            AudioFX.playReward();
+            confetti({ particleCount: 80, spread: 75, origin: { y: 0.5 } });
+            
+            if (isDouble) {
+                teams[currentTurnIndex].score += 15;
+            } else {
+                teams[currentTurnIndex].score += rewardVal;
+            }
+            closeModalAndNext();
+        }
+
+        function handleTimeOut(qData) {
+            AudioFX.playWrong();
+            const feedbackEl = document.getElementById('feedback-area');
+            const actionsEl = document.getElementById('modal-actions');
+            feedbackEl.classList.remove('hidden');
+            feedbackEl.className = "mb-4 p-3 rounded-2xl text-center font-bold bg-amber-100 text-amber-700 text-sm";
+            feedbackEl.innerText = `⏰ Hết giờ!`;
+
+            actionsEl.innerHTML = `
+                <button onclick="closeModalAndNext()" class="w-full bg-slate-500 hover:bg-slate-600 text-white font-extrabold py-3.5 rounded-2xl shadow-md transition text-base">
+                    Tiếp Tục ➔
+                </button>
+            `;
+        }
+
+        function closeModalAndNext() {
+            const modal = document.getElementById('challenge-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            currentTurnIndex = (currentTurnIndex + 1) % teams.length;
+            updateTurnDisplay();
+
+            if (openedBagsCount >= 12) {
+                triggerVictory();
+            }
+        }
+
+        function triggerVictory() {
+            AudioFX.playVictory();
+            confetti({
+                particleCount: 220,
+                spread: 120,
+                origin: { y: 0.5 }
+            });
+
+            let sortedTeams = [...teams].sort((a, b) => b.score - a.score);
+            let winner = sortedTeams[0];
+
+            const victoryScreen = document.getElementById('victory-screen');
+            const winnerAnnouncement = document.getElementById('winner-announcement');
+            const finalScoreboard = document.getElementById('final-scoreboard');
+
+            victoryScreen.classList.remove('hidden');
+            victoryScreen.classList.add('flex');
+            winnerAnnouncement.innerText = `🎉 Chúc mừng ${winner.name} đã giành chiến thắng xuất sắc! 🏆`;
+
+            let sbHtml = `<h4 class="font-extrabold text-sky-600 mb-2 text-sm sm:text-base">Bảng Điểm Tổng Kết:</h4>`;
+            sortedTeams.forEach((t, idx) => {
+                sbHtml += `
+                    <div class="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl shadow-sm border border-sky-100">
+                        <span class="font-bold text-slate-700 text-sm sm:text-base">${idx + 1}. ${t.name}</span>
+                        <span class="font-extrabold text-emerald-600 text-sm sm:text-base">${t.score} điểm</span>
+                    </div>
+                `;
+            });
+            finalScoreboard.innerHTML = sbHtml;
+        }
+
+        function resetGame() {
+            document.getElementById('victory-screen').classList.add('hidden');
+            document.getElementById('victory-screen').classList.remove('flex');
+            startGame();
+        }
+    </script>
+</body>
+</html>

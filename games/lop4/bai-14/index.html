@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Săn Ảnh Lập Trình Trực Quan - Bài 14 Tin 4</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        
+        :root {
+            --primary: #4F46E5;
+            --secondary: #F59E0B;
+            --danger: #EF4444;
+            --success: #10B981;
+            --bg-light: #F3F4F6;
+            --text-dark: #1F2937;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            margin: 0; padding: 0;
+            overflow: hidden;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
+            z-index: 50; transition: opacity 0.5s;
+        }
+        .hidden { opacity: 0; pointer-events: none; z-index: -1; display: none !important; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 2px solid rgba(255,255,255,1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 2rem; text-align: center; max-width: 90%; width: 520px;
+        }
+
+        .btn {
+            background: var(--primary); color: white; border: none;
+            padding: 12px 24px; border-radius: 99px; font-size: 1.2rem; font-weight: bold;
+            cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 4px 0 #3730A3; margin: 10px;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 #3730A3; }
+        .btn-green { background: var(--success); box-shadow: 0 4px 0 #047857; }
+        .btn-green:active { box-shadow: 0 0 0 #047857; }
+        
+        input {
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 12px;
+            border: 2px solid #D1D5DB; font-size: 1.1rem; text-align: center;
+            outline: none; transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--primary); }
+
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 15px;
+            display: flex; justify-content: space-between; z-index: 20; pointer-events: none;
+        }
+        .hud-item {
+            background: rgba(255,255,255,0.9); padding: 8px 16px; border-radius: 12px;
+            font-weight: 900; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            pointer-events: auto;
+        }
+
+        #mission-board {
+            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95); padding: 15px 25px; border-radius: 20px;
+            border: 4px solid var(--secondary); text-align: center; max-width: 90%;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15); pointer-events: auto; z-index: 20;
+        }
+
+        #viewfinder {
+            position: absolute; width: 90px; height: 90px;
+            border: 4px dashed rgba(239, 68, 68, 0.9); border-radius: 20%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 25;
+            transition: width 0.3s, height 0.3s;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #viewfinder::after { content: '+'; color: rgba(239, 68, 68, 0.9); font-size: 24px; font-weight: bold; }
+        #viewfinder.zoomed { width: 160px; height: 160px; border-color: var(--success); }
+        #viewfinder.zoomed::after { color: var(--success); }
+
+        #arena {
+            width: 100%; height: 100%; position: absolute; top:0; left:0;
+            background: url('https://placehold.co/1000x1000/e0e7ff/c7d2fe?text=Giao+Dien+Scratch') center/cover;
+        }
+
+        .game-item {
+            position: absolute; display: flex; flex-direction: column; align-items: center;
+            transform: translate(-50%, -50%); cursor: pointer; user-select: none; z-index: 5;
+            transition: transform 0.2s;
+        }
+        .game-item:hover { transform: translate(-50%, -50%) scale(1.1); z-index: 10; }
+        
+        /* Scratch Block Simulation Styling */
+        .block-event { background: #f59e0b; color: white; border-radius: 12px; padding: 8px 14px; font-weight: bold; border-left: 6px solid #d97706; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .block-motion { background: #4f46e5; color: white; border-radius: 12px; padding: 8px 14px; font-weight: bold; border-left: 6px solid #3730a3; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .block-control { background: #eab308; color: white; border-radius: 12px; padding: 8px 14px; font-weight: bold; border-left: 6px solid #ca8a04; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .block-pen { background: #0d9488; color: white; border-radius: 12px; padding: 8px 14px; font-weight: bold; border-left: 6px solid #115e59; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .block-looks { background: #9333ea; color: white; border-radius: 12px; padding: 8px 14px; font-weight: bold; border-left: 6px solid #7e22ce; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .block-sound { background: #db2777; color: white; border-radius: 12px; padding: 8px 14px; font-weight: bold; border-left: 6px solid #be185d; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
+        .game-item .label {
+            background: rgba(255,255,255,0.95); padding: 3px 8px; border-radius: 8px;
+            font-size: 0.8rem; font-weight: bold; margin-top: 4px; text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap; color: #1f2937;
+        }
+
+        #mobile-controls {
+            position: absolute; bottom: 30px; left: 0; width: 100%;
+            display: flex; justify-content: center; z-index: 30; gap: 20px; pointer-events: none;
+        }
+        .action-btn {
+            width: 70px; height: 70px; border-radius: 50%; font-size: 2rem;
+            border: none; cursor: pointer; pointer-events: auto;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3); transition: transform 0.1s;
+        }
+        .action-btn:active { transform: scale(0.9); }
+        #btn-shoot { background: radial-gradient(circle, #ff4d4d, #cc0000); color: white; border: 4px solid white; }
+        #btn-zoom { background: #3B82F6; color: white; border: 4px solid white; }
+
+        .floating-text {
+            position: absolute; font-size: 2rem; font-weight: bold; z-index: 100;
+            pointer-events: none; animation: floatUp 1s forwards ease-out;
+            text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
+        }
+        @keyframes floatUp {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -150%) scale(1.5); opacity: 0; }
+        }
+        
+        #album-panel {
+            position: absolute; right: -320px; top: 0; width: 300px; height: 100%;
+            background: rgba(255,255,255,0.95); box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            transition: right 0.3s; z-index: 40; display: flex; flex-direction: column;
+        }
+        #album-panel.open { right: 0; }
+        .album-header { background: var(--primary); color: white; padding: 15px; font-weight: bold; text-align: center; }
+        .album-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; overflow-y: auto; flex: 1; }
+        .album-slot { border: 2px dashed #ccc; border-radius: 10px; height: 80px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fafafa;}
+        .album-slot.filled { border-style: solid; border-color: var(--success); background: #ecfdf5;}
+        
+        #alert-popup {
+            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+            background: white; padding: 20px 30px; border-radius: 20px; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 100; opacity: 0; pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #alert-popup.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        .toggle-btn { background: #E5E7EB; color: #374151; padding: 5px 10px; border-radius: 8px; font-size: 1rem; border: none; cursor:pointer;}
+        .toggle-btn.active { background: var(--primary); color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="screen">
+        <div class="glass-panel">
+            <h1 class="text-3xl font-black text-indigo-700 mb-2">📸 SĂN ẢNH LẬP TRÌNH</h1>
+            <p class="text-gray-600 mb-4 font-bold">Bài 14: Khám phá môi trường lập trình trực quan (Scratch)</p>
+            
+            <div class="text-left bg-blue-50 p-4 rounded-xl mb-4 border border-blue-200">
+                <h3 class="font-bold text-blue-800 mb-2">🎮 HƯỚNG DẪN CÁCH CHƠI:</h3>
+                <ul class="text-sm text-blue-900 space-y-1 list-disc pl-5">
+                    <li>Rê chuột hoặc vuốt màn hình để di chuyển tâm ngắm.</li>
+                    <li>Đưa đúng Lệnh hoặc Khối lệnh yêu cầu vào chính giữa khung ngắm đỏ.</li>
+                    <li>Nhấn <b>Chuột trái</b>, phím <b>Space (Cách)</b> hoặc nút 🔴 để chụp.</li>
+                    <li>Hoàn thành các nhiệm vụ bám sát nội dung Bài 14 SGK Tin học 4.</li>
+                </ul>
+            </div>
+
+            <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" autocomplete="off">
+            <input type="text" id="player-class" placeholder="Nhập Lớp (Ví dụ: 4A)..." autocomplete="off">
+            <div class="text-red-500 text-sm font-bold h-5 mb-2" id="start-error"></div>
+            
+            <button class="btn btn-green w-full" onclick="startGame()">▶ BẮT ĐẦU SĂN ẢNH</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen hidden" style="background: transparent;">
+        <div id="arena"></div>
+        
+        <div id="hud">
+            <div class="flex flex-col gap-2">
+                <div class="hud-item text-indigo-700">🏆 Điểm: <span id="ui-score">0</span></div>
+                <div class="hud-item text-orange-500">🔥 Combo: <span id="ui-combo">0</span></div>
+            </div>
+            <div class="flex flex-col gap-2 items-end">
+                <div class="flex gap-2">
+                    <button class="toggle-btn active" id="btn-music" onclick="toggleMusic()">🎵 Nhạc</button>
+                    <button class="toggle-btn active" id="btn-sfx" onclick="toggleSFX()">🔊 Âm</button>
+                </div>
+                <div class="hud-item text-red-600" id="ui-time">⏳ 00:00</div>
+            </div>
+        </div>
+
+        <div id="mission-board">
+            <div class="text-xs text-gray-500 font-bold uppercase" id="m-title">Nhiệm vụ 1</div>
+            <div class="text-lg font-bold text-indigo-900" id="m-desc">Tìm và chụp lệnh [di chuyển 10 bước]</div>
+            <div class="mt-1 text-sm text-indigo-600 font-bold" id="m-progress">Đã chụp: 0/1</div>
+        </div>
+
+        <div id="viewfinder"></div>
+
+        <div id="mobile-controls">
+            <button id="btn-zoom" class="action-btn shadow-lg" onclick="activateZoom()">🔍</button>
+            <button id="btn-shoot" class="action-btn shadow-lg">🔴</button>
+            <button class="action-btn bg-gray-800 text-white border-4 border-gray-600 text-sm font-bold" onclick="toggleAlbum()">📖</button>
+        </div>
+
+        <div id="album-panel">
+            <div class="album-header">
+                Album Lệnh Scratch <span id="album-count">(0/0)</span>
+            </div>
+            <div class="album-grid" id="album-grid"></div>
+        </div>
+        
+        <div id="alert-popup">
+            <h2 id="alert-title" class="text-2xl font-black mb-2">Thông báo</h2>
+            <p id="alert-msg" class="text-gray-700 text-lg">Nội dung</p>
+        </div>
+    </div>
+
+    <div id="end-screen" class="screen hidden">
+        <div class="glass-panel" style="width: 580px;">
+            <h1 class="text-3xl font-black text-green-600 mb-2">🎉 HOÀN THÀNH XUẤT SẮC! 🎉</h1>
+            <p class="text-lg font-bold text-gray-700 mb-3">Học sinh: <span id="res-name" class="text-indigo-600"></span> - Lớp: <span id="res-class" class="text-indigo-600"></span></p>
+            
+            <div class="grid grid-cols-2 gap-3 text-left bg-white p-4 rounded-xl border border-gray-200 mb-4">
+                <div>🎯 <b>Chụp đúng:</b> <span id="res-correct" class="text-green-600 font-bold">0</span></div>
+                <div>❌ <b>Chụp nhầm:</b> <span id="res-wrong" class="text-red-500 font-bold">0</span></div>
+                <div>🔥 <b>Max Combo:</b> <span id="res-combo" class="text-orange-500 font-bold">0</span></div>
+                <div>⏱️ <b>Thời gian:</b> <span id="res-time" class="text-blue-500 font-bold">0s</span></div>
+                <div class="col-span-2 text-center pt-2 border-t">🏆 <b>TỔNG ĐIỂM:</b> <span id="res-score" class="text-indigo-700 font-black text-xl">0</span></div>
+            </div>
+
+            <div id="knowledge-review" class="text-left bg-yellow-50 p-4 rounded-xl border border-yellow-200 mb-4 hidden">
+                <h3 class="font-bold text-yellow-800">📖 LƯU Ý KIẾN THỨC CẦN NHỚ (BÀI 14):</h3>
+                <ul id="review-list" class="text-sm text-yellow-900 list-disc pl-5 space-y-1"></ul>
+            </div>
+
+            <div class="flex gap-4 justify-center mt-4">
+                <button class="btn bg-gray-500" onclick="goHome()">🏠 TRANG CHỦ</button>
+                <button class="btn btn-green" onclick="resetAndPlay()">🔄 CHƠI LẠI</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let isMusicOn = true;
+        let isSfxOn = true;
+        let bgmInterval = null;
+        const melody = [261.6, 329.6, 392.0, 523.3, 392.0, 329.6]; 
+        let noteIdx = 0;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playTone(freq, type, duration, vol = 0.1) {
+            if (!audioCtx || !isSfxOn) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const Sounds = {
+            shoot: () => playTone(800, 'square', 0.1, 0.05),
+            correct: () => { playTone(523.25, 'sine', 0.1, 0.2); setTimeout(() => playTone(659.25, 'sine', 0.2, 0.2), 100); },
+            wrong: () => { playTone(150, 'sawtooth', 0.3, 0.3); },
+            win: () => { [523, 659, 783, 1046].forEach((f, i) => setTimeout(() => playTone(f, 'square', 0.2, 0.1), i * 150)); }
+        };
+
+        function playBGM() {
+            if (!isMusicOn || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(melody[noteIdx], audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            noteIdx = (noteIdx + 1) % melody.length;
+        }
+
+        function toggleMusic() {
+            isMusicOn = !isMusicOn;
+            document.getElementById('btn-music').classList.toggle('active', isMusicOn);
+            if (!isMusicOn && bgmInterval) clearInterval(bgmInterval);
+            if (isMusicOn && state.isPlaying) bgmInterval = setInterval(playBGM, 400);
+        }
+        function toggleSFX() {
+            isSfxOn = !isSfxOn;
+            document.getElementById('btn-sfx').classList.toggle('active', isSfxOn);
+        }
+
+        // --- DỮ LIỆU CHUẨN XÁC BÀI 14 (KHÔNG RA NGOÀI NGUỒN SGK) ---
+        const ALL_ITEMS = [
+            // Nhóm Chuyển động (Xanh dương đậm)
+            { id: "m_move10", type: "block-motion", text: "di chuyển 10 bước" },
+            { id: "m_move100", type: "block-motion", text: "di chuyển 100 bước" },
+            { id: "m_turn90", type: "block-motion", text: "xoay 90 độ" },
+            { id: "m_turn15", type: "block-motion", text: "xoay 15 độ" },
+            { id: "m_goto", type: "block-motion", text: "đi tới vị trí ngẫu nhiên" },
+            
+            // Nhóm Sự kiện (Cam)
+            { id: "e_flag", type: "block-event", text: "Khi bấm vào ⚑" },
+            
+            // Nhóm Điều khiển (Cam đậm/Vàng)
+            { id: "c_wait1", type: "block-control", text: "đợi 1 giây" },
+            
+            // Nhóm Bút vẽ (Xanh ngọc - Mở rộng)
+            { id: "p_clear", type: "block-pen", text: "xóa tất cả" },
+            { id: "p_down", type: "block-pen", text: "đặt bút" },
+            { id: "p_up", type: "block-pen", text: "nhấc bút" },
+            { id: "p_color", type: "block-pen", text: "chọn bút màu" },
+
+            // Nhóm Hiển thị / Âm thanh (Nhiễu/Đáp án nhiễu từ bài học)
+            { id: "l_say", type: "block-looks", text: "nói Xin chào" },
+            { id: "s_sound", type: "block-sound", text: "phát âm thanh Meow" }
+        ];
+
+        // Các mức chơi bám sát Bài 14
+        const LEVELS = [
+            { 
+                title: "Nhiệm vụ 1: Nhận diện lệnh Chuyển động", 
+                text: "Tìm và chụp lệnh [di chuyển 10 bước] thuộc nhóm Chuyển động.", 
+                targets: ["m_move10"], 
+                count: 1 
+            },
+            { 
+                title: "Nhiệm vụ 2: Nhận diện nhóm lệnh Sự kiện", 
+                text: "Tìm và chụp lệnh [Khi bấm vào ⚑] để bắt đầu chạy chương trình.", 
+                targets: ["e_flag"], 
+                count: 1 
+            },
+            { 
+                title: "Nhiệm vụ 3: Nhóm lệnh Bút vẽ cơ bản", 
+                text: "Tìm và chụp lệnh [đặt bút] để nhân vật bắt đầu vẽ hình trên sân khấu.", 
+                targets: ["p_down"], 
+                count: 1 
+            },
+            { 
+                title: "Nhiệm vụ 4: Khối lệnh trong chương trình Rô-bốt", 
+                text: "Tìm và chụp chính xác 2 lệnh: [di chuyển 100 bước] và [xoay 90 độ].", 
+                targets: ["m_move100", "m_turn90"], 
+                count: 2 
+            },
+            { 
+                title: "Nhiệm vụ 5: Thao tác lệnh Điều khiển và Xóa vẽ", 
+                text: "Tìm và chụp 2 lệnh: [đợi 1 giây] và [xóa tất cả].", 
+                targets: ["c_wait1", "p_clear"], 
+                count: 2 
+            },
+            { 
+                title: "Nhiệm vụ BOSS: Tổng hợp chương trình vẽ hình", 
+                text: "Thử thách cuối! Chụp 3 lệnh tạo thành chương trình: [Khi bấm vào ⚑], [di chuyển 100 bước], [xoay 90 độ].", 
+                targets: ["e_flag", "m_move100", "m_turn90"], 
+                count: 3,
+                moving: true
+            }
+        ];
+
+        let state = {
+            isPlaying: false, name: '', class: '',
+            levelIdx: 0, score: 0, combo: 0, maxCombo: 0,
+            timeTotal: 0, totalTimer: null,
+            correctShots: 0, wrongShots: 0,
+            currentTargets: [], capturedInLevel: 0,
+            mistakes: new Set(),
+            zoomed: false, zoomTimeout: null,
+            activeObjects: []
+        };
+
+        const DOM = {
+            arena: document.getElementById('arena'),
+            vf: document.getElementById('viewfinder'),
+            album: document.getElementById('album-grid'),
+            albumCount: document.getElementById('album-count'),
+            albumPanel: document.getElementById('album-panel'),
+            score: document.getElementById('ui-score'),
+            combo: document.getElementById('ui-combo'),
+            time: document.getElementById('ui-time')
+        };
+
+        function spawnItem(itemData, isTarget, moving = false) {
+            const el = document.createElement('div');
+            el.className = `game-item ${itemData.type}`;
+            el.dataset.id = itemData.id;
+            el.innerHTML = `<span style="font-size:0.95rem;">🧩 ${itemData.text}</span>`;
+
+            let x, y, safe = false, attempts = 0;
+            const padX = 80, padYTop = 180, padYBot = 130; 
+            const areaW = Math.max(100, window.innerWidth - padX * 2);
+            const areaH = Math.max(100, window.innerHeight - padYTop - padYBot);
+
+            while (!safe && attempts < 50) {
+                x = padX + Math.random() * areaW;
+                y = padYTop + Math.random() * areaH;
+                safe = true;
+                for (let obj of state.activeObjects) {
+                    if (Math.hypot(x - obj.x, y - obj.y) < 130) { safe = false; break; }
+                }
+                attempts++;
+            }
+
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            DOM.arena.appendChild(el);
+
+            let obj = { id: itemData.id, el, isTarget, x, y, w: window.innerWidth, h: window.innerHeight, moving };
+            if (moving) {
+                obj.dx = (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 1.5);
+                obj.dy = (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 1.5);
+            }
+            state.activeObjects.push(obj);
+            return el;
+        }
+
+        function clearArena() {
+            DOM.arena.innerHTML = '';
+            state.activeObjects = [];
+        }
+
+        function loadLevel() {
+            clearArena();
+            if (state.levelIdx >= LEVELS.length) { endGame(); return; }
+            
+            const lvl = LEVELS[state.levelIdx];
+            document.getElementById('m-title').innerText = lvl.title;
+            document.getElementById('m-desc').innerText = lvl.text;
+            
+            state.capturedInLevel = 0;
+            const reqCount = lvl.count || 1;
+            document.getElementById('m-progress').innerText = `Đã chụp: 0/${reqCount}`;
+            
+            state.currentTargets = [...lvl.targets];
+            
+            // Spawn các mục tiêu đúng
+            lvl.targets.forEach(tId => {
+                const item = ALL_ITEMS.find(i => i.id === tId);
+                if (item) spawnItem(item, true, lvl.moving);
+            });
+
+            // Spawn thêm các lệnh mồi (distractors) từ SGK
+            let distractors = ALL_ITEMS.filter(i => !lvl.targets.includes(i.id));
+            distractors.sort(() => 0.5 - Math.random());
+            let spawnCount = 4 + Math.floor(Math.random() * 3);
+            for (let i = 0; i < spawnCount && i < distractors.length; i++) {
+                spawnItem(distractors[i], false, lvl.moving);
+            }
+
+            updateAlbumSlots(reqCount);
+        }
+
+        function updateAlbumSlots(count) {
+            DOM.album.innerHTML = '';
+            for(let i=0; i<count; i++) {
+                DOM.album.innerHTML += `<div class="album-slot" id="slot-${i}"><span>⏳</span></div>`;
+            }
+        }
+
+        function updateMouseTracker(e) {
+            if(!state.isPlaying) return;
+            let cx = e.clientX || (e.touches && e.touches[0].clientX);
+            let cy = e.clientY || (e.touches && e.touches[0].clientY);
+            if (cx === undefined || cy === undefined) return;
+            DOM.vf.style.left = `${cx}px`;
+            DOM.vf.style.top = `${cy}px`;
+        }
+
+        document.addEventListener('mousemove', updateMouseTracker);
+        document.addEventListener('touchmove', updateMouseTracker, {passive: true});
+
+        document.addEventListener('keydown', (e) => { if (e.code === 'Space' && state.isPlaying) capturePhoto(); });
+        document.addEventListener('mousedown', (e) => {
+            if(e.target.closest('#hud') || e.target.closest('#mission-board') || e.target.closest('#mobile-controls') || e.target.closest('.glass-panel')) return;
+            if(state.isPlaying) capturePhoto();
+        });
+        document.getElementById('btn-shoot').addEventListener('click', capturePhoto);
+        document.getElementById('btn-shoot').addEventListener('touchstart', (e)=>{e.preventDefault(); capturePhoto();});
+
+        function capturePhoto() {
+            if (!state.isPlaying) return;
+            Sounds.shoot();
+            
+            const vfRect = DOM.vf.getBoundingClientRect();
+            const cx = vfRect.left + vfRect.width / 2;
+            const cy = vfRect.top + vfRect.height / 2;
+            const radius = vfRect.width / 2;
+
+            let hitObj = null, minObjDist = Infinity;
+
+            state.activeObjects.forEach(obj => {
+                if (!obj.el.parentElement) return;
+                const oRect = obj.el.getBoundingClientRect();
+                const ox = oRect.left + oRect.width / 2;
+                const oy = oRect.top + oRect.height / 2;
+                const dist = Math.hypot(cx - ox, cy - oy);
+                
+                if (dist < radius + 15) {
+                    if (dist < minObjDist) { minObjDist = dist; hitObj = obj; }
+                }
+            });
+
+            if (hitObj) {
+                processHit(hitObj);
+            }
+        }
+
+        function processHit(obj) {
+            const isTarget = state.currentTargets.includes(obj.id);
+
+            if (isTarget) {
+                obj.el.remove();
+                state.correctShots++;
+                state.combo++;
+                if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+                
+                let pts = 10 + (state.combo > 1 ? state.combo * 2 : 0);
+                Sounds.correct(); 
+                showFloatingText(`+${pts}`, obj.el);
+                state.score += pts;
+                
+                addPhotoToAlbum(obj.el.cloneNode(true));
+                
+                state.currentTargets = state.currentTargets.filter(t => t !== obj.id);
+                state.capturedInLevel++;
+                
+                const lvl = LEVELS[state.levelIdx];
+                document.getElementById('m-progress').innerText = `Đã chụp: ${state.capturedInLevel}/${lvl.count}`;
+                
+                if (state.capturedInLevel >= lvl.count) {
+                    setTimeout(() => {
+                        state.levelIdx++;
+                        loadLevel();
+                    }, 1000);
+                }
+            } else {
+                Sounds.wrong();
+                state.wrongShots++;
+                state.combo = 0;
+                DOM.arena.style.boxShadow = "inset 0 0 40px red";
+                setTimeout(() => DOM.arena.style.boxShadow = "none", 300);
+                
+                state.mistakes.add("Cần phân biệt đúng tên nhóm lệnh và ý nghĩa từng lệnh trong Scratch (Bài 14)");
+                showAlert("Chụp nhầm lệnh!", "Lệnh này không thuộc yêu cầu nhiệm vụ. Hãy quan sát màu sắc và tên lệnh kỹ hơn!");
+            }
+            updateHUD();
+        }
+
+        function showFloatingText(text, el) {
+            const rect = el.getBoundingClientRect();
+            const float = document.createElement('div');
+            float.className = 'floating-text text-green-500';
+            float.innerText = text;
+            float.style.left = `${rect.left + rect.width/2}px`;
+            float.style.top = `${rect.top}px`;
+            document.body.appendChild(float);
+            setTimeout(() => float.remove(), 1000);
+        }
+
+        function addPhotoToAlbum(nodeClone) {
+            nodeClone.className = 'p-1 rounded text-center text-xs font-bold'; 
+            nodeClone.style = 'background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe;';
+            const slot = document.getElementById(`slot-${state.capturedInLevel}`);
+            if(slot) {
+                slot.innerHTML = '';
+                slot.appendChild(nodeClone);
+                slot.classList.add('filled');
+            }
+        }
+
+        function updateHUD() {
+            DOM.score.innerText = state.score;
+            DOM.combo.innerText = state.combo;
+            DOM.albumCount.innerText = `(${state.correctShots})`;
+            if (state.combo > 2) DOM.combo.classList.add('animate-pulse');
+            else DOM.combo.classList.remove('animate-pulse');
+        }
+
+        function showAlert(title, msg) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-msg').innerText = msg;
+            const popup = document.getElementById('alert-popup');
+            popup.classList.add('show');
+            setTimeout(() => popup.classList.remove('show'), 2500);
+        }
+
+        function activateZoom() {
+            if (state.zoomed) return;
+            state.zoomed = true;
+            DOM.vf.classList.add('zoomed');
+            clearTimeout(state.zoomTimeout);
+            state.zoomTimeout = setTimeout(() => {
+                DOM.vf.classList.remove('zoomed');
+                state.zoomed = false;
+            }, 5000);
+        }
+
+        function toggleAlbum() { DOM.albumPanel.classList.toggle('open'); }
+
+        function animateLoop() {
+            if (!state.isPlaying) return;
+            state.activeObjects.forEach(obj => {
+                if (obj.moving) {
+                    obj.x += obj.dx;
+                    obj.y += obj.dy;
+                    if (obj.x < 60 || obj.x > obj.w - 60) obj.dx *= -1;
+                    if (obj.y < 120 || obj.y > obj.h - 140) obj.dy *= -1;
+                    obj.el.style.left = `${obj.x}px`;
+                    obj.el.style.top = `${obj.y}px`;
+                }
+            });
+            requestAnimationFrame(animateLoop);
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60).toString().padStart(2, '0');
+            const sec = (s % 60).toString().padStart(2, '0');
+            return `⏳ ${m}:${sec}`;
+        }
+
+        function startGame() {
+            const name = document.getElementById('player-name').value.trim();
+            const cls = document.getElementById('player-class').value.trim();
+            const err = document.getElementById('start-error');
+            
+            if (!name || !cls) {
+                err.innerText = "❌ Vui lòng nhập Họ Tên và Lớp đầy đủ!";
+                return;
+            }
+            err.innerText = "";
+            state.name = name; state.class = cls;
+
+            initAudio();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            state.isPlaying = true; state.levelIdx = 0; state.score = 0; state.combo = 0; state.maxCombo = 0;
+            state.correctShots = 0; state.wrongShots = 0; state.timeTotal = 0;
+            state.mistakes.clear();
+            
+            updateHUD();
+            if (bgmInterval) clearInterval(bgmInterval);
+            if (isMusicOn) bgmInterval = setInterval(playBGM, 400);
+            
+            state.totalTimer = setInterval(() => {
+                state.timeTotal++;
+                DOM.time.innerText = formatTime(state.timeTotal);
+            }, 1000);
+
+            DOM.vf.style.left = '50%'; DOM.vf.style.top = '50%';
+
+            loadLevel();
+            requestAnimationFrame(animateLoop);
+        }
+
+        function endGame() {
+            state.isPlaying = false;
+            clearInterval(state.totalTimer);
+            if (bgmInterval) clearInterval(bgmInterval);
+            Sounds.win();
+            
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            
+            document.getElementById('res-name').innerText = state.name;
+            document.getElementById('res-class').innerText = state.class;
+            document.getElementById('res-correct').innerText = state.correctShots;
+            document.getElementById('res-wrong').innerText = state.wrongShots;
+            document.getElementById('res-combo').innerText = state.maxCombo;
+            document.getElementById('res-time').innerText = state.timeTotal + " giây";
+            document.getElementById('res-score').innerText = state.score;
+
+            const reviewPanel = document.getElementById('knowledge-review');
+            const reviewList = document.getElementById('review-list');
+            
+            let tips = [
+                "Trong Scratch, các nhóm lệnh cơ bản và lệnh thuộc nhóm có cùng màu sắc (ví dụ: Chuyển động màu xanh dương).",
+                "Các lệnh được ghép nối tuần tự từ trên xuống dưới tạo thành khối lệnh.",
+                "Nhóm lệnh Bút vẽ là nhóm lệnh mở rộng giúp nhân vật vẽ hình trên sân khấu."
+            ];
+            reviewList.innerHTML = tips.map(t => `<li>${t}</li>`).join('');
+            reviewPanel.classList.remove('hidden');
+        }
+
+        function resetAndPlay() {
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function goHome() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>

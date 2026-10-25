@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗺️ Game Săn Kho Báu Kiến Thức - Bảo Vệ Thông Tin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', cursive, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #9333ea 100%);
+            min-height: 100vh;
+            color: #1f2937;
+        }
+        .bouncing {
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .pulse-glow {
+            animation: pulseGlow 1.5s infinite;
+        }
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .firework {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: explode 1s ease-out forwards;
+        }
+        @keyframes explode {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center p-4">
+
+    <header class="w-full max-w-4xl flex justify-between items-center mb-4 bg-white/10 backdrop-blur-md p-3 rounded-2xl text-white shadow-lg border border-white/20">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🗺️</span>
+            <h1 class="text-lg md:text-xl font-bold tracking-wide">SĂN KHO BÁU KIẾN THỨC</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="toggleMusic" onclick="toggleMusicState()" class="bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-xl font-bold text-sm shadow flex items-center gap-1 transition transform active:scale-95">
+                🎵 Nhạc: <span id="musicStatus">TẮT</span>
+            </button>
+            <button id="toggleSound" onclick="toggleSoundState()" class="bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 rounded-xl font-bold text-sm shadow flex items-center gap-1 transition transform active:scale-95">
+                🔊 Âm thanh: <span id="soundStatus">BẬT</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 md:p-8 border-4 border-amber-300 relative overflow-hidden">
+        
+        <!-- SCREEN 1: LOGIN -->
+        <div id="screen-login" class="flex flex-col items-center text-center py-8">
+            <div class="text-6xl md:text-7xl mb-4 bouncing">🏴‍☠️💎</div>
+            <h2 class="text-3xl md:text-4xl font-extrabold text-blue-900 mb-2">HÀNH TRÌNH TÌM KHO BÁU SGK</h2>
+            <p class="text-gray-600 mb-6 max-w-md text-sm md:text-base">Bài 10: Bảo vệ thông tin khi dùng máy tính (Tin học Lớp 3). Mỗi chặng có 3 thử thách (Trắc nghiệm, Đúng/Sai, Ghép nối)!</p>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)" class="w-full max-w-md space-y-4 bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 shadow-inner">
+                <div class="text-left">
+                    <label class="block text-blue-900 font-bold mb-1 text-sm">Họ và tên học sinh:</label>
+                    <input type="text" id="playerName" required placeholder="Biệt danh (không nhập tên thật)" class="w-full px-4 py-3 rounded-xl border-2 border-blue-300 focus:outline-none focus:border-blue-600 text-lg font-semibold">
+                </div>
+                <div class="text-left">
+                    <label class="block text-blue-900 font-bold mb-1 text-sm">Lớp:</label>
+                    <input type="text" id="playerClass" required placeholder="Ví dụ: 3A" class="w-full px-4 py-3 rounded-xl border-2 border-blue-300 focus:outline-none focus:border-blue-600 text-lg font-semibold">
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-extrabold text-xl py-3.5 rounded-xl shadow-lg pulse-glow transition transform active:scale-95">
+                    🚀 BẮT ĐẦU SĂN KHO BÁU!
+                </button>
+            </form>
+        </div>
+
+        <!-- SCREEN 2: ISLAND MAP -->
+        <div id="screen-map" class="hidden flex flex-col items-center">
+            <div class="flex justify-between w-full items-center mb-6 bg-amber-100 p-4 rounded-2xl border-2 border-amber-300">
+                <div>
+                    <h3 class="font-bold text-amber-900 text-lg" id="displayPlayerInfo">Thuyền trưởng: ...</h3>
+                    <p class="text-xs text-amber-700">Mỗi đảo gồm 3 thử thách. Vượt qua 4 đảo để mở Hang Kho Báu!</p>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <span class="bg-amber-500 text-white px-3 py-1.5 rounded-full font-bold text-sm shadow" id="scoreDisplay">💎 0 Vàng</span>
+                    <span class="bg-purple-600 text-white px-3 py-1.5 rounded-full font-bold text-sm shadow" id="piecesDisplay">🧩 0/4 Đảo</span>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-extrabold text-blue-900 mb-6">🗺️ BẢN ĐỒ KHO BÁU BÍ ẨN</h2>
+
+            <!-- Islands Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full mb-6">
+                <!-- Island 1 -->
+                <button onclick="startMission(1)" id="island-1" class="island-btn bg-emerald-50 hover:bg-emerald-100 border-3 border-emerald-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md">
+                    <span class="text-4xl mb-2">🌴</span>
+                    <h4 class="font-bold text-emerald-900 text-lg">Đảo Hoang</h4>
+                    <p class="text-xs text-emerald-700 mt-1" id="status-1">Chặng 1: Lưu trữ thông tin (3 câu)</p>
+                    <span id="badge-1" class="mt-2 text-xs font-extrabold bg-emerald-200 text-emerald-800 px-2.5 py-1 rounded-full">CHƯA KHÁM PHÁ</span>
+                </button>
+
+                <!-- Island 2 -->
+                <button onclick="startMission(2)" id="island-2" class="island-btn bg-cyan-50 hover:bg-cyan-100 border-3 border-cyan-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md">
+                    <span class="text-4xl mb-2">🌊</span>
+                    <h4 class="font-bold text-cyan-900 text-lg">Hang Nước</h4>
+                    <p class="text-xs text-cyan-700 mt-1" id="status-2">Chặng 2: Trao đổi qua USB, Internet (3 câu)</p>
+                    <span id="badge-2" class="mt-2 text-xs font-extrabold bg-cyan-200 text-cyan-800 px-2.5 py-1 rounded-full">CHƯA KHÁM PHÁ</span>
+                </button>
+
+                <!-- Island 3 -->
+                <button onclick="startMission(3)" id="island-3" class="island-btn bg-purple-50 hover:bg-purple-100 border-3 border-purple-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md">
+                    <span class="text-4xl mb-2">🏛️</span>
+                    <h4 class="font-bold text-purple-900 text-lg">Đền Cổ</h4>
+                    <p class="text-xs text-purple-700 mt-1" id="status-3">Chặng 3: Nhận biết nguy cơ kẻ xấu (3 câu)</p>
+                    <span id="badge-3" class="mt-2 text-xs font-extrabold bg-purple-200 text-purple-800 px-2.5 py-1 rounded-full">CHƯA KHÁM PHÁ</span>
+                </button>
+
+                <!-- Island 4 -->
+                <button onclick="startMission(4)" id="island-4" class="island-btn bg-amber-50 hover:bg-amber-100 border-3 border-amber-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md">
+                    <span class="text-4xl mb-2">⛰️</span>
+                    <h4 class="font-bold text-amber-900 text-lg">Núi Đá</h4>
+                    <p class="text-xs text-amber-700 mt-1" id="status-4">Chặng 4: Bảo vệ thông tin & Mật khẩu (3 câu)</p>
+                    <span id="badge-4" class="mt-2 text-xs font-extrabold bg-amber-200 text-amber-800 px-2.5 py-1 rounded-full">CHƯA KHÁM PHÁ</span>
+                </button>
+
+                <!-- Island 5 (Boss / Treasure Cave) -->
+                <button onclick="startMission(5)" id="island-5" class="island-btn bg-rose-50 hover:bg-rose-100 border-3 border-rose-400 p-4 rounded-2xl flex flex-col items-center text-center transition shadow-md sm:col-span-2 md:col-span-2 relative overflow-hidden" disabled style="opacity: 0.6;">
+                    <span class="text-4xl mb-2">🏴‍☠️</span>
+                    <h4 class="font-bold text-rose-900 text-lg">Hang Kho Báu (BOSS CUỐI)</h4>
+                    <p class="text-xs text-rose-700 mt-1" id="status-5">Hoàn thành 4 chặng để mở khóa!</p>
+                    <span id="badge-5" class="mt-2 text-xs font-extrabold bg-rose-200 text-rose-800 px-2.5 py-1 rounded-full">🔒 KHÓA</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: CHALLENGE QUESTION -->
+        <div id="screen-challenge" class="hidden flex flex-col items-center">
+            <div class="w-full flex justify-between items-center mb-4">
+                <button onclick="backToMap()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-xl font-bold text-sm text-gray-700 flex items-center gap-1 transition">
+                    ⬅️ Quay lại Bản Đồ
+                </button>
+                <div class="flex gap-2">
+                    <span id="missionTitleBadge" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-bold text-sm">Chặng ...</span>
+                    <span id="questionProgressBadge" class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold text-sm">Câu 1/3</span>
+                </div>
+            </div>
+
+            <div id="questionContainer" class="w-full bg-blue-50/80 p-6 rounded-2xl border-2 border-blue-200 shadow-inner mb-6">
+                <!-- Dynamic Question Rendered via JS -->
+            </div>
+
+            <!-- Feedback Box -->
+            <div id="feedbackBox" class="hidden w-full p-4 rounded-xl text-center font-bold text-lg mb-4"></div>
+        </div>
+
+        <!-- SCREEN 4: VICTORY & TREASURE UNLOCKED -->
+        <div id="screen-victory" class="hidden flex flex-col items-center text-center py-6 relative">
+            <div class="text-7xl md:text-8xl mb-4 bouncing">👑💎🏆</div>
+            <h2 class="text-3xl md:text-4xl font-extrabold text-amber-600 mb-2">CHINH PHỤC KHO BÁU THÀNH CÔNG!</h2>
+            <p class="text-gray-700 mb-6 text-base md:text-lg" id="victoryMessage">Chúc mừng thuyền trưởng đã hoàn thành xuất sắc nhiệm vụ bảo vệ thông tin máy tính!</p>
+
+            <div class="bg-amber-50 border-3 border-amber-300 p-6 rounded-2xl w-full max-w-md mb-6 shadow-md text-left">
+                <h4 class="font-bold text-amber-900 text-lg mb-2 text-center">📜 GIẤY CHỨNG NHẬN THUYỀN TRƯỞNG</h4>
+                <p class="text-sm text-gray-700 mb-1"><strong>Họ tên:</strong> <span id="resName">...</span></p>
+                <p class="text-sm text-gray-700 mb-1"><strong>Lớp:</strong> <span id="resClass">...</span></p>
+                <p class="text-sm text-gray-700 mb-1"><strong>Vàng thu thập:</strong> <span id="resGold">0</span> 💎</p>
+                <p class="text-sm text-gray-700"><strong>Danh hiệu:</strong> 🏆 Siêu Sao An Toàn Mạng Số</p>
+            </div>
+
+            <button onclick="resetGame()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-lg px-8 py-3.5 rounded-xl shadow-lg transition transform active:scale-95">
+                🔄 CHƠI LẠI TỪ ĐẦU
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Custom Modal for Alerts -->
+    <div id="customModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center border-4 border-amber-400 shadow-2xl">
+            <div id="modalIcon" class="text-5xl mb-3">🔔</div>
+            <h3 id="modalTitle" class="font-extrabold text-xl text-blue-900 mb-2">Thông báo</h3>
+            <p id="modalMessage" class="text-gray-600 text-sm mb-6">Nội dung thông báo...</p>
+            <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl shadow transition">
+                ĐỒNG Ý
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        let gameState = {
+            playerName: "",
+            playerClass: "",
+            score: 0,
+            pieces: 0,
+            completedMissions: [false, false, false, false, false],
+            currentMission: 1,
+            currentQuestionIdx: 0
+        };
+
+        // --- WEB AUDIO API SOUND SYSTEM ---
+        let audioCtx = null;
+        let soundEnabled = true;
+        let musicEnabled = false;
+        let musicInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+            initAudio();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.setValueAtTime(100, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    g.gain.setValueAtTime(0.15, now + idx * 0.12);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.3);
+                    o.start(now + idx * 0.12);
+                    o.stop(now + idx * 0.12 + 0.3);
+                });
+            }
+        }
+
+        function startBgMusic() {
+            if (!musicEnabled) return;
+            initAudio();
+            if (musicInterval) clearInterval(musicInterval);
+
+            const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
+            let noteIdx = 0;
+
+            musicInterval = setInterval(() => {
+                if (!musicEnabled || !audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(melody[noteIdx], audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+
+                noteIdx = (noteIdx + 1) % melody.length;
+            }, 400);
+        }
+
+        function stopBgMusic() {
+            if (musicInterval) {
+                clearInterval(musicInterval);
+                musicInterval = null;
+            }
+        }
+
+        function toggleMusicState() {
+            initAudio();
+            musicEnabled = !musicEnabled;
+            document.getElementById('musicStatus').innerText = musicEnabled ? 'BẬT' : 'TẮT';
+            if (musicEnabled) {
+                startBgMusic();
+            } else {
+                stopBgMusic();
+            }
+            playSound('click');
+        }
+
+        function toggleSoundState() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundStatus').innerText = soundEnabled ? 'BẬT' : 'TẮT';
+            playSound('click');
+        }
+
+        // --- UI & NAVIGATION FUNCTIONS ---
+        function showModal(title, message, icon = '🔔') {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('modalIcon').innerText = icon;
+            document.getElementById('customModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('customModal').classList.add('hidden');
+            playSound('click');
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            initAudio();
+            const nameInput = document.getElementById('playerName').value.trim();
+            const classInput = document.getElementById('playerClass').value.trim();
+
+            if (!nameInput || !classInput) {
+                showModal('Thiếu thông tin', 'Vui lòng nhập đầy đủ Họ tên và Lớp để bắt đầu!', '⚠️');
+                return;
+            }
+
+            gameState.playerName = nameInput;
+            gameState.playerClass = classInput;
+
+            document.getElementById('displayPlayerInfo').innerText = `Thuyền trưởng: ${nameInput} (${classInput})`;
+            
+            document.getElementById('screen-login').classList.add('hidden');
+            document.getElementById('screen-map').classList.remove('hidden');
+            playSound('win');
+        }
+
+        function backToMap() {
+            document.getElementById('screen-challenge').classList.add('hidden');
+            document.getElementById('screen-map').classList.remove('hidden');
+            playSound('click');
+            updateMapUI();
+        }
+
+        function updateMapUI() {
+            document.getElementById('scoreDisplay').innerText = `💎 ${gameState.score} Vàng`;
+            document.getElementById('piecesDisplay').innerText = `🧩 ${gameState.pieces}/4 Đảo`;
+
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`island-${i}`);
+                const badge = document.getElementById(`badge-${i}`);
+                if (gameState.completedMissions[i]) {
+                    btn.classList.remove('bg-emerald-50', 'bg-cyan-50', 'bg-purple-50', 'bg-amber-50');
+                    btn.classList.add('bg-green-100', 'border-green-500');
+                    badge.className = "mt-2 text-xs font-extrabold bg-green-200 text-green-800 px-2.5 py-1 rounded-full";
+                    badge.innerText = "✅ ĐÃ HOÀN THÀNH";
+                }
+            }
+
+            // Check Boss Unlock
+            if (gameState.pieces >= 4) {
+                const bossBtn = document.getElementById('island-5');
+                const bossBadge = document.getElementById('badge-5');
+                bossBtn.removeAttribute('disabled');
+                bossBtn.style.opacity = '1';
+                bossBtn.classList.remove('bg-rose-50');
+                bossBtn.classList.add('bg-rose-100', 'pulse-glow');
+                bossBadge.className = "mt-2 text-xs font-extrabold bg-rose-500 text-white px-2.5 py-1 rounded-full animate-bounce";
+                bossBadge.innerText = "🔓 MỞ KHÓA NGAY!";
+            }
+        }
+
+        // --- EXPANDED MISSION BANK (3 QUESTIONS PER MISSION: MULTIPLE CHOICE, TRUE/FALSE, MATCHING) ---
+        const missions = {
+            1: {
+                title: "🌴 Đảo Hoang: Lưu Trữ Thông Tin (3 Thử Thách)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Thông tin nào dưới đây của em hoặc gia đình CÓ THỂ được lưu trữ trong máy tính?",
+                        options: [
+                            { text: "A. Họ tên, ngày sinh, địa chỉ, số điện thoại", correct: true },
+                            { text: "B. Chỉ số chiều cao tính bằng thước dây ở nhà", correct: false },
+                            { text: "C. Mùi vị các món ăn mẹ nấu hàng ngày", correct: false }
+                        ]
+                    },
+                    {
+                        type: "truefalse",
+                        desc: "Máy tính có khả năng lưu trữ tệp hình ảnh, video và giọng nói của em.",
+                        options: [
+                            { text: "ĐÚNG", correct: true },
+                            { text: "SAI", correct: false }
+                        ]
+                    },
+                    {
+                        type: "multiple",
+                        desc: "Mục đích chính của việc lưu trữ thông tin cá nhân trong máy tính là gì?",
+                        options: [
+                            { text: "A. Để phục vụ học tập, làm việc và giải trí", correct: true },
+                            { text: "B. Để kẻ xấu dễ dàng tìm kiếm và đánh cắp", correct: false },
+                            { text: "C. Để máy tính bị nặng và nhanh hỏng", correct: false }
+                        ]
+                    }
+                ]
+            },
+            2: {
+                title: "🌊 Hang Nước: Trao Đổi Thông Tin (3 Thử Thách)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Thông tin trong máy tính có thể gửi đến các máy tính khác thông qua cách nào?",
+                        options: [
+                            { text: "A. Thông qua Internet", correct: false },
+                            { text: "B. Thông qua thiết bị lưu trữ như USB, thẻ nhớ", correct: false },
+                            { text: "C. Cả A và B đều đúng", correct: true }
+                        ]
+                    },
+                    {
+                        type: "truefalse",
+                        desc: "Chỉ có thể trao đổi thông tin giữa các máy tính khi có kết nối Internet.",
+                        options: [
+                            { text: "ĐÚNG", correct: false },
+                            { text: "SAI (Vì có thể dùng USB, thẻ nhớ)", correct: true }
+                        ]
+                    },
+                    {
+                        type: "matching",
+                        desc: "Thiết bị nào dưới đây chuyên dùng để sao chép và trao đổi tệp giữa các máy tính?",
+                        options: [
+                            { text: "A. Cục sạc pin điện thoại", correct: false },
+                            { text: "B. USB hoặc thẻ nhớ", correct: true },
+                            { text: "C. Chuột máy tính không dây", correct: false }
+                        ]
+                    }
+                ]
+            },
+            3: {
+                title: "🏛️ Đền Cổ: Nguy Cơ Từ Kẻ Xấu (3 Thử Thách)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Nếu kẻ xấu lấy được thông tin cá nhân của em, chúng CÓ THỂ làm gì?",
+                        options: [
+                            { text: "A. Đe dọa, bắt nạt hoặc lừa đảo trên mạng", correct: true },
+                            { text: "B. Giúp em làm bài tập về nhà nhanh hơn", correct: false },
+                            { text: "C. Tặng quà và máy tính mới cho em", correct: false }
+                        ]
+                    },
+                    {
+                        type: "truefalse",
+                        desc: "Em nên thoải mái cung cấp tên và địa chỉ nhà mình cho bất kỳ người lạ nào trên Internet.",
+                        options: [
+                            { text: "ĐÚNG", correct: false },
+                            { text: "SAI", correct: true }
+                        ]
+                    },
+                    {
+                        type: "matching",
+                        desc: "Hành động nào sau đây là NÊN LÀM khi giao tiếp qua mạng?",
+                        options: [
+                            { text: "A. Không tuỳ tiện cung cấp thông tin cá nhân cho người lạ", correct: true },
+                            { text: "B. Gửi toàn bộ mật khẩu tài khoản cho bạn bè mượn", correct: false },
+                            { text: "C. Kết bạn và nhận tệp từ mọi tài khoản không quen biết", correct: false }
+                        ]
+                    }
+                ]
+            },
+            4: {
+                title: "⛰️ Núi Đá: Bảo Vệ Mật Khẩu (3 Thử Thách)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Em muốn gửi tệp ảnh đã lưu trong máy tính cho bạn ở xa, cách làm nào an toàn?",
+                        options: [
+                            { text: "A. Nhờ người lớn gửi qua thư điện tử hoặc sao chép vào USB", correct: true },
+                            { text: "B. Tự ý lấy điện thoại bố mẹ đăng tải toàn bộ ảnh lên mạng công khai", correct: false },
+                            { text: "C. Gửi mật khẩu ngân hàng của gia đình cho bạn", correct: false }
+                        ]
+                    },
+                    {
+                        type: "truefalse",
+                        desc: "Việc đặt mật khẩu cho máy tính giúp người khác không thể tự ý sử dụng thông tin bên trong.",
+                        options: [
+                            { text: "ĐÚNG", correct: true },
+                            { text: "SAI", correct: false }
+                        ]
+                    },
+                    {
+                        type: "matching",
+                        desc: "Quy tắc nào ĐÚNG để bảo vệ thông tin khi dùng máy tính?",
+                        options: [
+                            { text: "A. Đặt mật khẩu và không cho người lạ biết thông tin cá nhân", correct: true },
+                            { text: "B. Chia sẻ thông tin cá nhân của gia đình lên mọi trang web", correct: false },
+                            { text: "C. Mở tất cả các tệp lạ từ người không quen biết gửi tới", correct: false }
+                        ]
+                    }
+                ]
+            },
+            5: {
+                title: "🏴‍☠️ Hang Kho Báu: Boss Cuối (Mở Rương)",
+                questions: [
+                    {
+                        type: "multiple",
+                        desc: "Quy tắc quan trọng nhất để bảo vệ bản thân và gia đình trên môi trường số là gì?",
+                        options: [
+                            { text: "A. Bảo vệ mật khẩu, không cung cấp thông tin cá nhân cho người lạ", correct: true },
+                            { text: "B. Kết bạn với tất cả mọi người và chia sẻ mọi bí mật", correct: false },
+                            { text: "C. Tắt máy tính và không bao giờ sử dụng Internet nữa", correct: false }
+                        ]
+                    }
+                ]
+            }
+        };
+
+        function startMission(missionId) {
+            initAudio();
+            gameState.currentMission = missionId;
+            gameState.currentQuestionIdx = 0;
+
+            document.getElementById('screen-map').classList.add('hidden');
+            document.getElementById('screen-challenge').classList.remove('hidden');
+
+            renderCurrentQuestion();
+        }
+
+        function renderCurrentQuestion() {
+            const missionId = gameState.currentMission;
+            const mission = missions[missionId];
+            const qIdx = gameState.currentQuestionIdx;
+            const q = mission.questions[qIdx];
+
+            document.getElementById('missionTitleBadge').innerText = mission.title;
+            document.getElementById('questionProgressBadge').innerText = `Câu ${qIdx + 1}/${mission.questions.length}`;
+
+            let html = `
+                <p class="font-bold text-blue-900 text-lg md:text-xl mb-4">${q.desc}</p>
+                <div class="space-y-3">
+            `;
+
+            q.options.forEach((opt, idx) => {
+                html += `
+                    <button onclick="checkAnswer(${idx})" class="w-full text-left bg-white hover:bg-blue-100 border-2 border-blue-300 p-4 rounded-xl font-semibold text-blue-900 shadow transition transform active:scale-98 flex items-center justify-between">
+                        <span>${opt.text}</span>
+                        <span class="text-xl">👉</span>
+                    </button>
+                `;
+            });
+
+            html += `</div>`;
+            document.getElementById('questionContainer').innerHTML = html;
+            document.getElementById('feedbackBox').classList.add('hidden');
+        }
+
+        function checkAnswer(optionIndex) {
+            initAudio();
+            const missionId = gameState.currentMission;
+            const mission = missions[missionId];
+            const qIdx = gameState.currentQuestionIdx;
+            const q = mission.questions[qIdx];
+            const isCorrect = q.options[optionIndex].correct;
+            const feedbackBox = document.getElementById('feedbackBox');
+
+            if (isCorrect) {
+                playSound('correct');
+                feedbackBox.className = "w-full p-4 rounded-xl text-center font-bold text-lg mb-4 bg-emerald-100 text-emerald-800 border-2 border-emerald-300";
+                feedbackBox.innerHTML = `✅ CHÍNH XÁC! Thử thách ${qIdx + 1} hoàn thành! (+10 Vàng) 🔥`;
+                feedbackBox.classList.remove('hidden');
+                gameState.score += 10;
+
+                setTimeout(() => {
+                    gameState.currentQuestionIdx++;
+                    if (gameState.currentQuestionIdx < mission.questions.length) {
+                        renderCurrentQuestion();
+                    } else {
+                        // Mission Completed!
+                        if (!gameState.completedMissions[missionId]) {
+                            gameState.completedMissions[missionId] = true;
+                            if (missionId !== 5) {
+                                gameState.pieces += 1;
+                            }
+                        }
+
+                        if (missionId === 5) {
+                            triggerVictory();
+                        } else {
+                            backToMap();
+                        }
+                    }
+                }, 1500);
+
+            } else {
+                playSound('wrong');
+                feedbackBox.className = "w-full p-4 rounded-xl text-center font-bold text-lg mb-4 bg-rose-100 text-rose-800 border-2 border-rose-300 shake";
+                feedbackBox.innerHTML = "❌ CHƯA ĐÚNG! Kẻ xấu đang đánh lạc hướng. Hãy thử lại đáp án khác nhé!";
+                feedbackBox.classList.remove('hidden');
+            }
+        }
+
+        function triggerVictory() {
+            playSound('win');
+            createFireworks();
+
+            document.getElementById('screen-challenge').classList.add('hidden');
+            document.getElementById('screen-victory').classList.remove('hidden');
+
+            document.getElementById('resName').innerText = gameState.playerName;
+            document.getElementById('resClass').innerText = gameState.playerClass;
+            document.getElementById('resGold').innerText = gameState.score;
+            document.getElementById('victoryMessage').innerText = `Chúc mừng thuyền trưởng ${gameState.playerName} lớp ${gameState.playerClass} đã thu thập trọn vẹn kho báu kiến thức an toàn thông tin!`;
+        }
+
+        function createFireworks() {
+            const container = document.body;
+            for (let i = 0; i < 30; i++) {
+                const fw = document.createElement('div');
+                fw.className = 'firework';
+                fw.style.left = '50%';
+                fw.style.top = '50%';
+                fw.style.backgroundColor = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'][Math.floor(Math.random() * 5)];
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 100 + Math.random() * 200;
+                fw.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+                fw.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+
+                container.appendChild(fw);
+                setTimeout(() => fw.remove(), 1000);
+            }
+        }
+
+        function resetGame() {
+            initAudio();
+            gameState = {
+                playerName: "",
+                playerClass: "",
+                score: 0,
+                pieces: 0,
+                completedMissions: [false, false, false, false, false],
+                currentMission: 1,
+                currentQuestionIdx: 0
+            };
+            document.getElementById('playerName').value = "";
+            document.getElementById('playerClass').value = "";
+
+            document.getElementById('screen-victory').classList.add('hidden');
+            document.getElementById('screen-login').classList.remove('hidden');
+            playSound('click');
+        }
+
+        window.onload = function() {
+            // Initial load hook
+        };
+    </script>
+</body>
+</html>

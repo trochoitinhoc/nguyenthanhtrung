@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Thợ Mỏ Kiến Thức - Đào Vàng</title>
+    <style>
+        :root {
+            --bg-sky: #87CEEB;
+            --surface: #84cc16; /* 🌱 Cỏ */
+            --dirt: #854d0e;    /* 🟤 Đất */
+            --rock: #78716c;    /* 🪨 Đá */
+            --cave: #44403c;    /* 🕳️ Hang */
+            --gold: #b45309;    /* 🪙 Vàng */
+            --diamond: #0f766e; /* 💎 Kim cương */
+            --btn-bg: #f59e0b;
+            --btn-shadow: #b45309;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Nunito', sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-sky);
+            color: #333;
+            overflow-x: hidden;
+            touch-action: manipulation; /* Tối ưu cảm ứng */
+        }
+
+        .hidden { display: none !important; }
+
+        /* Container & Layout */
+        .screen {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .box {
+            background: #fff;
+            border: 4px solid #fcd34d;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 { color: #d97706; font-size: 2.2rem; text-shadow: 2px 2px 0 #fde68a; margin-bottom: 10px; }
+        h2 { color: #0284c7; font-size: 1.5rem; margin-bottom: 20px; }
+        
+        .input-group { margin-bottom: 20px; }
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border: 3px solid #e5e7eb;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--btn-bg); }
+
+        .guide-box {
+            background: #fef3c7;
+            border: 2px dashed #f59e0b;
+            border-radius: 16px;
+            padding: 15px;
+            text-align: left;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .guide-box li { margin-left: 20px; margin-bottom: 5px; }
+
+        /* Buttons */
+        .btn {
+            background: var(--btn-bg);
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 99px;
+            box-shadow: 0 6px 0 var(--btn-shadow);
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.1s;
+            text-transform: uppercase;
+            position: relative;
+        }
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 var(--btn-shadow);
+        }
+        .btn-blue {
+            background: #3b82f6;
+            box-shadow: 0 6px 0 #1d4ed8;
+        }
+        .btn-blue:active { box-shadow: 0 0 0 #1d4ed8; }
+        
+        .btn-outline {
+            background: #f3f4f6;
+            color: #374151;
+            box-shadow: 0 4px 0 #d1d5db;
+        }
+        .btn-outline:active { box-shadow: 0 0 0 #d1d5db; transform: translateY(4px); }
+
+        .top-bar {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #fcd34d;
+        }
+        
+        .stats-container { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 5px;}
+        
+        .stat-badge {
+            background: #fffbeb;
+            border: 2px solid #fde68a;
+            padding: 5px 12px;
+            border-radius: 99px;
+            font-weight: bold;
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 1.1rem;
+        }
+
+        .action-area {
+            text-align: center;
+            padding: 15px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .game-board {
+            background: #271c19;
+            padding: 10px;
+            border-radius: 16px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            margin: 0 auto;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .grid-3x5 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+            position: relative;
+            box-shadow: inset 0 -5px 0 rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        
+        @media (max-width: 350px) { .cell { font-size: 2rem; } }
+
+        .layer-0 { background-color: var(--surface); border-top: 6px solid #4d7c0f; }
+        .layer-1 { background-color: var(--dirt); border-top: 4px solid #713f12; }
+        .layer-2 { background-color: var(--rock); border-top: 4px solid #57534e; }
+        .layer-3 { background-color: var(--gold); border-top: 4px solid #78350f; }
+        .layer-4 { background-color: var(--diamond); border-top: 4px solid #0f172a; }
+
+        .cell:active:not(.locked):not(.revealed) { transform: scale(0.92); }
+
+        .cell.locked {
+            filter: brightness(0.4) grayscale(0.6);
+            cursor: not-allowed;
+        }
+        .cell.locked::after {
+            content: '🔒';
+            position: absolute;
+            font-size: 1.8rem;
+            opacity: 0.9;
+        }
+
+        .cell.revealed {
+            background-color: #3f2e2a !important; 
+            border-top: none;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.6);
+            cursor: default;
+        }
+
+        .item-content {
+            display: none;
+            animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .cell.revealed .item-content { display: block; }
+        
+        .cell.peeking .item-content {
+            display: block !important;
+            opacity: 0.4;
+            filter: blur(1px);
+        }
+
+        @keyframes popUp {
+            0% { transform: scale(0); }
+            80% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .pickaxe-anim {
+            position: absolute;
+            font-size: 4rem;
+            z-index: 50;
+            pointer-events: none;
+            animation: swing 0.3s ease-in-out;
+            transform-origin: bottom right;
+        }
+
+        @keyframes swing {
+            0% { transform: rotate(45deg) translate(-20px, -20px); }
+            50% { transform: rotate(-45deg) translate(10px, 10px); }
+            100% { transform: rotate(0deg) translate(0, 0); }
+        }
+
+        .shaking { animation: shake 0.2s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-5deg); }
+            75% { transform: translateX(5px) rotate(5deg); }
+        }
+
+        .crack-1::before, .crack-2::before {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 0 L30 20 L10 40 L40 50 L20 100' stroke='black' stroke-width='2' fill='none' opacity='0.5'/%3E%3C/svg%3E");
+            background-size: cover; pointer-events: none; border-radius: 12px;
+        }
+        .crack-2::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 0 L30 20 L10 40 L40 50 L20 100 M80 0 L70 30 L90 60 L60 80' stroke='black' stroke-width='3' fill='none' opacity='0.7'/%3E%3C/svg%3E");
+        }
+
+        .highlighting { animation: highlight 1.5s infinite; border: 3px solid gold; }
+        @keyframes highlight {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); z-index: 10; }
+            70% { box-shadow: 0 0 0 15px rgba(255, 215, 0, 0); z-index: 10; }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); z-index: 1; }
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; padding: 20px; opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background: white; border-radius: 24px; padding: 20px;
+            width: 100%; max-width: 450px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: scale(0.8) translateY(20px); transition: all 0.3s;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1) translateY(0); }
+
+        .q-option {
+            width: 100%; text-align: left; padding: 15px; margin-bottom: 10px;
+            background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 12px;
+            font-size: 1.1rem; cursor: pointer; transition: all 0.1s;
+        }
+        .q-option:hover { background: #dbeafe; }
+        .q-option:active { transform: scale(0.98); }
+        
+        .q-correct { background: #22c55e !important; color: white; border-color: #16a34a !important; }
+        .q-wrong { background: #ef4444 !important; color: white; border-color: #dc2626 !important; }
+
+        .feedback-box {
+            padding: 15px; border-radius: 12px; font-weight: bold; margin-top: 10px; font-size: 1.1rem; display: none;
+        }
+        .feedback-correct { background: #dcfce7; color: #166534; border: 2px solid #86efac; display: block; }
+        .feedback-wrong { background: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; display: block; }
+
+        /* BGM Mute Button */
+        .bgm-btn {
+            position: fixed; bottom: 20px; right: 20px; z-index: 99;
+            width: 50px; height: 50px; border-radius: 50%;
+            background: #fff; border: 3px solid #fcd34d;
+            font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Fireworks */
+        .firework {
+            position: fixed; width: 10px; height: 10px; border-radius: 50%;
+            pointer-events: none; z-index: 200;
+            animation: explode 1s ease-out forwards;
+        }
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    
+    <!-- Screen 1: Intro -->
+    <div id="intro-screen" class="screen">
+        <div class="box">
+            <h1>⛏️ THỢ MỎ KIẾN THỨC</h1>
+            <h2>ĐÀO VÀNG - LỚP 4</h2>
+            
+            <div class="input-group">
+                <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" />
+                <input type="text" id="player-class" placeholder="🏫 Nhập lớp (VD: 4A)..." />
+            </div>
+
+            <div class="guide-box">
+                <b>📜 HƯỚNG DẪN CÁCH CHƠI:</b>
+                <ul>
+                    <li>Bấm <b style="color:#2563eb">Nhận lượt đào</b> và trả lời đúng câu hỏi để lấy <b>1 Cuốc ⛏️</b>.</li>
+                    <li>Dùng cuốc đập ô đất tìm 🪨 Đá(+5), 🪙 Vàng(+20), 💎 Kim cương(+50).</li>
+                    <li>Đào đủ số ô để mở khóa các tầng sâu hơn dưới lòng đất.</li>
+                    <li>Tại ô cuối cùng, hãy vượt qua thử thách để lấy <b>Viên Kim Cương Huyền Thoại 💠</b>!</li>
+                </ul>
+            </div>
+
+            <button onclick="startGame()" class="btn">🚀 BẮT ĐẦU ĐÀO VÀNG</button>
+        </div>
+    </div>
+
+    <!-- Screen 2: Game -->
+    <div id="game-screen" class="screen hidden" style="padding: 0; justify-content: flex-start;">
+        <div class="top-bar">
+            <div style="font-weight: bold; font-size: 1.2rem; color: #1e3a8a;" id="display-info">👨‍🚀 Thợ mỏ</div>
+            <button onclick="showModal('modal-instructions')" class="btn-outline" style="padding: 5px 12px; border-radius: 10px; font-size: 0.9rem; border:none;">❓ HD</button>
+            <div class="stats-container">
+                <div class="stat-badge" style="background: #dbeafe; border-color: #93c5fd;" id="badge-pick">⛏️ <span id="stat-pickaxes">0</span></div>
+                <div class="stat-badge">🎯 <span id="stat-score">0</span></div>
+                <div class="stat-badge">🪙 <span id="stat-gold">0</span></div>
+                <div class="stat-badge">💎 <span id="stat-diamond">0</span></div>
+            </div>
+        </div>
+
+        <div class="action-area">
+            <button onclick="requestQuestion('normal')" class="btn btn-blue" style="animation: pulse 2s infinite;">
+                + NHẬN LƯỢT ĐÀO (Trả lời câu hỏi)
+            </button>
+            <p style="margin-top:10px; font-size:0.9rem; color:#1e40af;">Hãy đào các ô tầng trên để mở khóa tầng sâu hơn!</p>
+        </div>
+
+        <!-- Bàn chơi 3x5 = 15 ô -->
+        <div class="game-board">
+            <div class="grid-3x5" id="mine-grid">
+                <!-- Javascript sinh lưới tại đây -->
+            </div>
+        </div>
+        <div style="height: 50px;"></div> <!-- Đệm dưới cùng -->
+    </div>
+
+    <!-- Screen 3: End Game -->
+    <div id="end-screen" class="screen hidden" style="background: linear-gradient(#fde68a, #f59e0b);">
+        <div class="box">
+            <h1 style="color: #dc2626; font-size: 2.5rem;">🎉 CHIẾN THẮNG! 🎉</h1>
+            <h2 id="end-name" style="color: #047857; margin-bottom: 5px;">Thợ mỏ</h2>
+            <p style="font-size: 1.2rem; font-weight: bold; color:#4b5563; margin-bottom: 20px;">Đã tìm thấy Kim Cương Huyền Thoại!</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; text-align: left;">
+                <div style="background:#f3f4f6; padding:10px; border-radius:12px;">🎯 Điểm: <b style="color:red; font-size:1.3rem;" id="end-score">0</b></div>
+                <div style="background:#f3f4f6; padding:10px; border-radius:12px;">⛏️ Đã đào: <b id="end-dug">0</b> ô</div>
+                <div style="background:#fef3c7; padding:10px; border-radius:12px;">🪙 Vàng: <b id="end-gold">0</b></div>
+                <div style="background:#ccfbf1; padding:10px; border-radius:12px;">💎 K.Cương: <b id="end-diamond">0</b></div>
+                <div style="background:#dcfce7; padding:10px; border-radius:12px;">✅ Đúng: <b id="end-correct" style="color:#16a34a;">0</b></div>
+                <div style="background:#fee2e2; padding:10px; border-radius:12px;">❌ Sai: <b id="end-wrong" style="color:#dc2626;">0</b></div>
+            </div>
+
+            <div id="review-section" class="guide-box hidden">
+                <b style="color:#92400e;">📚 KIẾN THỨC CẦN ÔN LẠI:</b>
+                <ul id="review-list" style="color:#4b5563;"></ul>
+            </div>
+
+            <button onclick="resetGame()" class="btn btn-blue">🔄 CHƠI LẠI TỪ ĐẦU</button>
+        </div>
+    </div>
+
+    
+    <!-- Modal: Question -->
+    <div id="modal-question" class="modal-overlay">
+        <div class="modal-content" style="border: 4px solid #3b82f6;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 id="q-title" style="margin:0; color:#1d4ed8;">🧠 CÂU HỎI</h2>
+                <span id="q-type-badge" style="background:#ef4444; color:white; padding:4px 8px; border-radius:10px; font-size:0.8rem; font-weight:bold;">TỔNG HỢP</span>
+            </div>
+            <p id="q-text" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; text-align: left;"></p>
+            <div id="q-options" style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Nút đáp án -->
+            </div>
+            <div id="q-feedback" class="feedback-box"></div>
+            <button id="q-next-btn" class="btn hidden" style="margin-top: 15px;">TIẾP TỤC</button>
+        </div>
+    </div>
+
+    <!-- Modal: Item Alert -->
+    <div id="modal-alert" class="modal-overlay">
+        <div class="modal-content">
+            <div id="alert-icon" style="font-size: 5rem; margin-bottom: 10px; animation: popUp 0.5s;"></div>
+            <h2 id="alert-title" style="font-size: 2rem; color: #d97706; margin-bottom: 10px;"></h2>
+            <p id="alert-desc" style="font-size: 1.2rem; margin-bottom: 20px; line-height: 1.4;"></p>
+            <button onclick="closeAlert()" class="btn">TUYỆT VỜI!</button>
+        </div>
+    </div>
+
+    <!-- Modal: Instructions -->
+    <div id="modal-instructions" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="color:#d97706;">📜 HƯỚNG DẪN</h2>
+            <ul style="text-align:left; line-height: 1.6; margin-bottom: 20px; padding-left:20px;">
+                <li>Bấm <b>NHẬN LƯỢT ĐÀO</b> để trả lời câu hỏi Tin học. Đúng được 1 cuốc ⛏️.</li>
+                <li>🪨 Đá (+5đ), 🪙 Vàng (+20đ), 💎 Kim cương (+50đ).</li>
+                <li>⚡ <b>Cuốc vàng</b>: Tặng 1 lượt đào.</li>
+                <li>🔦 <b>Đèn soi</b>: Lộ 2 ô chưa đào.</li>
+                <li>🗺️ <b>Bản đồ</b>: Sáng ô giá trị ở tầng dưới.</li>
+                <li>📦 <b>Rương/Đá khổng lồ</b>: Trả lời câu khó nhận báu vật.</li>
+                <li>Đào tới cuối để lấy <b>KIM CƯƠNG HUYỀN THOẠI 💠</b>!</li>
+            </ul>
+            <button onclick="hideModal('modal-instructions')" class="btn btn-blue">ĐÃ HIỂU</button>
+        </div>
+    </div>
+
+    <!-- BGM Mute Button -->
+    <button class="bgm-btn" onclick="toggleBGM()" id="btn-bgm">🎵</button>
+
+    <script>
+        // --- 1. DỮ LIỆU CÂU HỎI (Bám sát Tin 4 Bài 2) ---
+        const QUESTIONS = {
+            normal: [
+                { q: "Lợi ích của việc gõ bàn phím đúng cách là gì?", opts: ["Tiết kiệm thời gian, công sức và bảo vệ sức khoẻ.", "Chỉ giúp gõ chữ nhanh hơn.", "Giữ bàn phím luôn sạch sẽ."], a: 0, hint: "Gõ đúng cách giúp gõ nhanh, không mỏi mắt mỏi cổ." },
+                { q: "Khi gõ các phím số, ngón tay của em vươn từ đâu đến gõ?", opts: ["Từ hàng phím trên.", "Từ vị trí xuất phát trên hàng phím cơ sở.", "Từ hàng phím dưới."], a: 1, hint: "Bắt đầu từ vị trí xuất phát trên hàng phím cơ sở." },
+                { q: "Sau khi gõ xong một phím số, em phải làm gì?", opts: ["Đưa ngón tay trở về vị trí xuất phát.", "Giữ nguyên ngón tay trên hàng phím số.", "Di chuyển ngón tay về hàng phím trên."], a: 0, hint: "Gõ xong phải đưa tay về vị trí xuất phát ngay." },
+                { q: "Ngón trỏ tay trái phụ trách gõ các phím số nào?", opts: ["2 và 3.", "6 và 7.", "4 và 5."], a: 2, hint: "Ngón trỏ trái (phím F) vươn lên gõ 4 và 5." },
+                { q: "Ngón trỏ tay phải phụ trách gõ các phím số nào?", opts: ["6 và 7.", "4 và 5.", "8 và 9."], a: 0, hint: "Ngón trỏ phải (phím J) vươn lên gõ 6 và 7." },
+                { q: "Phím số 8 do ngón nào phụ trách gõ?", opts: ["Ngón trỏ tay phải.", "Ngón giữa tay phải.", "Ngón giữa tay trái."], a: 1, hint: "Ngón giữa phải (phím K) vươn lên gõ số 8." },
+                { q: "Ngón út tay trái phụ trách gõ phím số mấy?", opts: ["Phím số 1.", "Phím số 0.", "Phím số 2."], a: 0, hint: "Ngón út trái xa nhất bên trái, gõ phím số 1." },
+                { q: "Khi luyện tập gõ phím, nếu không phải nhìn vào bàn phím thì sẽ giúp ích gì?", opts: ["Gõ được nhiều chữ hoa hơn.", "Không bị mỏi mắt, mỏi cổ.", "Không bị ấn nhầm phím xoá."], a: 1, hint: "Không nhìn bàn phím giúp bảo vệ mắt và cổ." }
+            ],
+            hard: [ 
+                { q: "Thử thách Rương: Phím số 0 và số 9 lần lượt do các ngón nào phụ trách?", opts: ["Ngón út trái và ngón áp út trái.", "Ngón trỏ phải và ngón giữa phải.", "Ngón út phải và ngón áp út phải."], a: 2, hint: "Số 0 là ngón út phải, số 9 là ngón áp út phải." },
+                { q: "Điền từ: 'Gõ bàn phím đúng cách sẽ giúp em gõ ... và ... hơn.'", opts: ["chậm / chắc chắn", "nhanh / chính xác", "mạnh / rõ nét"], a: 1, hint: "Lợi ích là tiết kiệm thời gian (nhanh) và đúng (chính xác)." }
+            ],
+            boss: [ 
+                { q: "💠 CÂU HỎI CUỐI CÙNG:\nHãy sắp xếp thứ tự các bước để gõ phím số đúng cách:\n1. Đưa ngón tay trở về vị trí xuất phát.\n2. Đặt tay ở vị trí xuất phát.\n3. Vươn ngón tay gõ phím số.", opts: ["2 -> 3 -> 1", "3 -> 2 -> 1", "1 -> 2 -> 3"], a: 0, hint: "Bắt đầu ở vị trí xuất phát -> vươn ngón tay gõ -> thu về." }
+            ]
+        };
+
+        // --- 2. CẤU HÌNH TRÒ CHƠI ---
+        const ROWS = 5;
+        const COLS = 3;
+        // Tổng 15 ô, mỗi tầng 3 ô
+        const LAYER_DEFS = [
+            { layerId: 0, cssClass: 'layer-0', unlockAt: 0, items: ['rock','rock','chest'] },
+            { layerId: 1, cssClass: 'layer-1', unlockAt: 2, items: ['gold','gold','map'] },
+            { layerId: 2, cssClass: 'layer-2', unlockAt: 5, items: ['giant_rock','flashlight','gold'] },
+            { layerId: 3, cssClass: 'layer-3', unlockAt: 8, items: ['diamond','gold','golden_pick'] },
+            { layerId: 4, cssClass: 'layer-4', unlockAt: 11, items: ['diamond','rock','legendary'] } // Chắc chắn có Legendary ở đáy
+        ];
+
+        const ITEM_CONFIG = {
+            'rock': { icon: '🪨', name: 'Đá Thường', points: 5, color: '#4b5563' },
+            'gold': { icon: '🪙', name: 'Vàng', points: 20, color: '#d97706' },
+            'diamond': { icon: '💎', name: 'Kim Cương', points: 50, color: '#0f766e' },
+            'chest': { icon: '📦', name: 'Rương Bí Mật', points: 30, color: '#b45309' },
+            'giant_rock': { icon: '🗿', name: 'Đá Khổng Lồ', points: 40, color: '#374151' },
+            'map': { icon: '🗺️', name: 'Bản Đồ', points: 10, color: '#15803d' },
+            'golden_pick': { icon: '⚡', name: 'Cuốc Vàng', points: 5, color: '#eab308' },
+            'flashlight': { icon: '🔦', name: 'Đèn Soi', points: 5, color: '#1f2937' },
+            'legendary': { icon: '💠', name: 'Kim Cương Huyền Thoại', points: 200, color: '#db2777' }
+        };
+
+        let player = { name: '', class: '', score: 0, pickaxes: 0, gold: 0, diamond: 0, correct: 0, wrong: 0, dug: 0 };
+        let grid = [];
+        let unlockedLayer = 0; 
+        let isAnimating = false;
+        let reviewList = new Set();
+        let currentResolve = null; // Dùng để đợi Promise trả lời câu hỏi
+
+        // --- 3. TIỆN ÍCH CHUNG ---
+        const $id = id => document.getElementById(id);
+        const showModal = id => $id(id).classList.add('active');
+        const hideModal = id => $id(id).classList.remove('active');
+        const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+
+        // --- 4. WEB AUDIO API (OFFLINE SOUND & BGM) ---
+        let audioCtx, bgmOsc, bgmGain, isMuted = false, bgmInterval;
+        const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // C4, E4, G4, C5, G4, E4 (Vui nhộn)
+        let noteIndex = 0;
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function toggleBGM() {
+            initAudio();
+            isMuted = !isMuted;
+            $id('btn-bgm').innerText = isMuted ? '🔇' : '🎵';
+            if(isMuted) {
+                if(bgmGain) bgmGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                clearInterval(bgmInterval);
+            } else {
+                startBGM();
+            }
+        }
+
+        function startBGM() {
+            if(isMuted || !audioCtx) return;
+            audioCtx.resume();
+            bgmInterval = setInterval(() => {
+                if(isMuted) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = notes[noteIndex % notes.length];
+                noteIndex++;
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime); // Nhạc nền nhỏ
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }, 400); // 1 nhịp 400ms
+        }
+
+        function playSound(type) {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            
+            if (type === 'hit') { // Đập đá
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'coin') { // Ting ting vàng
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.setValueAtTime(1600, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'wrong') { // Tịt
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'win') { // Tada (Chiến thắng/Câu đúng)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.setValueAtTime(600, now + 0.15);
+                osc.frequency.setValueAtTime(800, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            }
+        }
+
+        // --- 5. HIỆU ỨNG PHÁO HOA TỰ VIẾT (DOM) ---
+        function shootFireworks() {
+            const colors = ['#f87171', '#fbbf24', '#34d399', '#60a5fa', '#c084fc'];
+            for(let i=0; i<30; i++) {
+                const fw = document.createElement('div');
+                fw.className = 'firework';
+                fw.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                // Bắn từ giữa màn hình
+                fw.style.left = window.innerWidth / 2 + 'px';
+                fw.style.top = window.innerHeight / 2 + 'px';
+                // Tính toán hướng bay ngẫu nhiên
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * 150 + 50;
+                fw.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+                fw.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
+                document.body.appendChild(fw);
+                // Xoá sau khi nổ xong
+                setTimeout(() => fw.remove(), 1000);
+            }
+        }
+
+        // --- STREAMING_CHUNK: Logic Luồng Trò Chơi (Bắt đầu, Khởi tạo Lưới) ---
+        function startGame() {
+            const name = $id('player-name').value.trim();
+            if (!name) { alert("Xin hãy nhập tên của em nhé!"); return; }
+            
+            initAudio(); 
+            startBGM();
+
+            player.name = name;
+            player.class = $id('player-class').value.trim();
+            $id('intro-screen').classList.add('hidden');
+            $id('game-screen').classList.remove('hidden');
+            
+            let displayName = player.name;
+            if(player.class) displayName += ` (${player.class})`;
+            $id('display-info').innerText = `👨‍🚀 ${displayName}`;
+            
+            resetStats();
+            generateGrid();
+            updateUI();
+        }
+
+        function resetStats() {
+            player.score = player.pickaxes = player.gold = player.diamond = player.correct = player.wrong = player.dug = 0;
+            unlockedLayer = 0;
+            isAnimating = false;
+            reviewList.clear();
+        }
+
+        function generateGrid() {
+            const gridEl = $id('mine-grid');
+            gridEl.innerHTML = '';
+            grid = [];
+
+            for (let r = 0; r < ROWS; r++) {
+                let items = shuffle([...LAYER_DEFS[r].items]); 
+                let rowCells = [];
+                for (let c = 0; c < COLS; c++) {
+                    const cellData = {
+                        row: r, col: c, item: items[c], isRevealed: false,
+                        layerClass: LAYER_DEFS[r].cssClass
+                    };
+                    rowCells.push(cellData);
+                    
+                    const cellEl = document.createElement('div');
+                    cellEl.className = `cell ${cellData.layerClass} locked`;
+                    cellEl.id = `cell-${r}-${c}`;
+                    cellEl.innerHTML = `<div class="item-content">${ITEM_CONFIG[items[c]].icon}</div>`;
+                    cellEl.onclick = () => handleCellClick(r, c);
+                    gridEl.appendChild(cellEl);
+                }
+                grid.push(rowCells);
+            }
+            updateLayerLocks();
+        }
+
+        function updateLayerLocks() {
+            // Mở khóa tầng dựa trên số ô đã đào (Unlock logic)
+            for (let i = 0; i < LAYER_DEFS.length; i++) {
+                if (player.dug >= LAYER_DEFS[i].unlockAt) {
+                    if (unlockedLayer < i) unlockedLayer = i;
+                }
+            }
+            // Áp dụng class locked
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const el = $id(`cell-${r}-${c}`);
+                    if (r <= unlockedLayer && !grid[r][c].isRevealed) {
+                        el.classList.remove('locked');
+                    } else if (r > unlockedLayer) {
+                        el.classList.add('locked');
+                    }
+                }
+            }
+        }
+
+        function updateUI() {
+            $id('stat-pickaxes').innerText = player.pickaxes;
+            $id('stat-score').innerText = player.score;
+            $id('stat-gold').innerText = player.gold;
+            $id('stat-diamond').innerText = player.diamond;
+            
+            // Đổi màu badge nếu có cuốc
+            const pBadge = $id('badge-pick');
+            if (player.pickaxes > 0) {
+                pBadge.style.background = '#dcfce7'; pBadge.style.borderColor = '#86efac';
+            } else {
+                pBadge.style.background = '#dbeafe'; pBadge.style.borderColor = '#93c5fd';
+            }
+        }
+
+        // --- STREAMING_CHUNK: Quản lý Câu hỏi và Trả lời ---
+        function requestQuestion(type) {
+            if (isAnimating && type === 'normal') return; 
+            return new Promise(resolve => {
+                currentResolve = resolve;
+                let qList = QUESTIONS[type] || QUESTIONS.normal;
+                let qData = qList[Math.floor(Math.random() * qList.length)];
+                
+                // Thiết lập Giao diện Modal
+                $id('q-title').innerText = type === 'normal' ? '🧠 CÂU HỎI' : (type === 'hard' ? '⚠️ THỬ THÁCH RƯƠNG/ĐÁ' : '💠 TRÙM CUỐI');
+                
+                let badge = $id('q-type-badge');
+                badge.innerText = type === 'normal' ? 'NHẬN CUỐC' : 'THỬ THÁCH';
+                badge.style.background = type === 'normal' ? '#3b82f6' : '#ef4444';
+                
+                $id('q-text').innerHTML = qData.q.replace(/\n/g, '<br>');
+                
+                const optsContainer = $id('q-options');
+                optsContainer.innerHTML = '';
+                $id('q-feedback').className = 'feedback-box'; // Reset feedback
+                $id('q-next-btn').classList.add('hidden');
+
+                // Tạo các nút đáp án
+                qData.opts.forEach((optText, index) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'q-option';
+                    btn.innerText = String.fromCharCode(65 + index) + ". " + optText;
+                    btn.onclick = () => handleAnswer(index, qData, btn, type);
+                    optsContainer.appendChild(btn);
+                });
+
+                showModal('modal-question');
+            });
+        }
+
+        function handleAnswer(selectedIndex, qData, btnEl, type) {
+            // Khóa click
+            const buttons = $id('q-options').querySelectorAll('.q-option');
+            buttons.forEach(b => { b.onclick = null; b.style.cursor = 'default'; });
+
+            const feedbackEl = $id('q-feedback');
+            const nextBtn = $id('q-next-btn');
+            nextBtn.classList.remove('hidden');
+
+            const isCorrect = (selectedIndex === qData.a);
+
+            if (isCorrect) {
+                playSound('win');
+                shootFireworks();
+                player.correct++;
+                btnEl.classList.add('q-correct');
+                
+                let fbText = "🎉 CHÍNH XÁC!";
+                if (type === 'normal') {
+                    player.pickaxes++;
+                    fbText += "<br>Em nhận được 1 Lượt Đào (⛏️)";
+                }
+                feedbackEl.innerHTML = fbText;
+                feedbackEl.className = 'feedback-box feedback-correct';
+                
+                nextBtn.onclick = () => {
+                    hideModal('modal-question');
+                    updateUI();
+                    if(currentResolve) currentResolve(true);
+                };
+            } else {
+                playSound('wrong');
+                player.wrong++;
+                reviewList.add(qData.hint); // Lưu vào danh sách ôn tập
+                
+                btnEl.classList.add('q-wrong');
+                buttons[qData.a].classList.add('q-correct'); // Hiển thị đáp án đúng
+                
+                feedbackEl.innerHTML = `❌ CHƯA CHÍNH XÁC - HÃY THỬ LẠI<br><span style="font-weight:normal; font-size:1rem;">Gợi ý: ${qData.hint}</span>`;
+                if(type === 'normal') feedbackEl.innerHTML += "<br><i style='font-size:0.9rem;'>(Không nhận được cuốc, cố lên nhé!)</i>";
+                feedbackEl.className = 'feedback-box feedback-wrong';
+                
+                nextBtn.onclick = () => {
+                    hideModal('modal-question');
+                    updateUI();
+                    if(currentResolve) currentResolve(false);
+                };
+            }
+        }
+
+        // --- STREAMING_CHUNK: Xử lý Đào Vàng và Sự Kiện Ô Đất ---
+        async function handleCellClick(r, c) {
+            const cellData = grid[r][c];
+            const cellEl = $id(`cell-${r}-${c}`);
+
+            // Kiểm tra hợp lệ
+            if (isAnimating || cellData.isRevealed) return;
+            if (cellEl.classList.contains('locked')) {
+                cellEl.classList.add('shaking');
+                setTimeout(() => cellEl.classList.remove('shaking'), 200);
+                playSound('wrong');
+                return;
+            }
+            if (player.pickaxes <= 0) {
+                showAlert('⛏️ HẾT LƯỢT ĐÀO', 'Em hãy bấm nút "NHẬN LƯỢT ĐÀO" và trả lời đúng để có thêm cuốc nhé!', '❌');
+                return;
+            }
+
+            // Bắt đầu đào
+            isAnimating = true;
+            player.pickaxes--; // Trừ 1 cuốc
+            updateUI();
+
+            // 1. Sinh Cuốc Chim Ảo
+            const pickaxe = document.createElement('div');
+            pickaxe.className = 'pickaxe-anim';
+            pickaxe.innerText = '⛏️';
+            const rect = cellEl.getBoundingClientRect();
+            document.body.appendChild(pickaxe);
+            pickaxe.style.left = (rect.left + rect.width/2 - 20) + 'px';
+            pickaxe.style.top = (rect.top - 40) + 'px';
+
+            playSound('hit');
+
+            // 2. Rung và nứt
+            cellEl.classList.add('shaking', 'crack-1');
+            await new Promise(res => setTimeout(res, 300));
+            pickaxe.remove();
+            
+            // 3. Xử lý câu hỏi nếu trúng Rương/Đá/Kim cương huyền thoại
+            let success = true;
+            const itemType = cellData.item;
+            
+            if (itemType === 'chest' || itemType === 'giant_rock') {
+                cellEl.classList.replace('crack-1', 'crack-2');
+                success = await requestQuestion('hard');
+                if (!success) {
+                    // Trả lời sai -> Biến thành đá thường
+                    cellData.item = 'rock'; 
+                    cellEl.querySelector('.item-content').innerHTML = ITEM_CONFIG['rock'].icon;
+                    showAlert('Tiếc quá!', 'Thử thách thất bại, báu vật đã biến thành đá thường.', '💨');
+                }
+            } else if (itemType === 'legendary') {
+                cellEl.classList.replace('crack-1', 'crack-2');
+                success = await requestQuestion('boss');
+                if (!success) {
+                    // Trả lời sai Boss -> Dừng lại, chưa mở ô, trả lại cuốc?
+                    // Trò chơi cho phép họ tìm thêm cuốc để thử lại ô này
+                    isAnimating = false;
+                    cellEl.classList.remove('crack-2', 'shaking', 'crack-1');
+                    // Không trả lại cuốc vì họ đã cuốc trúng, coi như tốn 1 lượt cho 1 lần trả lời sai
+                    return; 
+                }
+            }
+
+            // 4. Mở Ô (Reveal)
+            cellData.isRevealed = true;
+            player.dug++;
+            cellEl.classList.remove('shaking', 'crack-1', 'crack-2', 'peeking');
+            cellEl.classList.add('revealed');
+            
+            // Cập nhật điểm & Hiệu ứng âm thanh
+            const finalItemType = cellData.item;
+            const config = ITEM_CONFIG[finalItemType];
+            
+            player.score += config.points;
+            if (finalItemType === 'gold') { player.gold++; playSound('coin'); }
+            else if (finalItemType === 'diamond') { player.diamond++; playSound('coin'); setTimeout(()=>playSound('coin'), 150); }
+            else if (finalItemType === 'golden_pick') { player.pickaxes++; playSound('win'); }
+            else playSound('hit');
+
+            updateUI();
+            updateLayerLocks();
+
+            // 5. Hiển thị Popup Nhận Đồ & Hiệu ứng kỹ năng
+            await showItemAlert(finalItemType, config);
+            
+            if (finalItemType === 'map') applyMapEffect();
+            if (finalItemType === 'flashlight') applyFlashlightEffect();
+
+            isAnimating = false;
+
+            // 6. Kích hoạt kết thúc Game nếu là Legendary (Đã sửa lỗi bug ở bước này)
+            if (finalItemType === 'legendary') {
+                endGame();
+            }
+        }
+
+        // --- STREAMING_CHUNK: Hiệu ứng Vật phẩm và Kết thúc ---
+        function showAlert(title, desc, icon) {
+            $id('alert-icon').innerText = icon;
+            $id('alert-title').innerText = title;
+            $id('alert-title').style.color = "#374151";
+            $id('alert-desc').innerHTML = desc;
+            showModal('modal-alert');
+        }
+
+        function closeAlert() { hideModal('modal-alert'); }
+
+        async function showItemAlert(itemType, config) {
+            return new Promise(resolve => {
+                let desc = `+${config.points} điểm.`;
+                
+                if (itemType === 'golden_pick') desc += '<br><b style="color:#16a34a">Tuyệt vời! Tặng thêm 1 lượt đào.</b>';
+                if (itemType === 'map') desc += '<br><b style="color:#2563eb">Bản đồ làm sáng ô quý giá ở tầng chưa mở!</b>';
+                if (itemType === 'flashlight') desc += '<br><b style="color:#4f46e5">Đèn soi lộ diện 2 ô bí mật.</b>';
+                if (itemType === 'legendary') {
+                    desc = '<b style="color:#db2777; font-size:1.3rem;">KIM CƯƠNG HUYỀN THOẠI ĐÃ ĐƯỢC TÌM THẤY!</b>';
+                    playSound('win');
+                    shootFireworks();
+                }
+
+                $id('alert-icon').innerText = config.icon;
+                $id('alert-title').innerText = config.name;
+                $id('alert-title').style.color = config.color;
+                $id('alert-desc').innerHTML = desc;
+                
+                showModal('modal-alert');
+                
+                // Bấm nút TUYỆT VỜI sẽ đóng alert và resolve
+                const btn = $id('modal-alert').querySelector('button');
+                btn.onclick = () => {
+                    closeAlert();
+                    resolve();
+                };
+            });
+        }
+
+        function applyMapEffect() {
+            // Tìm ô có giá trị nhất ở các tầng chưa mở
+            let bestTarget = null;
+            let highestVal = -1;
+
+            for (let r = unlockedLayer + 1; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let cell = grid[r][c];
+                    if (!cell.isRevealed) {
+                        let val = ITEM_CONFIG[cell.item].points;
+                        if (cell.item === 'legendary') val += 1000;
+                        if (cell.item === 'golden_pick') val += 100; 
+                        
+                        if (val > highestVal) { highestVal = val; bestTarget = {r, c}; }
+                    }
+                }
+            }
+
+            if (bestTarget) {
+                const el = $id(`cell-${bestTarget.r}-${bestTarget.c}`);
+                el.classList.add('highlighting');
+                setTimeout(() => el.classList.remove('highlighting'), 4000); // Tắt nhấp nháy sau 4s
+            }
+        }
+
+        function applyFlashlightEffect() {
+            // Hé lộ ngẫu nhiên 2 ô chưa đào (tầng đã mở hoặc sắp mở)
+            let hiddenCells = [];
+            for (let r = 0; r <= Math.min(unlockedLayer + 1, ROWS - 1); r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (!grid[r][c].isRevealed && grid[r][c].item !== 'flashlight') {
+                        hiddenCells.push({r, c});
+                    }
+                }
+            }
+            
+            hiddenCells = shuffle(hiddenCells).slice(0, 2); 
+            hiddenCells.forEach(pos => {
+                const el = $id(`cell-${pos.r}-${pos.c}`);
+                el.classList.add('peeking'); // Class làm mờ đất hiện item mờ mờ
+            });
+        }
+
+        function endGame() {
+            $id('game-screen').classList.add('hidden');
+            $id('end-screen').classList.remove('hidden');
+            
+            $id('end-name').innerText = player.name + (player.class ? ` (${player.class})` : '');
+            $id('end-score').innerText = player.score;
+            $id('end-dug').innerText = player.dug;
+            $id('end-gold').innerText = player.gold;
+            $id('end-diamond').innerText = player.diamond;
+            $id('end-correct').innerText = player.correct;
+            $id('end-wrong').innerText = player.wrong;
+
+            const reviewSec = $id('review-section');
+            const reviewUl = $id('review-list');
+            if (reviewList.size > 0) {
+                reviewSec.classList.remove('hidden');
+                reviewUl.innerHTML = Array.from(reviewList).map(text => `<li>${text}</li>`).join('');
+            } else {
+                reviewSec.classList.add('hidden');
+            }
+            
+            // Âm thanh và pháo hoa liên tục
+            for(let i=0; i<4; i++) {
+                setTimeout(() => { playSound('win'); shootFireworks(); }, i * 600);
+            }
+        }
+
+        function resetGame() {
+            $id('end-screen').classList.add('hidden');
+            $id('intro-screen').classList.remove('hidden');
+            if(bgmGain) { // Tắt nhạc khi quay lại màn hình chờ
+                bgmGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                clearInterval(bgmInterval);
+            }
+        }
+    </script>
+</body>
+</html>

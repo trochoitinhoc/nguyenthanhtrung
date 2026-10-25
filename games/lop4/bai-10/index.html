@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Phi Công Giao Hàng - Bài 10: Phần mềm soạn thảo văn bản</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Baloo 2', cursive, sans-serif;
+            background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
+            margin: 0;
+            overflow: hidden;
+            touch-action: none;
+            color: #333;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-canvas {
+            background-color: #87CEEB;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 4px solid #fff;
+            border-radius: 12px;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 50;
+            backdrop-filter: blur(4px);
+        }
+
+        .panel {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            border: 4px solid #fff;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .btn {
+            background: linear-gradient(to bottom, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            color: #d11a2a;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(209, 26, 42, 0.3);
+            transition: all 0.2s;
+            font-family: 'Baloo 2', cursive;
+            margin: 5px;
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(209, 26, 42, 0.4); }
+        .btn:active { transform: translateY(1px); }
+        .btn-blue { background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%); color: white; box-shadow: 0 5px 15px rgba(0, 198, 255, 0.3); }
+        .btn-green { background: linear-gradient(to right, #43e97b 0%, #38f9d7 100%); color: #0a5225; box-shadow: 0 5px 15px rgba(56, 249, 215, 0.4); }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-family: inherit;
+        }
+
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: 800px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .hud-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid #4facfe;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fuel-bar-container {
+            width: 100px;
+            height: 15px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .fuel-bar {
+            height: 100%;
+            background: #43e97b;
+            width: 100%;
+            transition: width 0.2s, background-color 0.2s;
+        }
+
+        #mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .d-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.7);
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            color: #333;
+        }
+        .d-btn:active { background: rgba(200,200,200,0.9); transform: scale(0.95); }
+
+        #orientation-warning {
+            display: none;
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background: #111; color: white; z-index: 9999;
+            flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 20px;
+        }
+        @media screen and (orientation: portrait) and (max-width: 768px) {
+            #orientation-warning { display: flex; }
+            #main-wrapper { display: none; }
+        }
+
+        #sound-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.8);
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 40;
+        }
+    </style>
+</head>
+<body>
+    <div id="orientation-warning">
+        <div class="text-6xl mb-4">📱 ➡️ 🔄</div>
+        <h2 class="text-2xl font-bold mb-2">Vui lòng xoay ngang màn hình</h2>
+        <p class="text-gray-300">Game trải nghiệm tốt nhất ở chế độ toàn cảnh (Landscape).</p>
+    </div>
+
+    <div id="main-wrapper" style="width: 100%; height: 100%;">
+        <button id="sound-toggle">🔊</button>
+
+        <div id="game-container">
+            <canvas id="game-canvas" width="800" height="450"></canvas>
+
+            <div id="hud" class="hidden">
+                <div class="hud-box text-blue-600">
+                    <span>❤️ <span id="hud-lives">3</span></span>
+                </div>
+                <div class="hud-box text-green-600">
+                    <span>⛽</span>
+                    <div class="fuel-bar-container"><div id="hud-fuel" class="fuel-bar"></div></div>
+                </div>
+                <div class="hud-box text-purple-600">
+                    <span>📦 <span id="hud-deliveries">0</span>/5</span>
+                </div>
+                <div class="hud-box text-red-500">
+                    <span>⭐ <span id="hud-score">0</span></span>
+                </div>
+            </div>
+
+            <div id="mobile-controls">
+                <div class="control-group flex-col">
+                    <div class="d-btn" id="btn-up">↑</div>
+                    <div class="d-btn" id="btn-down">↓</div>
+                </div>
+                <div class="control-group items-end">
+                    <div class="d-btn" id="btn-left">←</div>
+                    <div class="d-btn" id="btn-right">→</div>
+                </div>
+            </div>
+
+            <!-- Start Screen -->
+            <div id="start-screen" class="ui-layer">
+                <div class="panel">
+                    <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">PHI CÔNG GIAO HÀNG</h1>
+                    <p class="text-lg text-gray-600 mb-6">Ôn tập Bài 10: Phần mềm soạn thảo văn bản (Tin học 4)</p>
+                    
+                    <div class="max-w-xs mx-auto">
+                        <input type="text" id="player-name" placeholder="Biệt danh (không nhập tên thật)" required>
+                        <input type="text" id="player-class" placeholder="Lớp (VD: 4A)" required>
+                        <p id="login-error" class="text-red-500 text-sm hidden mb-2">Vui lòng nhập đủ thông tin!</p>
+                        <button id="btn-start" class="btn btn-blue w-full">BẮT ĐẦU CHƠI</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tutorial Screen -->
+            <div id="tutorial-screen" class="ui-layer" style="display: none;">
+                <div class="panel" style="max-width: 600px;">
+                    <h2 class="text-3xl font-bold text-blue-600 mb-4">HƯỚNG DẪN CHUYẾN BAY</h2>
+                    <div class="text-left space-y-3 mb-6 text-gray-700 text-lg">
+                        <p><strong>🎯 Nhiệm vụ:</strong> Lái máy bay vượt qua 5 chặng, trả lời các câu hỏi chính xác về Bài 10.</p>
+                        <p><strong>🕹️ Điều khiển:</strong> Dùng phím Mũi tên (hoặc WASD) hoặc nút cảm ứng trên màn hình.</p>
+                        <div class="bg-gray-100 p-3 rounded-lg flex flex-col gap-2">
+                            <div class="flex items-center gap-2"><span class="text-2xl">📦</span> <strong>Điểm giao hàng:</strong> Gặp câu hỏi về phần mềm soạn thảo văn bản!</div>
+                            <div class="flex items-center gap-2"><span class="text-2xl">🔋</span> <strong>Nhiên liệu:</strong> Thu thập để tăng nhiên liệu bay.</div>
+                        </div>
+                    </div>
+                    <button id="btn-understand" class="btn btn-green w-full py-3 text-xl animate-pulse">ĐÃ HIỂU - BẮT ĐẦU BAY!</button>
+                </div>
+            </div>
+
+            <!-- Question Screen -->
+            <div id="question-screen" class="ui-layer" style="display: none;">
+                <div class="panel" style="max-width: 600px; width: 90%;">
+                    <div class="text-2xl mb-2">📦 ĐIỂM GIAO HÀNG</div>
+                    <h2 id="q-text" class="text-xl font-bold text-gray-800 mb-4 text-left">Nội dung câu hỏi?</h2>
+                    <div id="q-options" class="flex flex-col gap-2 mb-4"></div>
+                    <div id="q-feedback" class="hidden p-3 rounded-lg mb-4 text-left font-semibold"></div>
+                    <button id="btn-next-q" class="btn btn-blue hidden w-full">TIẾP TỤC BAY</button>
+                </div>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="result-screen" class="ui-layer" style="display: none;">
+                <div class="panel">
+                    <h1 id="result-title" class="text-4xl font-extrabold mb-2">TIÊU ĐỀ</h1>
+                    <h2 id="result-rank" class="text-2xl font-bold text-purple-600 mb-4">Danh hiệu</h2>
+                    <div class="text-lg text-gray-700 space-y-2 mb-6">
+                        <p>Học sinh: <strong id="res-name"></strong> - Lớp <strong id="res-class"></strong></p>
+                        <p>Tổng điểm: <strong id="res-score" class="text-red-500 text-2xl">0</strong></p>
+                        <p>Giao hàng thành công: <strong id="res-deliveries">0</strong>/5 kiện</p>
+                        <p>Câu hỏi đúng: <strong id="res-correct">0</strong>/15 câu</p>
+                    </div>
+                    <button id="btn-restart" class="btn btn-green">CHƠI LẠI TỪ ĐẦU</button>
+                </div>
+            </div>
+
+            <!-- Stage Screen -->
+            <div id="stage-screen" class="ui-layer" style="display: none;">
+                <div class="panel">
+                    <h1 class="text-3xl font-bold text-green-500 mb-2">GIAO HÀNG THÀNH CÔNG!</h1>
+                    <p class="text-lg mb-4">Chuẩn bị sang chặng tiếp theo...</p>
+                    <button id="btn-next-stage" class="btn btn-blue">BAY TIẾP</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx;
+        let isMuted = false;
+        let bgmInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration, vol = 0.1) {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const SoundFx = {
+            coin: () => playTone(1200, 'sine', 0.1, 0.1),
+            correct: () => { playTone(600, 'triangle', 0.1, 0.1); setTimeout(() => playTone(800, 'triangle', 0.2, 0.15), 100); },
+            wrong: () => { playTone(300, 'sawtooth', 0.3, 0.1); setTimeout(() => playTone(200, 'sawtooth', 0.4, 0.1), 200); },
+            crash: () => playTone(100, 'square', 0.3, 0.2),
+            win: () => {
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    setTimeout(() => playTone(freq, 'sine', 0.2, 0.1), i * 150);
+                });
+            }
+        };
+
+        function startBGM() {
+            if (isMuted || !audioCtx) return;
+            stopBGM();
+            const notes = [261.63, 329.63, 392.00, 523.25];
+            let step = 0;
+            bgmInterval = setInterval(() => {
+                if (gameState.isRunning && !isMuted) {
+                    playTone(notes[step % notes.length], 'sine', 0.2, 0.03);
+                    step++;
+                }
+            }, 300);
+        }
+
+        function stopBGM() {
+            if (bgmInterval) clearInterval(bgmInterval);
+        }
+
+        document.getElementById('sound-toggle').addEventListener('click', () => {
+            isMuted = !isMuted;
+            document.getElementById('sound-toggle').innerText = isMuted ? '🔇' : '🔊';
+            if (isMuted) stopBGM();
+            else if (gameState.isRunning) startBGM();
+        });
+
+        const allQuestions = [
+            {
+                q: "Phần mềm soạn thảo văn bản giúp em thực hiện những công việc gì?",
+                options: ["Chỉ gõ chữ", "Gõ, chỉnh sửa, trình bày và lưu văn bản", "Chỉ vẽ tranh và tính toán", "Chỉ để giải trí chơi game"],
+                ans: 1,
+                exp: "Phần mềm soạn thảo văn bản giúp em gõ, chỉnh sửa, trình bày và lưu văn bản."
+            },
+            {
+                q: "Khi em gõ phím trong phần mềm soạn thảo văn bản, điều gì xảy ra?",
+                options: ["Kí tự xuất hiện tại vị trí con trỏ soạn thảo", "Kí tự xuất hiện ngẫu nhiên trên màn hình", "Máy tính sẽ tự động tắt nguồn", "Không có gì thay đổi"],
+                ans: 0,
+                exp: "Khi gõ phím, kí tự tương ứng sẽ xuất hiện tại vị trí con trỏ soạn thảo nhấp nháy."
+            },
+            {
+                q: "Để xoá kí tự ở bên trái con trỏ soạn thảo, em nhấn phím nào?",
+                options: ["Phím Delete", "Phím Backspace", "Phím Enter", "Phím Space"],
+                ans: 1,
+                exp: "Nhấn phím Backspace để xoá kí tự ở bên trái con trỏ soạn thảo."
+            },
+            {
+                q: "Để xoá kí tự ở bên phải con trỏ soạn thảo, em nhấn phím nào?",
+                options: ["Phím Backspace", "Phím Delete", "Phím Shift", "Phím Caps Lock"],
+                ans: 1,
+                exp: "Nhấn phím Delete để xoá kí tự ở bên phải con trỏ soạn thảo."
+            },
+            {
+                q: "Để xoá một phần văn bản lớn, trước tiên em cần làm gì?",
+                options: ["Tắt máy tính", "Chọn (bôi đen) phần văn bản đó rồi nhấn phím Delete hoặc Backspace", "Nhấn phím Enter liên tục", "Nhấn phím Space"],
+                ans: 1,
+                exp: "Trước tiên em cần chọn phần văn bản đó, sau đó nhấn phím Delete hoặc Backspace."
+            },
+            {
+                q: "Khi muốn xuống dòng và chuyển sang đoạn văn bản mới, em nhấn phím nào?",
+                options: ["Phím Enter", "Phím Shift", "Phím Space", "Phím Tab"],
+                ans: 0,
+                exp: "Nhấn phím Enter khi muốn xuống dòng và chuyển sang đoạn văn bản mới."
+            },
+            {
+                q: "Khi muốn gõ chữ hoa, em kết hợp nhấn phím nào cùng với phím chữ?",
+                options: ["Phím Ctrl", "Phím Alt", "Phím Shift", "Phím Delete"],
+                ans: 2,
+                exp: "Nhấn phím Shift đồng thời gõ phím chữ khi muốn gõ chữ hoa."
+            },
+            {
+                q: "Biểu tượng nào dưới đây là biểu tượng của phần mềm soạn thảo văn bản Word?",
+                options: ["Biểu tượng chữ P màu cam", "Biểu tượng chữ W", "Biểu tượng hình ngọn lửa", "Biểu tượng máy ảnh"],
+                ans: 1,
+                exp: "Biểu tượng chữ W đặc trưng cho phần mềm Microsoft Word."
+            },
+            {
+                q: "Để khởi động phần mềm Word từ màn hình nền, em thực hiện thao tác gì với biểu tượng của nó?",
+                options: ["Nháy đơn chuột", "Nháy đúp chuột", "Nhấn phím Enter", "Kéo thả chuột ra ngoài màn hình"],
+                ans: 1,
+                exp: "Nháy đúp chuột vào biểu tượng trên màn hình nền để khởi động phần mềm."
+            },
+            {
+                q: "Trong màn hình làm việc của phần mềm soạn thảo văn bản, khu vực hiển thị các bảng chọn và lệnh được gọi là gì?",
+                options: ["Vùng soạn thảo", "Dải lệnh", "Thanh cuộn", "Con trỏ soạn thảo"],
+                ans: 1,
+                exp: "Phần chứa các thẻ Home, Insert, Page Layout... gọi là Dải lệnh."
+            },
+            {
+                q: "Vị trí trong phần mềm nơi em gõ các nội dung văn bản được gọi là gì?",
+                options: ["Vùng soạn thảo", "Dải lệnh", "Thanh trạng thái", "Thanh tiêu đề"],
+                ans: 0,
+                exp: "Vùng soạn thảo là nơi em nhấp chuột và gõ nội dung văn bản."
+            },
+            {
+                q: "Để lưu tệp văn bản vào máy tính, em chọn lệnh nào trong bảng chọn File?",
+                options: ["Open", "Save", "Print", "New"],
+                ans: 1,
+                exp: "Chọn lệnh Save trong bảng chọn File để lưu tệp văn bản."
+            },
+            {
+                q: "Khi lưu tệp văn bản lần đầu, nếu không đặt tên, máy tính mặc định lấy gì làm tên tệp?",
+                options: ["Các chữ đầu tiên trong văn bản", "Tên của giáo viên", "Ngày tháng năm hiện tại", "Tên ngẫu nhiên bằng số"],
+                ans: 0,
+                exp: "Máy tính mặc định lấy các chữ đầu tiên trong văn bản làm tên tệp."
+            },
+            {
+                q: "Phát biểu nào sau đây đúng nhất khi nói về màn hình làm việc của phần mềm soạn thảo văn bản?",
+                options: ["Không có con trỏ soạn thảo", "Có con trỏ soạn thảo nhấp nháy", "Chỉ có hình ảnh không có chữ", "Không cho phép gõ phím"],
+                ans: 1,
+                exp: "Trong vùng soạn thảo, có con trỏ soạn thảo nhấp nháy."
+            },
+            {
+                q: "Để thoát khỏi phần mềm soạn thảo văn bản Word, em nháy chuột vào nút nào ở góc trên bên phải màn hình?",
+                options: ["Nút dấu trừ (-)", "Nút ô vuông", "Nút chữ X (Đóng cửa sổ)", "Nút mũi tên"],
+                ans: 2,
+                exp: "Nháy vào nút X ở góc trên bên phải màn hình làm việc để đóng và thoát khỏi phần mềm."
+            }
+        ];
+
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const WIDTH = canvas.width;
+        const HEIGHT = canvas.height;
+
+        const STAGES = [
+            { name: "Chặng 1", bg: "#87CEEB", ground: "#555", obsSpeed: 2 },
+            { name: "Chặng 2", bg: "#a8e6cf", ground: "#88d8b0", obsSpeed: 2.5 },
+            { name: "Chặng 3", bg: "#ffecd2", ground: "#fcb69f", obsSpeed: 3 },
+            { name: "Chặng 4", bg: "#e0c3fc", ground: "#8ec5fc", obsSpeed: 3.5 },
+            { name: "Chặng 5", bg: "#cfdef3", ground: "#e0eafc", obsSpeed: 4 }
+        ];
+
+        let gameState = {
+            isRunning: false,
+            playerName: '',
+            playerClass: '',
+            score: 0,
+            lives: 3,
+            fuel: 100,
+            stage: 0,
+            deliveries: 0,
+            correctAns: 0,
+            cameraX: 0,
+            stageQuestions: [],
+            currentQIndex: 0
+        };
+
+        const keys = { up: false, down: false, left: false, right: false };
+        window.addEventListener('keydown', e => {
+            if(e.key === 'ArrowUp' || e.key === 'w') keys.up = true;
+            if(e.key === 'ArrowDown' || e.key === 's') keys.down = true;
+            if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+            if(e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+        });
+        window.addEventListener('keyup', e => {
+            if(e.key === 'ArrowUp' || e.key === 'w') keys.up = false;
+            if(e.key === 'ArrowDown' || e.key === 's') keys.down = false;
+            if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+            if(e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+        });
+
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if(isTouchDevice) {
+            document.getElementById('mobile-controls').style.display = 'flex';
+            const bindTouch = (id, key) => {
+                const btn = document.getElementById(id);
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+            };
+            bindTouch('btn-up', 'up'); bindTouch('btn-down', 'down');
+            bindTouch('btn-left', 'left'); bindTouch('btn-right', 'right');
+        }
+
+        const Plane = {
+            x: 100, y: 200, w: 60, h: 30,
+            vx: 0, vy: 0, speed: 4,
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.vy * 0.05);
+
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.w/2, this.h/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "#0052cc";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.fillStyle = "#e63946";
+                ctx.beginPath();
+                ctx.moveTo(-this.w/2 + 10, 0);
+                ctx.lineTo(-this.w/2 - 10, -20);
+                ctx.lineTo(-this.w/2 + 5, -20);
+                ctx.fill();
+
+                ctx.fillStyle = "#0052cc";
+                ctx.beginPath();
+                ctx.ellipse(0, 5, 15, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = "#333";
+                const propAngle = (Date.now() / 50) % (Math.PI * 2);
+                ctx.translate(this.w/2, 0);
+                ctx.rotate(propAngle);
+                ctx.fillRect(-2, -15, 4, 30);
+
+                ctx.restore();
+            },
+            update() {
+                if (keys.up) this.vy -= 0.5;
+                if (keys.down) this.vy += 0.5;
+                if (keys.left) this.vx -= 0.5;
+                if (keys.right) this.vx += 0.5;
+
+                this.vx *= 0.9;
+                this.vy *= 0.9;
+
+                if(this.vx > this.speed) this.vx = this.speed;
+                if(this.vx < -this.speed) this.vx = -this.speed;
+                if(this.vy > this.speed) this.vy = this.speed;
+                if(this.vy < -this.speed) this.vy = -this.speed;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if(this.x < 30) this.x = 30;
+                if(this.x > WIDTH - 30) this.x = WIDTH - 30;
+                if(this.y < 20) this.y = 20;
+                if(this.y > HEIGHT - 30) this.y = HEIGHT - 30;
+            }
+        };
+
+        let obstacles = [];
+        let fuels = [];
+        let deliveries = [];
+        let particles = [];
+
+        function spawnObstacle() {
+            if(Math.random() < 0.02) {
+                obstacles.push({
+                    x: WIDTH + 50,
+                    y: Math.random() * (HEIGHT - 100) + 20,
+                    size: Math.random() * 20 + 20,
+                    speed: Math.random() * 2 + STAGES[gameState.stage].obsSpeed
+                });
+            }
+        }
+
+        function spawnFuel() {
+            if(Math.random() < 0.005) {
+                fuels.push({
+                    x: WIDTH + 50,
+                    y: Math.random() * (HEIGHT - 100) + 20,
+                    size: 15
+                });
+            }
+        }
+
+        function initDeliveryPoints() {
+            deliveries = [
+                { x: 1500, y: HEIGHT - 80, active: true },
+                { x: 3000, y: HEIGHT - 80, active: true },
+                { x: 4500, y: HEIGHT - 80, active: true }
+            ];
+        }
+
+        function checkCollisions() {
+            const hitBox = 20;
+
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                let dx = Plane.x - obs.x;
+                let dy = Plane.y - obs.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < hitBox + obs.size/2) {
+                    SoundFx.crash();
+                    gameState.lives--;
+                    gameState.fuel = Math.max(0, gameState.fuel - 10);
+                    gameState.score -= 5;
+                    updateHUD();
+                    createExplosion(obs.x, obs.y, "#ff0000");
+                    obstacles.splice(i, 1);
+                    
+                    if (gameState.lives <= 0 || gameState.fuel <= 0) {
+                        gameOver(false);
+                    }
+                }
+            }
+
+            for (let i = fuels.length - 1; i >= 0; i--) {
+                let f = fuels[i];
+                let dx = Plane.x - f.x;
+                let dy = Plane.y - f.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < hitBox + f.size) {
+                    SoundFx.coin();
+                    gameState.fuel = Math.min(100, gameState.fuel + 20);
+                    gameState.score += 5;
+                    updateHUD();
+                    createExplosion(f.x, f.y, "#43e97b");
+                    fuels.splice(i, 1);
+                }
+            }
+
+            for (let i = 0; i < deliveries.length; i++) {
+                let d = deliveries[i];
+                if (d.active && Plane.x > (d.x - gameState.cameraX) - 30 && Plane.x < (d.x - gameState.cameraX) + 30) {
+                    d.active = false;
+                    pauseGameForQuestion();
+                }
+            }
+        }
+
+        function createExplosion(x, y, color) {
+            for(let i=0; i<10; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    life: 30, color: color
+                });
+            }
+        }
+
+        function gameLoop() {
+            if (!gameState.isRunning) return;
+
+            Plane.update();
+            gameState.cameraX += 2 + gameState.stage * 0.5;
+            
+            gameState.fuel -= 0.05;
+            if(gameState.fuel <= 0) gameOver(false);
+
+            spawnObstacle();
+            spawnFuel();
+
+            let speedOffset = 2 + gameState.stage * 0.5;
+            obstacles.forEach(o => o.x -= (o.speed + speedOffset*0.2));
+            fuels.forEach(f => f.x -= speedOffset);
+            
+            obstacles = obstacles.filter(o => o.x > -50);
+            fuels = fuels.filter(f => f.x > -50);
+
+            particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life--; });
+            particles = particles.filter(p => p.life > 0);
+
+            checkCollisions();
+            updateHUD();
+
+            ctx.fillStyle = STAGES[gameState.stage].bg;
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+            ctx.fillStyle = STAGES[gameState.stage].ground;
+            ctx.fillRect(0, HEIGHT - 40, WIDTH, 40);
+
+            deliveries.forEach(d => {
+                if(d.active) {
+                    let drawX = d.x - gameState.cameraX;
+                    if(drawX > -100 && drawX < WIDTH + 100) {
+                        ctx.fillStyle = "rgba(255, 215, 0, 0.5)";
+                        ctx.fillRect(drawX - 20, 0, 40, HEIGHT);
+                        ctx.fillStyle = "#ff6b6b";
+                        ctx.fillRect(drawX - 15, HEIGHT - 60, 30, 30);
+                        ctx.fillStyle = "white";
+                        ctx.font = "bold 14px Arial";
+                        ctx.fillText("GIAO", drawX - 16, HEIGHT - 40);
+                    }
+                }
+            });
+
+            obstacles.forEach(o => {
+                ctx.fillStyle = "#666";
+                ctx.beginPath();
+                ctx.arc(o.x, o.y, o.size/2, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            fuels.forEach(f => {
+                ctx.fillStyle = "#43e97b";
+                ctx.fillRect(f.x - f.size/2, f.y - f.size, f.size, f.size*2);
+                ctx.fillStyle = "#fff";
+                ctx.font = "12px Arial";
+                ctx.fillText("F", f.x - 4, f.y + 4);
+            });
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 30;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+
+            Plane.draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-lives').innerText = gameState.lives;
+            const fuelBar = document.getElementById('hud-fuel');
+            fuelBar.style.width = gameState.fuel + '%';
+            fuelBar.style.backgroundColor = gameState.fuel > 50 ? '#43e97b' : (gameState.fuel > 20 ? '#f6e58d' : '#eb4d4b');
+            document.getElementById('hud-deliveries').innerText = gameState.deliveries;
+            document.getElementById('hud-score').innerText = gameState.score;
+        }
+
+        function prepareStageQuestions() {
+            let shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
+            gameState.stageQuestions = shuffled.slice(0, 3);
+            gameState.currentQIndex = 0;
+        }
+
+        function pauseGameForQuestion() {
+            gameState.isRunning = false;
+            stopBGM();
+            keys.up = keys.down = keys.left = keys.right = false;
+            
+            document.getElementById('question-screen').style.display = 'flex';
+            
+            const qData = gameState.stageQuestions[gameState.currentQIndex];
+            document.getElementById('q-text').innerText = `Câu ${gameState.currentQIndex + 1}: ` + qData.q;
+            
+            const optsContainer = document.getElementById('q-options');
+            optsContainer.innerHTML = '';
+            
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left p-3 border-2 border-gray-300 rounded-lg font-bold hover:bg-blue-50 transition-colors';
+                btn.innerText = String.fromCharCode(65 + idx) + ". " + opt;
+                btn.onclick = () => handleAnswer(idx, qData.ans, qData.exp, btn);
+                optsContainer.appendChild(btn);
+            });
+            
+            document.getElementById('q-feedback').className = 'hidden p-3 rounded-lg mb-4 text-left font-semibold';
+            document.getElementById('btn-next-q').style.display = 'none';
+        }
+
+        function handleAnswer(selectedIndex, correctIndex, explanation, btnElement) {
+            const buttons = document.getElementById('q-options').children;
+            for(let b of buttons) b.disabled = true;
+
+            const feedback = document.getElementById('q-feedback');
+            feedback.style.display = 'block';
+
+            if (selectedIndex === correctIndex) {
+                SoundFx.correct();
+                btnElement.classList.replace('border-gray-300', 'border-green-500');
+                btnElement.classList.add('bg-green-100');
+                feedback.className = 'p-3 rounded-lg mb-4 text-left font-semibold bg-green-100 text-green-700 border border-green-300';
+                feedback.innerHTML = "✅ Chính xác! +10 điểm. <br><span class='font-normal'>" + explanation + "</span>";
+                
+                gameState.score += 10;
+                gameState.correctAns++;
+                gameState.deliveries++;
+            } else {
+                SoundFx.wrong();
+                btnElement.classList.replace('border-gray-300', 'border-red-500');
+                btnElement.classList.add('bg-red-100');
+                buttons[correctIndex].classList.replace('border-gray-300', 'border-green-500');
+                buttons[correctIndex].classList.add('bg-green-100');
+                
+                feedback.className = 'p-3 rounded-lg mb-4 text-left font-semibold bg-red-100 text-red-700 border border-red-300';
+                feedback.innerHTML = "❌ Rất tiếc, chưa đúng! <br><span class='font-normal'>" + explanation + "</span>";
+            }
+            
+            updateHUD();
+            gameState.currentQIndex++;
+            document.getElementById('btn-next-q').style.display = 'block';
+        }
+
+        document.getElementById('btn-next-q').addEventListener('click', () => {
+            document.getElementById('question-screen').style.display = 'none';
+            if (gameState.currentQIndex >= 3) {
+                stageComplete();
+            } else {
+                gameState.isRunning = true;
+                startBGM();
+                requestAnimationFrame(gameLoop);
+            }
+        });
+
+        function stageComplete() {
+            SoundFx.win();
+            if (gameState.stage < 4) {
+                document.getElementById('stage-screen').style.display = 'flex';
+            } else {
+                gameOver(true);
+            }
+        }
+
+        document.getElementById('btn-next-stage').addEventListener('click', () => {
+            document.getElementById('stage-screen').style.display = 'none';
+            gameState.stage++;
+            gameState.score += 20;
+            startStage();
+        });
+
+        document.getElementById('btn-start').addEventListener('click', () => {
+            const name = document.getElementById('player-name').value.trim();
+            const pClass = document.getElementById('player-class').value.trim();
+            if(!name || !pClass) {
+                document.getElementById('login-error').style.display = 'block';
+                return;
+            }
+            gameState.playerName = name;
+            gameState.playerClass = pClass;
+            
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('tutorial-screen').style.display = 'flex';
+        });
+
+        document.getElementById('btn-understand').addEventListener('click', () => {
+            document.getElementById('tutorial-screen').style.display = 'none';
+            document.getElementById('hud').style.display = 'flex';
+            initAudio();
+            resetFullGame();
+        });
+
+        function resetFullGame() {
+            gameState.score = 0;
+            gameState.lives = 3;
+            gameState.deliveries = 0;
+            gameState.correctAns = 0;
+            gameState.stage = 0;
+            startStage();
+        }
+
+        function startStage() {
+            Plane.x = 100; Plane.y = HEIGHT/2;
+            Plane.vx = 0; Plane.vy = 0;
+            gameState.fuel = 100;
+            gameState.cameraX = 0;
+            obstacles = [];
+            fuels = [];
+            particles = [];
+            
+            prepareStageQuestions();
+            initDeliveryPoints();
+            
+            updateHUD();
+            gameState.isRunning = true;
+            startBGM();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver(isWin) {
+            gameState.isRunning = false;
+            stopBGM();
+            
+            document.getElementById('result-screen').style.display = 'flex';
+            document.getElementById('res-name').innerText = gameState.playerName;
+            document.getElementById('res-class').innerText = gameState.playerClass;
+            document.getElementById('res-score').innerText = gameState.score;
+            document.getElementById('res-deliveries').innerText = gameState.deliveries;
+            document.getElementById('res-correct').innerText = gameState.correctAns;
+            
+            const titleEl = document.getElementById('result-title');
+            const rankEl = document.getElementById('result-rank');
+            
+            if (isWin) {
+                SoundFx.win();
+                gameState.score += 100;
+                document.getElementById('res-score').innerText = gameState.score;
+                titleEl.innerText = "🎉 CHUYẾN BAY THÀNH CÔNG!";
+                titleEl.className = "text-4xl font-extrabold mb-2 text-green-600";
+                
+                if(gameState.correctAns >= 14) rankEl.innerText = "🏆 Cơ Trưởng Huyền Thoại";
+                else if(gameState.correctAns >= 10) rankEl.innerText = "🥇 Phi Công Xuất Sắc";
+                else rankEl.innerText = "🥈 Phi Công Giỏi";
+            } else {
+                SoundFx.crash();
+                titleEl.innerText = "💥 CHUYẾN BAY THẤT BẠI";
+                titleEl.className = "text-4xl font-extrabold mb-2 text-red-600";
+                rankEl.innerText = "Tập Sự Cần Cố Gắng Thêm";
+            }
+        }
+
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            document.getElementById('result-screen').style.display = 'none';
+            resetFullGame();
+        });
+    </script>
+</body>
+</html>

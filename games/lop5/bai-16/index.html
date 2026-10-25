@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dòng Cát Kiến Thức - Lớp 5 Bài 16</title>
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
+        body {
+            font-family: 'Montserrat', sans-serif;
+            user-select: none;
+        }
+        .bubble-glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { filter: drop-shadow(0 0 5px rgba(234, 179, 8, 0.8)); }
+            50% { filter: drop-shadow(0 0 15px rgba(234, 179, 8, 1)); }
+        }
+        .gold-glow {
+            animation: pulse-glow 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900 text-white min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- HEADER BAR -->
+    <header class="w-full bg-white/10 backdrop-blur-md px-4 py-3 flex justify-between items-center border-b border-white/20 shadow-lg z-50">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">⏳</span>
+            <div>
+                <h1 class="font-black text-lg md:text-xl text-yellow-300 tracking-wide drop-shadow">DÒNG CÁT KIẾN THỨC</h1>
+                <p class="text-xs text-blue-200">Bài 16: Từ Kịch Bản Đến Chương Trình (Lớp 5)</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="btnMusic" onclick="toggleMusic()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-full text-sm font-bold transition flex items-center shadow">
+                🎵 Nhạc: <span id="musicStatus" class="ml-1 text-green-300">Bật</span>
+            </button>
+            <button id="btnSound" onclick="toggleSound()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-full text-sm font-bold transition flex items-center shadow">
+                🔊 Âm thanh: <span id="soundStatus" class="ml-1 text-green-300">Bật</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 max-w-5xl mx-auto w-full relative">
+
+        <!-- SCREEN 1: LOGIN / PLAYER INFO -->
+        <div id="screenLogin" class="w-full max-w-md bg-white/15 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/30 text-center animate-float">
+            <div class="text-6xl mb-4">🐱⚽</div>
+            <h2 class="text-2xl font-black text-yellow-300 mb-2">CHÀO MỪNG BẠN NHỎ!</h2>
+            <p class="text-sm text-gray-200 mb-6">Nhập thông tin để bắt đầu hành trình chinh phục dòng cát kiến thức Bài 16.</p>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-sm font-bold text-yellow-200 mb-1">Họ và tên học sinh:</label>
+                    <input type="text" id="inputName" required placeholder="Biệt danh (không nhập tên thật)" 
+                        class="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/40 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-semibold">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-yellow-200 mb-1">Lớp:</label>
+                    <input type="text" id="inputClass" required placeholder="Ví dụ: 5A" 
+                        class="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/40 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-semibold">
+                </div>
+                <button type="submit" class="w-full py-4 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-gray-900 font-black text-lg rounded-xl btn-hover shadow-xl transition transform active:scale-95">
+                    🚀 BẮT ĐẦU CHƠI
+                </button>
+            </form>
+        </div>
+
+        <!-- SCREEN 2: GAMEPLAY INTERFACE -->
+        <div id="screenGame" class="hidden w-full flex flex-col items-center">
+            <!-- HUD TOP BAR -->
+            <div class="w-full flex flex-wrap justify-between items-center bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl mb-4 border border-white/20 shadow-lg text-sm md:text-base">
+                <div class="flex items-center space-x-4">
+                    <span class="font-bold text-yellow-300">👤 <span id="displayName">--</span> (<span id="displayClass">--</span>)</span>
+                    <span class="bg-blue-600/60 px-3 py-1 rounded-full font-bold">Level <span id="displayLevel">1</span>/4</span>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <div class="font-bold">⭐ Điểm: <span id="displayScore" class="text-yellow-300 text-lg">0</span></div>
+                    <div class="font-bold">🔥 Combo: <span id="displayCombo" class="text-orange-400 text-lg">x1</span></div>
+                    <div class="font-bold">⏳ Thời gian: <span id="displayTime" class="text-red-300 text-lg">60</span>s</div>
+                </div>
+            </div>
+
+            <!-- MISSION BANNER -->
+            <div id="missionBanner" class="w-full bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-white/30 p-4 rounded-2xl mb-4 text-center shadow-xl">
+                <h3 id="missionTitle" class="text-lg md:text-xl font-black text-yellow-300 mb-1">Đang tải nhiệm vụ...</h3>
+                <p id="missionDesc" class="text-xs md:text-sm text-gray-100">Đọc kỹ câu hỏi và mở đúng cửa dẫn cát vào bình chứa chính xác.</p>
+            </div>
+
+            <!-- GAME BOARD CANVAS & CONTROLS -->
+            <div class="w-full bg-slate-900/80 border-2 border-white/20 rounded-3xl p-4 shadow-2xl relative flex flex-col items-center">
+                
+                <!-- Feedback overlay badge -->
+                <div id="gameFeedback" class="absolute top-6 z-30 transition-all duration-300 transform scale-0 px-6 py-2 rounded-full font-black text-lg shadow-2xl"></div>
+
+                <!-- Simulation Canvas for Sand and Gates -->
+                <div class="relative w-full max-w-3xl h-[360px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-700 shadow-inner">
+                    <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+                    
+                    <!-- Interactive Gates Overlay Buttons for Mobile/Mouse -->
+                    <div id="gatesControls" class="absolute bottom-3 left-0 right-0 flex justify-center space-x-3 px-4 z-20">
+                        <!-- Dynamic Gate buttons will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Target Bins Container -->
+                <div id="binsContainer" class="w-full max-w-3xl grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                    <!-- Dynamic bins -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 3: BOSS BATTLE -->
+        <div id="screenBoss" class="hidden w-full flex flex-col items-center">
+            <div class="w-full max-w-3xl bg-red-950/80 border-4 border-red-500 rounded-3xl p-6 shadow-2xl text-center relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 text-9xl opacity-10">👹</div>
+                <h2 class="text-2xl md:text-3xl font-black text-yellow-400 mb-2 gold-glow">🔥 BOSS: DÒNG CÁT CUỐI CÙNG 🔥</h2>
+                <p class="text-sm text-red-200 mb-4">Điều hướng cát lần lượt qua 13 kiến thức trọng tâm của Bài 16 theo đúng thứ tự!</p>
+                
+                <div class="bg-black/40 p-4 rounded-2xl mb-4 border border-red-500/30 flex justify-between items-center">
+                    <span class="font-bold text-lg">Tiến độ Boss: <span id="bossStepCount" class="text-yellow-300">1</span>/<span id="bossTotalSteps">13</span></span>
+                    <span class="font-bold text-lg">Thời gian cát chảy: <span id="bossTimer" class="text-red-400 text-2xl font-black">75</span>s</span>
+                </div>
+
+                <div id="bossCurrentTask" class="bg-white/10 p-6 rounded-2xl mb-6 border border-white/20 text-lg font-bold text-yellow-200 min-h-[90px] flex items-center justify-center">
+                    Đang tải nhiệm vụ Boss...
+                </div>
+
+                <div id="bossOptions" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Boss options injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SCREEN 4: RESULTS & SUMMARY -->
+        <div id="screenResult" class="hidden w-full max-w-2xl bg-white/15 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/30 text-center relative overflow-hidden">
+            <div id="victoryBadge" class="text-7xl mb-3 animate-bounce">🏆</div>
+            <h2 id="resultTitle" class="text-3xl font-black text-yellow-300 mb-2">CHINH PHỤC DÒNG CÁT KIẾN THỨC!</h2>
+            <p id="resultSubtitle" class="text-sm text-gray-200 mb-6">Tuyệt vời! Bạn đã hoàn thành xuất sắc Bài 16.</p>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-black/30 p-4 rounded-2xl border border-white/10">
+                    <p class="text-xs text-gray-300">Tổng điểm</p>
+                    <p id="resScore" class="text-2xl font-black text-yellow-300">0</p>
+                </div>
+                <div class="bg-black/30 p-4 rounded-2xl border border-white/10">
+                    <p class="text-xs text-gray-300">Combo cao nhất</p>
+                    <p id="resCombo" class="text-2xl font-black text-orange-400">x1</p>
+                </div>
+                <div class="bg-black/30 p-4 rounded-2xl border border-white/10">
+                    <p class="text-xs text-gray-300">Đúng / Sai</p>
+                    <p id="resAccuracy" class="text-2xl font-black text-green-300">0/0</p>
+                </div>
+                <div class="bg-black/30 p-4 rounded-2xl border border-white/10">
+                    <p class="text-xs text-gray-300">Tổng thời gian</p>
+                    <p id="resTime" class="text-2xl font-black text-blue-300">0s</p>
+                </div>
+            </div>
+
+            <!-- REVIEW KNOWLEDGE BOX -->
+            <div class="bg-purple-950/60 border border-purple-500/40 p-5 rounded-2xl mb-6 text-left">
+                <h3 class="font-bold text-yellow-300 mb-2 flex items-center">📚 KIẾN THỨC CẦN ÔN LẠI (BÀI 16):</h3>
+                <ul id="reviewKnowledgeList" class="list-disc list-inside text-xs md:text-sm text-gray-200 space-y-1.5">
+                    <li>Kịch bản trả lời 3 câu hỏi cốt lõi: Nhân vật nào? Sân khấu nào? Hành động ra sao?</li>
+                    <li>Trò chơi 'Mèo bắt bóng' gồm nhân vật Mèo và Trái bóng, sân khấu mặc định nền trắng.</li>
+                    <li>Cấu trúc lặp dùng cho hành động lặp đi lặp lại (ví dụ: trái bóng di chuyển liên tục, mèo đuổi theo liên tục).</li>
+                    <li>Cấu trúc rẽ nhánh (nếu... thì...) kiểm tra điều kiện (ví dụ: nếu mèo chạm bóng thì tăng điểm lên 1).</li>
+                    <li>Biến 'Điểm' được khởi tạo bằng 0 khi bấm cờ xanh và thay đổi 1 lượng 1 mỗi khi mèo bắt được bóng.</li>
+                    <li>Chạy thử, quan sát kết quả và sửa lỗi giúp chương trình hoạt động đúng theo ý tưởng kịch bản.</li>
+                    <li>Lưu tệp với tên mới (như MeoBatBong1) giúp giữ lại bản cũ và tạo các phiên bản cải tiến tiếp theo.</li>
+                </ul>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="flex flex-wrap justify-center gap-4">
+                <button onclick="restartGame()" class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-black rounded-xl btn-hover shadow-lg transition">
+                    🔄 CHƠI LẠI TỪ ĐẦU
+                </button>
+                <button onclick="goHome()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white font-black rounded-xl btn-hover shadow-lg transition">
+                    🏠 TRANG CHỦ
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="w-full text-center py-3 text-xs text-blue-200 border-t border-white/10 bg-black/20">
+        Dòng Cát Kiến Thức © 2026 - Phát triển cho học sinh Lớp 5 bám sát SGK Tin học Bài 16.
+    </footer>
+
+    <script>
+        let audioCtx = null;
+        let isMusicOn = true;
+        let isSoundOn = true;
+        let bgmInterval = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration, delay = 0) {
+            if (!isSoundOn || !audioCtx) return;
+            setTimeout(() => {
+                try {
+                    initAudio();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + duration);
+                } catch(e) {}
+            }, delay);
+        }
+
+        function playCorrectSound() {
+            playTone(523.25, 'triangle', 0.15, 0); // C5
+            playTone(659.25, 'triangle', 0.15, 100); // E5
+            playTone(783.99, 'triangle', 0.3, 200); // G5
+        }
+
+        function playWrongSound() {
+            playTone(200, 'sawtooth', 0.2, 0);
+            playTone(150, 'sawtooth', 0.3, 150);
+        }
+
+        function playWinSound() {
+            const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.50];
+            notes.forEach((n, idx) => playTone(n, 'sine', 0.2, idx * 80));
+        }
+
+        function startBGM() {
+            if (bgmInterval) clearInterval(bgmInterval);
+            const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63];
+            let noteIdx = 0;
+            bgmInterval = setInterval(() => {
+                if (!isMusicOn || !audioCtx) return;
+                try {
+                    initAudio();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(melody[noteIdx], audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                    noteIdx = (noteIdx + 1) % melody.length;
+                } catch(e) {}
+            }, 350);
+        }
+
+        function stopBGM() {
+            if (bgmInterval) clearInterval(bgmInterval);
+            bgmInterval = null;
+        }
+
+        function toggleMusic() {
+            isMusicOn = !isMusicOn;
+            document.getElementById('musicStatus').innerText = isMusicOn ? 'Bật' : 'Tắt';
+            document.getElementById('musicStatus').className = isMusicOn ? 'ml-1 text-green-300' : 'ml-1 text-red-300';
+            if (isMusicOn) startBGM();
+            else stopBGM();
+        }
+
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            document.getElementById('soundStatus').innerText = isSoundOn ? 'Bật' : 'Tắt';
+            document.getElementById('soundStatus').className = isSoundOn ? 'ml-1 text-green-300' : 'ml-1 text-red-300';
+        }
+
+        let playerData = { name: '', classStr: '' };
+        let currentLevel = 1;
+        let score = 0;
+        let combo = 1;
+        let maxCombo = 1;
+        let correctCount = 0;
+        let wrongCount = 0;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let startTime = 0;
+        let totalElapsedSeconds = 0;
+
+        // 4 Levels strictly based on Lesson 16 SGK Lớp 5
+        const levelDataList = [
+            {
+                level: 1,
+                title: "Level 1: Nhân vật và Sân khấu cơ bản",
+                desc: "Dẫn dòng cát kiến thức vào bình chứa đúng tên nhân vật trong trò chơi 'Mèo bắt bóng'.",
+                time: 60,
+                gates: [{ id: 0, label: "Cửa Trái (Nhân vật mèo 🐱)", angle: -1 }, { id: 1, label: "Cửa Phải (Nhân vật bóng ⚽)", angle: 1 }],
+                bins: [
+                    { id: 0, text: "Nhân vật Mèo & Trái Bóng", correct: true },
+                    { id: 1, text: "Nhân vật Rồng lửa", correct: false },
+                    { id: 2, text: "Sân khấu màu đen", correct: false },
+                    { id: 3, text: "Nhân vật Xe tăng", correct: false }
+                ],
+                targetBinId: 0
+            },
+            {
+                level: 2,
+                title: "Level 2: Cấu trúc lặp trong kịch bản",
+                desc: "Trái bóng di chuyển liên tục trong sân khấu. Sử dụng cấu trúc nào để thực hiện?",
+                time: 55,
+                gates: [{ id: 0, label: "Cửa A: Cấu trúc lặp", angle: -1 }, { id: 1, label: "Cửa B: Cấu trúc rẽ nhánh", angle: 1 }],
+                bins: [
+                    { id: 0, text: "Cấu trúc rẽ nhánh", correct: false },
+                    { id: 1, text: "Cấu trúc lặp (liên tục)", correct: true },
+                    { id: 2, text: "Cấu trúc tuần tự tĩnh", correct: false },
+                    { id: 3, text: "Cấu trúc dừng hoàn toàn", correct: false }
+                ],
+                targetBinId: 1
+            },
+            {
+                level: 3,
+                title: "Level 3: Cấu trúc rẽ nhánh & Biến điểm",
+                desc: "Nếu mèo chạm vào bóng thì tăng điểm lên 1. Khởi tạo biến Điểm ban đầu bằng mấy?",
+                time: 50,
+                gates: [{ id: 0, label: "Cửa 1: Đặt Điểm thành 0", angle: -1 }, { id: 1, label: "Cửa 2: Đặt Điểm thành 100", angle: 1 }],
+                bins: [
+                    { id: 0, text: "Đặt Điểm thành 100", correct: false },
+                    { id: 1, text: "Đặt Điểm thành 0", correct: true },
+                    { id: 2, text: "Xóa biến Điểm", correct: false },
+                    { id: 3, text: "Ẩn biến Điểm", correct: false }
+                ],
+                targetBinId: 1
+            },
+            {
+                level: 4,
+                title: "Level 4: Mục đích chạy thử và lưu tệp",
+                desc: "Tại sao cần lưu tệp với tên mới (ví dụ: MeoBatBong1) ở phần Vận dụng?",
+                time: 45,
+                gates: [{ id: 0, label: "Cửa X: Giữ bản cũ và lưu bản cải tiến mới", angle: -1 }, { id: 1, label: "Cửa Y: Để xóa ứng dụng", angle: 1 }],
+                bins: [
+                    { id: 0, text: "Để xóa toàn bộ chương trình", correct: false },
+                    { id: 1, text: "Để lưu bản cải tiến mới (MeoBatBong1)", correct: true },
+                    { id: 2, text: "Để thay đổi màu nền máy", correct: false },
+                    { id: 3, text: "Để kết nối internet", correct: false }
+                ],
+                targetBinId: 1
+            }
+        ];
+
+        // Boss Battle 13 steps (including the original 8 + 5 newly added core textbook questions)
+        const bossSteps = [
+            { step: 1, prompt: "Bước 1: Kịch bản chương trình được viết để trả lời câu hỏi nào?", options: ["Chương trình có những nhân vật nào, sân khấu nào và hành động ra sao?", "Cách mở máy tính như thế nào?", "Ai là người phát minh ra Scratch?", "Giá tiền của máy tính là bao nhiêu?"], correct: 0 },
+            { step: 2, prompt: "Bước 2: Chương trình 'Mèo bắt bóng' gồm những nhân vật chính nào?", options: ["Mèo và Trái bóng", "Xe hơi và Robot", "Chim và Cá", "Máy bay và Mây"], correct: 0 },
+            { step: 3, prompt: "Bước 3: Lệnh nào giúp trái bóng di chuyển liên tục trong sân khấu?", options: ["Lệnh lướt tới vị trí ngẫu nhiên trong vòng lặp liên tục", "Lệnh ẩn nhân vật", "Lệnh dừng lại tất cả", "Lệnh phát âm thanh meo meo"], correct: 0 },
+            { step: 4, prompt: "Bước 4: Nhân vật Mèo thực hiện hành động di chuyển theo điều gì?", options: ["Di chuyển theo con trỏ chuột", "Đứng yên một chỗ", "Nhảy múa ngoài màn hình", "Biến mất khi bấm phím"], correct: 0 },
+            { step: 5, prompt: "Bước 5: Khối lệnh kiểm tra điều kiện Mèo chạm bóng thuộc cấu trúc gì?", options: ["Cấu trúc rẽ nhánh (nếu...thì...)", "Cấu trúc lặp lại mãi mãi không điều kiện", "Cấu trúc nhập văn bản", "Cấu trúc vẽ hình vuông"], correct: 0 },
+            { step: 6, prompt: "Bước 6: Tại sao sau khi tạo chương trình, chúng ta cần chạy thử?", options: ["Để quan sát kết quả, kiểm tra và sửa lỗi xem đã đúng kịch bản chưa", "Để chơi game khác", "Để máy tính nghỉ ngơi", "Để tăng độ sáng màn hình"], correct: 0 },
+            { step: 7, prompt: "Bước 7: Biến 'Điểm' trong trò chơi Mèo bắt bóng dùng để làm gì?", options: ["Lưu điểm số của người chơi mỗi khi mèo chạm bóng", "Đếm thời gian tắt máy", "Lưu tên học sinh", "Đổi màu nền sân khấu"], correct: 0 },
+            { step: 8, prompt: "Bước 8: Khi tạo bản cải tiến từ MeoBatBong, ta lưu tệp với tên gì ở Vận dụng?", options: ["MeoBatBong1", "ScratchGame", "CatBall", "TinHoc5"], correct: 0 },
+            // 5 Additional Questions
+            { step: 9, prompt: "Bước 9 (Bổ sung 1): Sân khấu mặc định trong trò chơi 'Mèo bắt bóng' có màu gì?", options: ["Màu trắng", "Màu đen tuyền", "Màu đỏ rực", "Màu xanh lá cây"], correct: 0 },
+            { step: 10, prompt: "Bước 10 (Bổ sung 2): Khối lệnh 'di tới con trỏ chuột' trong vòng lặp giúp nhân vật Mèo làm gì?", options: ["Luôn di chuyển theo sát con trỏ chuột của người chơi", "Đứng im góc màn hình", "Biến mất ngẫu nhiên", "Nhảy lên cao 3 lần"], correct: 0 },
+            { step: 11, prompt: "Bước 11 (Bổ sung 3): Khi mèo chạm vào bóng, khối lệnh thay đổi Điểm thực hiện thế nào?", options: ["Thay đổi Điểm một lượng 1", "Trừ điểm về 0", "Nhân đôi điểm số", "Không thay đổi điểm"], correct: 0 },
+            { step: 12, prompt: "Bước 12 (Bổ sung 4): Sự kiện nào thường được dùng để bắt đầu chạy chương trình Scratch?", options: ["Khi bấm vào lá cờ xanh 🟩", "Khi nhấn phím Esc", "Khi tắt màn hình", "Khi rút nguồn điện"], correct: 0 },
+            { step: 13, prompt: "Bước 13 (Bổ sung 5): Mục đích của việc chia nhỏ công việc thành các bước trong kịch bản là gì?", options: ["Để dễ hiểu và dễ thực hiện chương trình", "Để làm chương trình chạy chậm hơn", "Để làm game khó chơi hơn", "Để tốn nhiều thời gian viết mã"], correct: 0 }
+        ];
+
+        let currentBossStep = 0;
+        let bossTimerVal = 75;
+        let bossTimerInterval = null;
+
+        // Sand simulation state variables
+        let canvas, ctx;
+        let sandParticles = [];
+        let gateState = 0; // -1 for left gate, 1 for right gate, 0 for center
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const name = document.getElementById('inputName').value.trim();
+            const className = document.getElementById('inputClass').value.trim();
+            if (!name || !className) return;
+
+            playerData.name = name;
+            playerData.classStr = className;
+
+            document.getElementById('displayName').innerText = name;
+            document.getElementById('displayClass').innerText = className;
+
+            document.getElementById('screenLogin').classList.add('hidden');
+            document.getElementById('screenGame').classList.remove('hidden');
+
+            initAudio();
+            if (isMusicOn) startBGM();
+
+            initCanvas();
+            startGameSession();
+        }
+
+        function startGameSession() {
+            currentLevel = 1;
+            score = 0;
+            combo = 1;
+            maxCombo = 1;
+            correctCount = 0;
+            wrongCount = 0;
+            startTime = Date.now();
+            loadLevel(currentLevel);
+        }
+
+        function loadLevel(lvl) {
+            currentLevel = lvl;
+            document.getElementById('displayLevel').innerText = currentLevel;
+            const data = levelDataList[currentLevel - 1];
+            
+            document.getElementById('missionTitle').innerText = data.title;
+            document.getElementById('missionDesc').innerText = data.desc;
+            timeLeft = data.time;
+
+            renderBins(data.bins);
+            renderGates(data.gates);
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('displayTime').innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    showFeedback("HẾT GIỜ!", false);
+                    setTimeout(() => nextLevelOrBoss(), 1500);
+                }
+            }, 1000);
+
+            resetSandParticles();
+        }
+
+        function renderBins(bins) {
+            const container = document.getElementById('binsContainer');
+            container.innerHTML = '';
+            bins.forEach((bin) => {
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-2xl bg-white/10 border border-white/20 text-center font-bold text-xs md:text-sm transition transform hover:scale-105 cursor-pointer shadow-md flex items-center justify-center min-h-[60px]`;
+                div.innerHTML = `<span>📥 ${bin.text}</span>`;
+                div.onclick = () => checkBinSelection(bin.correct);
+                container.appendChild(div);
+            });
+        }
+
+        function renderGates(gates) {
+            const container = document.getElementById('gatesControls');
+            container.innerHTML = '';
+            gates.forEach((gate) => {
+                const btn = document.createElement('button');
+                btn.className = `px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-bold text-xs md:text-sm rounded-xl shadow-lg transition transform active:scale-95 border border-white/30`;
+                btn.innerText = gate.label;
+                btn.onclick = () => setGate(gate.angle);
+                container.appendChild(btn);
+            });
+        }
+
+        function setGate(angle) {
+            gateState = angle;
+            playTone(440, 'sine', 0.1);
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('gameCanvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            resetSandParticles();
+            requestAnimationFrame(updateSandSimulation);
+        }
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            canvas.width = canvas.parentElement.clientWidth || 600;
+            canvas.height = 320;
+        }
+
+        function resetSandParticles() {
+            if (!canvas) {
+                canvas = document.getElementById('gameCanvas');
+                if (!canvas) return;
+            }
+            sandParticles = [];
+            const w = canvas.width || 600;
+            for (let i = 0; i < 60; i++) {
+                sandParticles.push({
+                    x: w / 2 + (Math.random() * 40 - 20),
+                    y: Math.random() * -100,
+                    vy: 2 + Math.random() * 2,
+                    vx: 0,
+                    color: Math.random() > 0.5 ? '#facc15' : '#fb923c'
+                });
+            }
+        }
+
+        function updateSandSimulation() {
+            if (!ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw funnel structure
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2 - 80, 20);
+            ctx.lineTo(canvas.width / 2, 100);
+            ctx.lineTo(canvas.width / 2 + 80, 20);
+            ctx.stroke();
+
+            // Draw gates
+            ctx.fillStyle = gateState === -1 ? '#22c55e' : '#64748b';
+            ctx.fillRect(canvas.width / 2 - 120, 140, 90, 12);
+            ctx.fillStyle = gateState === 1 ? '#22c55e' : '#64748b';
+            ctx.fillRect(canvas.width / 2 + 30, 140, 90, 12);
+
+            // Update & Draw Sand
+            sandParticles.forEach(p => {
+                p.y += p.vy;
+                p.x += p.vx;
+
+                // Funnel convergence
+                if (p.y < 100) {
+                    p.x += (canvas.width / 2 - p.x) * 0.05;
+                }
+
+                // Gate collision
+                if (p.y >= 135 && p.y <= 155) {
+                    if (p.x < canvas.width / 2) {
+                        if (gateState === -1) p.vx = -2; // Directed left
+                        else p.vx = 1;
+                    } else {
+                        if (gateState === 1) p.vx = 2; // Directed right
+                        else p.vx = -1;
+                    }
+                }
+
+                // Reset particle at bottom
+                if (p.y > canvas.height) {
+                    p.y = -10;
+                    p.x = canvas.width / 2 + (Math.random() * 20 - 10);
+                    p.vx = 0;
+                }
+
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(updateSandSimulation);
+        }
+
+        function checkBinSelection(isCorrect) {
+            const data = levelDataList[currentLevel - 1];
+            if (isCorrect) {
+                playCorrectSound();
+                correctCount++;
+                score += 100 * combo;
+                combo = Math.min(combo + 1, 5);
+                maxCombo = Math.max(maxCombo, combo);
+                showFeedback("ĐÚNG MỤC TIÊU! ⭐", true);
+                updateHUD();
+
+                setTimeout(() => {
+                    nextLevelOrBoss();
+                }, 1200);
+            } else {
+                playWrongSound();
+                wrongCount++;
+                combo = 1;
+                showFeedback("NHẦM BÌNH! ❌", false);
+                updateHUD();
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById('displayScore').innerText = score;
+            document.getElementById('displayCombo').innerText = 'x' + combo;
+        }
+
+        function showFeedback(text, isSuccess) {
+            const fb = document.getElementById('gameFeedback');
+            fb.innerText = text;
+            fb.className = `absolute top-6 z-30 transition-all duration-300 transform scale-100 px-6 py-2 rounded-full font-black text-lg shadow-2xl ${isSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`;
+            setTimeout(() => {
+                fb.className = 'absolute top-6 z-30 transition-all duration-300 transform scale-0 px-6 py-2 rounded-full font-black text-lg shadow-2xl';
+            }, 1000);
+        }
+
+        function nextLevelOrBoss() {
+            if (timerInterval) clearInterval(timerInterval);
+            if (currentLevel < 4) {
+                loadLevel(currentLevel + 1);
+            } else {
+                startBossBattle();
+            }
+        }
+
+        function startBossBattle() {
+            document.getElementById('screenGame').classList.add('hidden');
+            document.getElementById('screenBoss').classList.remove('hidden');
+            currentBossStep = 0;
+            bossTimerVal = 75;
+            document.getElementById('bossTotalSteps').innerText = bossSteps.length;
+            loadBossStep();
+
+            if (bossTimerInterval) clearInterval(bossTimerInterval);
+            bossTimerInterval = setInterval(() => {
+                bossTimerVal--;
+                document.getElementById('bossTimer').innerText = bossTimerVal;
+                if (bossTimerVal <= 0) {
+                    clearInterval(bossTimerInterval);
+                    endGame(false);
+                }
+            }, 1000);
+        }
+
+        function loadBossStep() {
+            if (currentBossStep >= bossSteps.length) {
+                clearInterval(bossTimerInterval);
+                playWinSound();
+                endGame(true);
+                return;
+            }
+
+            const stepData = bossSteps[currentBossStep];
+            document.getElementById('bossStepCount').innerText = currentBossStep + 1;
+            document.getElementById('bossCurrentTask').innerText = stepData.prompt;
+
+            const optionsContainer = document.getElementById('bossOptions');
+            optionsContainer.innerHTML = '';
+            
+            let shuffledOpts = [...stepData.options];
+            let correctText = stepData.options[stepData.correct];
+            shuffledOpts.sort(() => Math.random() - 0.5);
+
+            shuffledOpts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = 'p-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl font-bold text-sm md:text-base text-left transition btn-hover shadow';
+                btn.innerText = opt;
+                btn.onclick = () => {
+                    if (opt === correctText) {
+                        playCorrectSound();
+                        correctCount++;
+                        score += 200 * combo;
+                        currentBossStep++;
+                        loadBossStep();
+                    } else {
+                        playWrongSound();
+                        wrongCount++;
+                        showFeedback("Sai thứ tự cát!", false);
+                    }
+                };
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function endGame(isVictory) {
+            document.getElementById('screenBoss').classList.add('hidden');
+            document.getElementById('screenGame').classList.add('hidden');
+            document.getElementById('screenResult').classList.remove('hidden');
+
+            stopBGM();
+            totalElapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+
+            document.getElementById('resScore').innerText = score;
+            document.getElementById('resCombo').innerText = 'x' + maxCombo;
+            document.getElementById('resAccuracy').innerText = `${correctCount} / ${correctCount + wrongCount}`;
+            document.getElementById('resTime').innerText = totalElapsedSeconds + 's';
+
+            if (isVictory) {
+                document.getElementById('victoryBadge').innerText = '🏆🎉';
+                document.getElementById('resultTitle').innerText = 'CHINH PHỤC DÒNG CÁT KIẾN THỨC!';
+                document.getElementById('resultSubtitle').innerText = `${playerData.name} (${playerData.classStr}) đã hoàn thành xuất sắc Bài 16!`;
+            } else {
+                document.getElementById('victoryBadge').innerText = '⏳💥';
+                document.getElementById('resultTitle').innerText = 'HẾT GIỜ HOẶC CHƯA HOÀN THÀNH!';
+                document.getElementById('resultSubtitle').innerText = `Cố gắng ôn tập lại kiến thức Bài 16 để thử lại nhé!`;
+            }
+        }
+
+        function restartGame() {
+            document.getElementById('screenResult').classList.add('hidden');
+            document.getElementById('screenGame').classList.remove('hidden');
+            if (isMusicOn) startBGM();
+            initCanvas();
+            startGameSession();
+        }
+
+        function goHome() {
+            stopBGM();
+            document.getElementById('screenResult').classList.add('hidden');
+            document.getElementById('screenBoss').classList.add('hidden');
+            document.getElementById('screenGame').classList.add('hidden');
+            document.getElementById('screenLogin').classList.remove('hidden');
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputClass').value = '';
+        }
+    </script>
+</body>
+</html>
